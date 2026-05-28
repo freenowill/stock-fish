@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+.env
+.git
+reports
+simulation_output
+*.log
+.DS_Store

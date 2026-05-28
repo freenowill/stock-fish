@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockFish - A 股智能分析</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1923; color: #e0e6ed; min-height: 100vh;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 0; border-bottom: 1px solid #1e3a5f; margin-bottom: 24px;
+    }
+    h1 { font-size: 24px; background: linear-gradient(135deg, #ff4757, #ff6348); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: #6b8db5; font-size: 13px; }
+
+    .search-box { display: flex; gap: 12px; margin-bottom: 24px; }
+    .search-box input {
+      flex: 1; max-width: 200px;
+      padding: 12px 16px; border: 1px solid #1e3a5f; border-radius: 8px;
+      background: #1a2d42; color: #e0e6ed; font-size: 16px; outline: none;
+    }
+    .search-box input:focus { border-color: #ff4757; }
+    .search-box button {
+      padding: 12px 24px; border: none; border-radius: 8px;
+      background: linear-gradient(135deg, #ff4757, #ff6348);
+      color: #fff; font-size: 15px; cursor: pointer; transition: opacity .2s;
+    }
+    .search-box button:hover { opacity: .85; }
+    .search-box button:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* Cards */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .card {
+      background: #152436; border: 1px solid #1e3a5f; border-radius: 12px;
+      padding: 18px; transition: border-color .2s;
+    }
+    .card:hover { border-color: #ff4757; }
+    .card .label { color: #6b8db5; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .card .value { font-size: 24px; font-weight: 600; }
+    .card .sub { font-size: 13px; margin-top: 4px; color: #8ab4f8; }
+    .card .sub span { font-weight: 500; }
+
+    /* A-share convention: red = positive, green = negative */
+    .positive { color: #ff4757; }
+    .negative { color: #00d4aa; }
+    .neutral { color: #ffa502; }
+
+    /* Signal box */
+    .signal-box {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px; border-radius: 10px; margin-bottom: 16px;
+    }
+    .signal-bullish { background: rgba(255,71,87,.12); border: 1px solid #ff4757; }
+    .signal-bearish { background: rgba(0,212,170,.12); border: 1px solid #00d4aa; }
+    .signal-neutral { background: rgba(255,165,2,.12); border: 1px solid #ffa502; }
+    .signal-icon { font-size: 28px; }
+    .signal-label { font-weight: 600; font-size: 18px; }
+    .signal-meta { font-size: 13px; color: #6b8db5; }
+
+    /* Detail sections */
+    .section-title {
+      font-size: 15px; font-weight: 600; margin: 24px 0 10px;
+      padding-bottom: 8px; border-bottom: 1px solid #1e3a5f;
+      color: #8ab4f8;
+    }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .detail-item { padding: 10px 12px; background: #0f1923; border-radius: 8px; }
+    .detail-item .label { font-size: 11px; color: #6b8db5; }
+    .detail-item .value { font-size: 15px; font-weight: 500; margin-top: 4px; }
+
+    /* Summary cards */
+    .summary-list { display: flex; flex-direction: column; gap: 8px; }
+    .summary-item {
+      padding: 10px 14px; border-radius: 8px; font-size: 13px;
+      border-left: 3px solid; line-height: 1.5;
+    }
+    .summary-item.bullish { background: rgba(255,71,87,.08); border-left-color: #ff4757; }
+    .summary-item.bearish { background: rgba(0,212,170,.08); border-left-color: #00d4aa; }
+    .summary-item .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-right: 6px; }
+    .tag-positive { background: rgba(255,71,87,.2); color: #ff6b7a; }
+    .tag-negative { background: rgba(0,212,170,.2); color: #00d4aa; }
+    .summary-item .src { color: #6b8db5; font-size: 11px; }
+
+    /* Risk/positive factors */
+    .factor-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .factor-tag {
+      padding: 4px 10px; border-radius: 12px; font-size: 12px;
+    }
+    .factor-tag.positive { background: rgba(255,71,87,.12); border: 1px solid rgba(255,71,87,.3); }
+    .factor-tag.negative { background: rgba(0,212,170,.12); border: 1px solid rgba(0,212,170,.3); }
+
+    /* Sentiment bars */
+    .sent-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 8px 0; }
+    .sent-bar .pos { background: #ff4757; }
+    .sent-bar .neg { background: #00d4aa; }
+    .sent-bar .mid { background: #2a3f5a; }
+
+    /* Status */
+    .loading { text-align: center; padding: 40px; color: #6b8db5; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #1e3a5f; border-top-color: #ff4757; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #ff4757; padding: 16px; background: rgba(255,71,87,.1); border-radius: 8px; margin-bottom: 16px; }
+
+    /* Two-column layout */
+    .two-col { display: flex; gap: 24px; }
+    .two-col > div { flex: 1; min-width: 0; }
+
+    /* Prediction box */
+    .pred-box {
+      background: #152436; border: 1px solid #1e3a5f; border-radius: 12px;
+      padding: 16px; margin-bottom: 16px;
+    }
+    .pred-box .pred-header { color: #8ab4f8; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .pred-box .pred-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+    .pred-box .pred-row .pred-val { font-weight: 500; }
+
+    @media (max-width: 768px) {
+      .two-col { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>StockFish</h1>
+      <div class="subtitle">A 股实时分析 · 多智能体推演</div>
+    </div>
+    <div id="backendStatus" style="font-size:12px;color:#6b8db5;">加载中...</div>
+  </header>
+
+  <div class="search-box">
+    <input id="symbolInput" type="text" placeholder="股票代码 (600519)" value="600519" />
+    <button id="analyzeBtn" onclick="analyze()">分析</button>
+  </div>
+
+  <div id="result"></div>
+</div>
+
+<script>
+const API = '';
+
+async function analyze() {
+  const symbol = document.getElementById('symbolInput').value.trim();
+  const btn = document.getElementById('analyzeBtn');
+  const resultDiv = document.getElementById('result');
+
+  if (!symbol) { alert('请输入股票代码'); return; }
+  btn.disabled = true;
+  resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析...</div>';
+
+  try {
+    const resp = await fetch(`${API}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      resultDiv.innerHTML = `<div class="error">${err.error || '请求失败'}</div>`;
+      return;
+    }
+    const data = await resp.json();
+    renderAnalysis(data);
+  } catch (e) {
+    resultDiv.innerHTML = `<div class="error">网络错误: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function cfmt(val, digits) {
+  // Color format: returns class and sign
+  if (val == null) return { cls: '', text: '-' };
+  const n = Number(val);
+  digits = digits != null ? digits : 2;
+  return {
+    cls: n > 0 ? 'positive' : n < 0 ? 'negative' : '',
+    text: (n >= 0 ? '+' : '') + n.toFixed(digits),
+  };
+}
+
+function renderAnalysis(data) {
+  const q = data.quote || {};
+  const ti = data.technical_indicators || {};
+  const fs = data.financial_summary || {};
+  const signals = data.signals || {};
+  const pred = data.prediction_summary || {};
+  const sn = data.sentiment_news || {};
+  const sg = data.sentiment_guba || {};
+
+  const price = q.price;
+  const changePct = q.change_pct;
+  const overall = signals.overall || 'neutral';
+  const sigClass = `signal-${overall}`;
+  const sigEmoji = overall === 'bullish' ? '▲' : overall === 'bearish' ? '▼' : '◆';
+  const sigLabel = overall === 'bullish' ? '看多' : overall === 'bearish' ? '看空' : '中性';
+
+  const changeFmt = cfmt(changePct, 2);
+
+  // ---- SIGNAL HEADER ----
+  let html = `
+  <div class="signal-box ${sigClass}">
+    <span class="signal-icon ${overall === 'bullish' ? 'positive' : overall === 'bearish' ? 'negative' : 'neutral'}">${sigEmoji}</span>
+    <div>
+      <div class="signal-label">综合信号: ${sigLabel}</div>
+      <div class="signal-meta">评分: ${signals.score ?? '-'} | ${data.stock_name || data.symbol} | PE分位: ${data.valuation_percentile ?? '-'}%</div>
+    </div>
+  </div>`;
+
+  // ---- CARDS GRID ----
+  const buyPrice = data.suggested_buy_price;
+  const valLevel = data.valuation_level || '正常';
+  const valCls = valLevel === '很低' || valLevel === '偏低' ? 'positive' :
+                 valLevel === '偏高' || valLevel === '很高' ? 'negative' : 'neutral';
+
+  // Sentiment stats
+  const newsTotal = sn.total_count || 0;
+  const newsPos = sn.positive_count || 0;
+  const newsNeg = sn.negative_count || 0;
+  const gubaTotal = sg.total_count || 0;
+  const gubaPos = sg.positive_count || 0;
+  const gubaNeg = sg.negative_count || 0;
+  const totalCount = newsTotal + gubaTotal;
+  const totalPos = newsPos + gubaPos;
+  const totalNeg = newsNeg + gubaNeg;
+  const sentAvg = ((sn.avg_score || 0) + (sg.avg_score || 0)) / 2;
+  const sentAvgFmt = cfmt(sentAvg, 2);
+
+  // PE display
+  const peVal = q.pe != null ? q.pe.toFixed(1) : '-';
+  const marketCap = q.market_cap != null ? (q.market_cap >= 1e4 ? (q.market_cap / 1e4).toFixed(2) + '万亿' : q.market_cap.toFixed(0) + '亿') : '-';
+
+  html += `
+  <div class="grid">
+    <div class="card">
+      <div class="label">当前价格</div>
+      <div class="value ${changeFmt.cls}">${price != null ? price.toFixed(2) : '-'}</div>
+      <div class="sub ${changeFmt.cls}">
+        涨跌 ${changeFmt.text}%
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">建议买入价格</div>
+      <div class="value" style="color:#ff6348;">${buyPrice != null ? buyPrice.toFixed(2) : '-'}</div>
+      <div class="sub">${buyPrice && price ? '距现价 ' + ((buyPrice / price - 1) * 100).toFixed(1) + '%' : ''}</div>
+    </div>
+    <div class="card">
+      <div class="label">当前估值</div>
+      <div class="value ${valCls}">${valLevel}</div>
+      <div class="sub">
+        PE: ${peVal} | PB: ${q.pb != null ? q.pb.toFixed(1) : '-'}
+        ${data.historical_pe_avg ? '<br>历史PE均值: ' + data.historical_pe_avg.toFixed(1) : ''}
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">总市值</div>
+      <div class="value">${marketCap}</div>
+      <div class="sub">换手率: ${q.turnover_rate != null ? q.turnover_rate + '%' : '-'}</div>
+    </div>
+    <div class="card">
+      <div class="label">舆情情感</div>
+      <div class="value ${sentAvgFmt.cls}">${sentAvg >= 0 ? '+' : ''}${sentAvg.toFixed(2)}</div>
+      <div class="sub">总${totalCount}条 | 正面${totalPos} | 负面${totalNeg}</div>
+      <div class="sent-bar">
+        <div class="pos" style="width:${totalCount ? (totalPos/totalCount*100) : 0}%"></div>
+        <div class="neg" style="width:${totalCount ? (totalNeg/totalCount*100) : 0}%"></div>
+        <div class="mid" style="flex:1"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">LLM 预测</div>
+      <div class="value ${pred.outlook === '看多' ? 'positive' : pred.outlook === '看空' ? 'negative' : 'neutral'}">${pred.outlook || '-'}</div>
+      <div class="sub">置信度: ${pred.confidence || '-'} | 目标: ${pred.price_target_low != null ? pred.price_target_low.toFixed(2) : '-'} ~ ${pred.price_target_high != null ? pred.price_target_high.toFixed(2) : '-'}</div>
+    </div>
+  </div>`;
+
+  // ---- TWO COLUMNS: Tech + Fundamentals ----
+  html += `<div class="two-col">
+    <div>
+      <div class="section-title">技术指标</div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="label">MA5</div><div class="value ${price != null && ti.ma5 != null ? (price > ti.ma5 ? 'positive' : 'negative') : ''}">${ti.ma5 != null ? ti.ma5 : '-'}</div></div>
+        <div class="detail-item"><div class="label">MA10</div><div class="value ${price != null && ti.ma10 != null ? (price > ti.ma10 ? 'positive' : 'negative') : ''}">${ti.ma10 != null ? ti.ma10 : '-'}</div></div>
+        <div class="detail-item"><div class="label">MA20</div><div class="value ${price != null && ti.ma20 != null ? (price > ti.ma20 ? 'positive' : 'negative') : ''}">${ti.ma20 != null ? ti.ma20 : '-'}</div></div>
+        <div class="detail-item"><div class="label">RSI(14)</div><div class="value ${ti.rsi_14 != null ? (ti.rsi_14 > 70 ? 'negative' : ti.rsi_14 < 30 ? 'positive' : '') : ''}">${ti.rsi_14 != null ? ti.rsi_14 : '-'}</div></div>
+        <div class="detail-item"><div class="label">MACD</div><div class="value ${(ti.macd_hist || 0) >= 0 ? 'positive' : 'negative'}">${ti.macd_hist != null ? ti.macd_hist.toFixed(3) : '-'}</div></div>
+        <div class="detail-item"><div class="label">KDJ-K/D/J</div><div class="value">${ti.kdj_k != null ? ti.kdj_k.toFixed(1)+'/'+ti.kdj_d.toFixed(1)+'/'+ti.kdj_j.toFixed(1) : '-'}</div></div>
+        <div class="detail-item"><div class="label">布林上轨</div><div class="value">${ti.boll_upper != null ? ti.boll_upper : '-'}</div></div>
+        <div class="detail-item"><div class="label">布林中轨</div><div class="value">${ti.boll_middle != null ? ti.boll_middle : '-'}</div></div>
+        <div class="detail-item"><div class="label">布林下轨</div><div class="value">${ti.boll_lower != null ? ti.boll_lower : '-'}</div></div>
+        <div class="detail-item"><div class="label">量比</div><div class="value">${ti.volume_ratio != null ? ti.volume_ratio : '-'}</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">基本面</div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="label">EPS</div><div class="value">${fs.eps != null ? fs.eps : '-'}</div></div>
+        <div class="detail-item"><div class="label">ROE</div><div class="value">${fs.roe != null ? fs.roe + '%' : '-'}</div></div>
+        <div class="detail-item"><div class="label">营收</div><div class="value">${fs.revenue != null ? fs.revenue + '亿' : '-'}</div></div>
+        <div class="detail-item"><div class="label">净利润</div><div class="value">${fs.net_profit != null ? fs.net_profit + '亿' : '-'}</div></div>
+        <div class="detail-item"><div class="label">毛利率</div><div class="value">${fs.gross_margin != null ? fs.gross_margin + '%' : '-'}</div></div>
+        <div class="detail-item"><div class="label">负债率</div><div class="value">${fs.debt_ratio != null ? fs.debt_ratio + '%' : '-'}</div></div>
+      </div>
+
+      <div class="section-title" style="margin-top:16px;">信号明细</div>
+      ${(signals.details || []).map(s => {
+        const arrow = s.impact === 'positive' ? '▲' : '▼';
+        const cls = s.impact === 'positive' ? 'positive' : 'negative';
+        return `<div style="padding:5px 0;font-size:13px;border-bottom:1px solid #1a2d42;">
+          <span class="${cls}">${arrow}</span> ${s.factor}
+          <span style="color:#6b8db5;float:right;">${s.weight}</span>
+        </div>`;
+      }).join('')}
+
+      ${pred.reason ? `
+      <div class="section-title" style="margin-top:16px;">核心逻辑</div>
+      <div style="padding:10px 14px;background:#0f1923;border-radius:8px;font-size:13px;line-height:1.6;">${pred.reason}</div>
+      ` : ''}
+    </div>
+  </div>`;
+
+  // ---- IMPORTANT NEWS SUMMARY ----
+  const bullNews = data.important_bullish_news || [];
+  const bearNews = data.important_bearish_news || [];
+  if (bullNews.length > 0 || bearNews.length > 0) {
+    html += `<div class="section-title">重要新闻摘要</div>`;
+    if (bullNews.length > 0) {
+      html += `<div class="summary-list">`;
+      for (const n of bullNews) {
+        html += `<div class="summary-item bullish">
+          <span class="tag tag-positive">利好</span>${n.title}
+          <span class="src"> [${n.source}]</span>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    if (bearNews.length > 0) {
+      html += `<div class="summary-list" style="margin-top:6px;">`;
+      for (const n of bearNews) {
+        html += `<div class="summary-item bearish">
+          <span class="tag tag-negative">利空</span>${n.title}
+          <span class="src"> [${n.source}]</span>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // ---- LATEST NEWS LIST ----
+  html += `<div class="section-title">全部新闻 (${data.news ? data.news.length : 0}条)</div>`;
+  html += `<div class="summary-list">`;
+  if (data.news && data.news.length > 0) {
+    for (const n of data.news.slice(0, 10)) {
+      const datePart = (n.publish_time || '').slice(0, 10);
+      html += `<div class="summary-item" style="border-left-color:#1e3a5f;">
+        ${n.title}
+        <span class="src"> [${n.source || ''} ${datePart}]</span>
+      </div>`;
+    }
+  } else {
+    html += `<div style="color:#6b8db5;padding:8px;">暂无新闻</div>`;
+  }
+  html += `</div>`;
+
+  // ---- GUBA SUMMARY ----
+  const bullGuba = data.important_bullish_guba || [];
+  const bearGuba = data.important_bearish_guba || [];
+  if (bullGuba.length > 0 || bearGuba.length > 0) {
+    html += `<div class="section-title">股吧热议摘要</div>`;
+    if (bullGuba.length > 0) {
+      html += `<div class="summary-list">`;
+      for (const g of bullGuba) {
+        html += `<div class="summary-item bullish">
+          <span class="tag tag-positive">看多</span>${g.title}
+          <span class="src"> [@${g.source}]</span>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    if (bearGuba.length > 0) {
+      html += `<div class="summary-list" style="margin-top:6px;">`;
+      for (const g of bearGuba) {
+        html += `<div class="summary-item bearish">
+          <span class="tag tag-negative">看空</span>${g.title}
+          <span class="src"> [@${g.source}]</span>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // ---- ALL GUBA ----
+  html += `<div class="section-title">全部股吧热议 (${data.guba_posts ? data.guba_posts.length : 0}条)</div>`;
+  html += `<div class="summary-list">`;
+  if (data.guba_posts && data.guba_posts.length > 0) {
+    for (const g of data.guba_posts.slice(0, 10)) {
+      html += `<div class="summary-item" style="border-left-color:#1e3a5f;">
+        ${g.title}
+        <span class="src"> [@${g.author || ''} 阅${g.read_count || 0} 评${g.comment_count || 0}]</span>
+      </div>`;
+    }
+  } else {
+    html += `<div style="color:#6b8db5;padding:8px;">暂无股吧数据</div>`;
+  }
+  html += `</div>`;
+
+  // ---- RISK FACTORS ----
+  if (data.risk_factors && data.risk_factors.length > 0) {
+    html += `<div class="section-title">风险提示</div>`;
+    html += `<div class="factor-tags">`;
+    for (const r of data.risk_factors) {
+      html += `<span class="factor-tag negative">${r.factor || r}</span>`;
+    }
+    html += `</div>`;
+  }
+
+  // ---- LLM FULL ANALYSIS ----
+  if (data.llm_analysis) {
+    html += `<div class="section-title">AI 分析详情</div>`;
+    html += `<div style="padding:16px;background:#152436;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap;">${data.llm_analysis}</div>`;
+  }
+
+  document.getElementById('result').innerHTML = html;
+
+  // Update backend status
+  fetch(`${API}/api/config`).then(r => r.json()).then(cfg => {
+    document.getElementById('backendStatus').textContent =
+      `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+  }).catch(() => {});
+}
+
+// Auto-load config on start
+window.addEventListener('DOMContentLoaded', () => {
+  fetch(`${API}/api/config`).then(r => r.json()).then(cfg => {
+    document.getElementById('backendStatus').textContent =
+      `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+  }).catch(() => {});
+  analyze();
+});
+</script>
+</body>
+</html>

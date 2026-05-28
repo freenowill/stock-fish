@@ -1,0 +1,72 @@
+# 环境变量 / 密钥
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 生成输出
+reports/
+simulation_output/
+*.dist-info/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志与输出
+*.log
+logs/
+*.html.report
+
+# 临时文件
+*.tmp
+*.bak
+*.csv
+!requirements.txt
+
+# 敏感数据
+~/.jsdata_tk.csv
+token*.txt
+*_token*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+.package-lock.json
+
+# Docker
+.docker/
+
+# 大文件/数据文件
+*.h5
+*.hdf5
+*.pkl
+*.parquet
+pickle_cache/
+
+# wget
+wget-log*

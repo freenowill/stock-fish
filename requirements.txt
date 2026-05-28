@@ -1,0 +1,22 @@
+# StockFish 依赖
+flask>=3.0.0
+flask-cors>=6.0.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+requests>=2.28.0
+beautifulsoup4>=4.11.0
+lxml>=4.9.0
+
+# A 股数据
+akshare>=1.16.0
+tushare>=1.4.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# LLM 客户端
+openai>=1.0.0
+
+# 工具
+loguru>=0.7.0
+PyYAML>=6.0
