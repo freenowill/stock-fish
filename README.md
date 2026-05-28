@@ -98,6 +98,18 @@ curl -X POST http://localhost:8000/api/predict \
   -d '{"symbol":"600519","scenario":"base"}'
 ```
 
+## 数据源
+
+| 数据 | 来源 | 覆盖范围 |
+|------|------|----------|
+| 行情 / K线 / PE / 财务 | Tushare Pro | A 股全量 |
+| 中文新闻 | 新浪财经（当日 15~20 条） | A 股个股 |
+| 英文新闻 | Yahoo Finance RSS | 美股/港股为主，A 股覆盖稀疏 |
+| 股吧热议 | 东方财富股吧（当日 80+ 条） | A 股个股 |
+
+> Bloomberg / Reuters / Wall Street Journal 需要付费 API 订阅（Bloomberg Terminal、Refinitiv Eikon 等），无法免费接入。
+> 雪球 需要登录认证，API 限频严格，暂未接入。
+
 ## 界面展示
 
 <p align="center">

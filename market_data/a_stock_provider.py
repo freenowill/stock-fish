@@ -338,12 +338,20 @@ class AkShareBackend(BaseStockBackend):
             return None
 
     def get_news(self, symbol: str) -> List[NewsItem]:
+        today = datetime.now().strftime('%Y-%m-%d')
         results = []
+        # 新浪财经 (中文)
         try:
             results = self._fetch_sina_news(symbol)
         except Exception:
             pass
-        # Fallback: try AkShare
+        # Yahoo Finance (英文)
+        try:
+            yahoo_news = self._fetch_yahoo_finance_news(symbol)
+            results.extend(yahoo_news)
+        except Exception:
+            pass
+        # Fallback: AkShare
         if not results:
             try:
                 ak = self._get_ak()
@@ -358,7 +366,11 @@ class AkShareBackend(BaseStockBackend):
                         ))
             except Exception:
                 pass
-        return results
+        # 仅保留当日消息
+        today_news = [n for n in results if n.publish_time[:10] == today]
+        if today_news:
+            return today_news
+        return results  # 降级：无当日消息时返回全部
 
     def _sina_market_prefix(self, symbol: str) -> str:
         code = symbol.strip().zfill(6)
@@ -398,12 +410,49 @@ class AkShareBackend(BaseStockBackend):
         return results
 
     def get_guba(self, symbol: str) -> List[GubaPost]:
+        today = datetime.now().strftime('%m-%d')
         result = []
         try:
             result = self._fetch_eastmoney_guba(symbol)
         except Exception:
             pass
-        return result
+        today_posts = [p for p in result if p.publish_time[:5] == today]
+        return today_posts if today_posts else result
+
+    def _yf_symbol(self, symbol: str) -> str:
+        """600519.SH → 600519.SS, 000858.SZ → 000858.SZ"""
+        code = symbol.strip().zfill(6)
+        suffix = 'SS' if code.startswith(('6', '9')) else 'SZ'
+        return f'{code}.{suffix}'
+
+    def _fetch_yahoo_finance_news(self, symbol: str) -> List[NewsItem]:
+        import requests
+        from bs4 import BeautifulSoup
+        from datetime import datetime, timedelta
+        yf_sym = self._yf_symbol(symbol)
+        url = f'https://feeds.finance.yahoo.com/rss/2.0/headline?s={yf_sym}&region=CN&lang=zh-CN'
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(url, timeout=15, headers=headers)
+        soup = BeautifulSoup(r.text, 'xml')
+        results = []
+        today = datetime.now().strftime('%Y-%m-%d')
+        for item in soup.find_all('item'):
+            title = item.title.text.strip() if item.title else ''
+            link = item.link.text.strip() if item.link else ''
+            pubdate_str = item.pubDate.text if item.pubDate else ''
+            try:
+                from email.utils import parsedate_to_datetime
+                pub_dt = parsedate_to_datetime(pubdate_str)
+                pubdate = pub_dt.strftime('%Y-%m-%d %H:%M')
+            except Exception:
+                pubdate = ''
+            if not title:
+                continue
+            results.append(NewsItem(
+                title=title, url=link, publish_time=pubdate,
+                source='Yahoo Finance',
+            ))
+        return results
 
     def _fetch_eastmoney_guba(self, symbol: str) -> List[GubaPost]:
         import re
