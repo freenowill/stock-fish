@@ -98,18 +98,21 @@ curl -X POST http://localhost:8000/api/predict \
   -d '{"symbol":"600519","scenario":"base"}'
 ```
 
-## 前端功能
+## 界面展示
 
-| 区域 | 内容 |
-|------|------|
-| 综合信号栏 | 看多/看空/中性 + 综合评分 + PE分位 |
-| 6 数据卡片 | 现价 / 建议买入价 / 估值等级 / 总市值 / 舆情统计 / LLM 预测 |
-| 技术指标 | MA5/10/20、RSI(14)、MACD、KDJ、布林带、量比 |
-| 基本面 | EPS、ROE、营收、净利润、毛利率、负债率 |
-| 信号明细 | 各因子方向和权重 |
-| 重要新闻摘要 | 利好 Top 3 + 利空 Top 3 |
-| 股吧热议摘要 | 看多 Top 3 + 看空 Top 3 |
-| AI 分析详情 | LLM 全量分析文本 |
+<p align="center">
+  <img src="document/1.png" width="49%" alt="信号卡片 + 技术指标">
+  <img src="document/2.png" width="49%" alt="基本面 + 信号明细">
+</p>
+
+<p align="center">
+  <img src="document/3.png" width="49%" alt="重要新闻摘要">
+  <img src="document/4.png" width="49%" alt="股吧热议 + AI分析">
+</p>
+
+<p align="center">
+  <img src="document/5.png" width="80%" alt="预测报告详情">
+</p>
 
 配色采用 A 股传统：**红涨绿跌**。
 
