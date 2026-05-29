@@ -11,6 +11,7 @@ lxml>=4.9.0
 # A 股数据
 akshare>=1.16.0
 tushare>=1.4.0
+baostock>=0.8.8
 pandas>=2.0.0
 numpy>=1.24.0
 

@@ -351,6 +351,16 @@ class AkShareBackend(BaseStockBackend):
             results.extend(yahoo_news)
         except Exception:
             pass
+        # 雪球热度
+        try:
+            xq = self.get_xueqiu_popularity(symbol)
+            if xq.get('follow_count', 0) > 0:
+                results.append(NewsItem(
+                    title=f"雪球关注度: {xq.get('follow_count', 0):.0f}人关注 最新价: {xq.get('latest_price', '?')}",
+                    source='雪球', publish_time=today,
+                ))
+        except Exception:
+            pass
         # Fallback: AkShare
         if not results:
             try:
@@ -492,6 +502,29 @@ class AkShareBackend(BaseStockBackend):
                 continue
         return results
 
+    def get_xueqiu_popularity(self, symbol: str) -> dict:
+        """获取雪球热度数据（关注/讨论/交易）"""
+        try:
+            import akshare as ak
+            code = symbol.strip().zfill(6)
+            prefix = 'SH' if code.startswith(('6', '9')) else 'SZ'
+            full_code = f'{prefix}{code}'
+            for func in [ak.stock_hot_follow_xq, ak.stock_hot_tweet_xq, ak.stock_hot_deal_xq]:
+                df = func()
+                if df is not None and not df.empty:
+                    match = df[df['股票代码'] == full_code]
+                    if not match.empty:
+                        row = match.iloc[0]
+                        result = {
+                            'follow_count': float(row.get('关注', 0)) if '关注' in df.columns else 0,
+                        }
+                        if '最新价' in df.columns:
+                            result['latest_price'] = float(row['最新价'])
+                        return result
+        except Exception:
+            pass
+        return {}
+
     @staticmethod
     def _safe_float(val) -> Optional[float]:
         if val is None:
@@ -509,6 +542,160 @@ class AkShareBackend(BaseStockBackend):
             return round(float(val) / divisor, 4)
         except (ValueError, TypeError):
             return None
+
+
+# ========== BaoStock 后端（免费、无需token） ==========
+
+class BaoStockBackend(BaseStockBackend):
+    """BaoStock 数据后端，免费无需token，作为 Tushare/AkShare 失败时的兜底"""
+
+    def __init__(self):
+        self._logged_in = False
+
+    def _login(self):
+        if self._logged_in:
+            return
+        import baostock as bs
+        bs.login()
+        self._logged_in = True
+        self._bs = bs
+
+    def _bs_prefix(self, symbol: str) -> str:
+        code = symbol.strip().zfill(6)
+        return 'sh.' + code if code.startswith(('6', '9')) else 'sz.' + code
+
+    def get_quote(self, symbol: str) -> Optional[Quote]:
+        try:
+            self._login()
+            prefix = self._bs_prefix(symbol)
+            code = symbol.strip().zfill(6)
+            # 日K线最新一条作为行情
+            rs = self._bs.query_history_k_data_plus(prefix,
+                'date,open,high,low,close,volume,amount,peTTM,pbMRQ,turn',
+                frequency='d', adjustflag='2')
+            rows = []
+            while rs.next():
+                rows.append(rs.get_row_data())
+            if not rows:
+                return None
+            r = rows[-1]
+            price = float(r[3]) if r[3] else 0
+            prev_close = float(r[3]) if len(rows) > 1 and rows[-2][3] else price
+            change_pct = (price - prev_close) / prev_close * 100 if prev_close else 0
+
+            # 股票名称
+            name = code
+            try:
+                rs_name = self._bs.query_stock_basic(code=prefix)
+                if rs_name.error_code == '0':
+                    while rs_name.next():
+                        name = rs_name.get_row_data()[1]
+            except Exception:
+                pass
+
+            pe = float(r[6]) if r[6] else None
+            pb = float(r[7]) if r[7] else None
+            turnover = float(r[8]) if r[8] else None
+
+            return Quote(
+                symbol=code, name=name, price=round(price, 2),
+                change=round(price - prev_close, 2), change_pct=round(change_pct, 2),
+                volume=float(r[4]) if r[4] else 0, amount=float(r[5]) if r[5] else 0,
+                high=float(r[1]) if r[1] else 0, low=float(r[2]) if r[2] else 0,
+                open_=float(r[0]) if r[0] else 0, prev_close=round(prev_close, 2),
+                turnover_rate=round(turnover, 2) if turnover else None,
+                pe=round(pe, 2) if pe else None, pb=round(pb, 2) if pb else None,
+                market_cap=None, timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            )
+        except Exception as e:
+            logger.error(f"BaoStock 行情失败 [{symbol}]: {e}")
+            return None
+
+    def get_historical(self, symbol: str, days: int = 365) -> Optional[List[dict]]:
+        try:
+            self._login()
+            prefix = self._bs_prefix(symbol)
+            end = datetime.now()
+            start = end - timedelta(days=days)
+            rs = self._bs.query_history_k_data_plus(prefix,
+                'date,open,high,low,close,volume,amount',
+                start_date=start.strftime('%Y-%m-%d'), end_date=end.strftime('%Y-%m-%d'),
+                frequency='d', adjustflag='2')
+            rows = []
+            while rs.next():
+                r = rs.get_row_data()
+                if r[0] and r[3]:
+                    rows.append({
+                        'date': r[0], 'open': float(r[1]), 'high': float(r[2]),
+                        'low': float(r[3]), 'close': float(r[4]),
+                        'volume': float(r[5]) if r[5] else 0,
+                        'amount': float(r[6]) if r[6] else 0,
+                    })
+            return rows if rows else None
+        except Exception as e:
+            logger.error(f"BaoStock 历史数据失败 [{symbol}]: {e}")
+            return None
+
+    def get_financials(self, symbol: str) -> Optional[FinancialSummary]:
+        try:
+            self._login()
+            prefix = self._bs_prefix(symbol)
+            code = symbol.strip().zfill(6)
+            name = code
+            try:
+                rs_name = self._bs.query_stock_basic(code=prefix)
+                if rs_name.error_code == '0':
+                    while rs_name.next():
+                        name = rs_name.get_row_data()[1]
+            except Exception:
+                pass
+            # 季度利润表
+            eps = roe = None
+            year = datetime.now().year
+            rs = self._bs.query_profit_data(code=prefix, year=year, quarter=1)
+            if rs.error_code == '0':
+                fields = rs.get_field_names()
+                while rs.next():
+                    r = rs.get_row_data()
+                    rd = dict(zip(fields, r))
+                    if rd.get('roeAvg'):
+                        try: roe = float(rd['roeAvg'])
+                        except: pass
+                    if rd.get('epsEnyu'):
+                        try: eps = float(rd['epsEnyu'])
+                        except: pass
+            return FinancialSummary(
+                symbol=code, name=name, eps=eps, roe=roe,
+                report_date=f'{year}Q1',
+            )
+        except Exception as e:
+            logger.warning(f"BaoStock 财务失败 [{symbol}]: {e}")
+            return None
+
+    def get_historical_pe(self, symbol: str, days: int = 365 * 3) -> List[float]:
+        try:
+            self._login()
+            prefix = self._bs_prefix(symbol)
+            end = datetime.now()
+            start = end - timedelta(days=days)
+            rs = self._bs.query_history_k_data_plus(prefix,
+                'date,peTTM', start_date=start.strftime('%Y-%m-%d'),
+                end_date=end.strftime('%Y-%m-%d'), frequency='d', adjustflag='2')
+            pe_vals = []
+            while rs.next():
+                r = rs.get_row_data()
+                if r[1]:
+                    try: pe_vals.append(float(r[1]))
+                    except: pass
+            return pe_vals
+        except Exception:
+            return []
+
+    def get_news(self, symbol: str) -> List[NewsItem]:
+        return []
+
+    def get_guba(self, symbol: str) -> List[GubaPost]:
+        return []
 
 
 # ========== 技术指标计算（与后端无关） ==========
@@ -650,10 +837,11 @@ class AStockProvider:
     """
     A 股数据提供者（主入口）
 
-    自动选择可用后端：
-    1. TushareBackend（Tushare Pro，推荐）
+    自动选择可用后端（逐级降级）：
+    1. TushareBackend（Tushare Pro，推荐，需token）
     2. AkShareBackend（东方财富，需中国大陆网络）
-    3. MockBackend（内置模拟数据，保底）
+    3. BaoStockBackend（免费，无需token）
+    4. MockBackend（内置模拟数据，保底）
     """
 
     def __init__(self, backend: Optional[str] = None, proxy: Optional[str] = None,
@@ -708,7 +896,20 @@ class AStockProvider:
             except Exception as e:
                 logger.warning(f"AkShareBackend 不可用: {e}")
 
-        # 3. Mock（保底）
+        # 3. BaoStock（免费兜底）
+        if self._requested_backend in ('baostock', 'auto'):
+            try:
+                bk = BaoStockBackend()
+                test = bk.get_quote("600519")
+                if test is not None and test.price > 0:
+                    self._backend = bk
+                    self._active_backend_name = 'baostock'
+                    logger.info("使用 BaoStockBackend（免费数据）")
+                    return self._backend
+            except Exception as e:
+                logger.warning(f"BaoStockBackend 不可用: {e}")
+
+        # 4. Mock（最终保底）
         logger.info("回退到 MockBackend（模拟数据）")
         self._backend = MockBackend()
         self._active_backend_name = 'mock'
