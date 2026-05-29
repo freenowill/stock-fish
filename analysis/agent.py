@@ -85,18 +85,18 @@ class StockAnalysisAgent:
                 'price_target_low': prediction.price_target_low,
                 'price_target_high': prediction.price_target_high,
                 'reason': prediction.reason,
+                # 多 Agent 辩论观点
+                'tech_view': prediction.tech_view,
+                'fund_view': prediction.fund_view,
+                'sent_view': prediction.sent_view,
             }
             state.price_target = {
                 'current': prediction.price_target_current,
                 'low': prediction.price_target_low,
                 'high': prediction.price_target_high,
             }
-            state.short_term_pred = prediction.short_term
-            state.mid_term_pred = prediction.mid_term
-            state.long_term_pred = prediction.long_term
-            state.suggested_action = prediction.suggested_action
             state.risk_factors = [{'factor': f} for f in prediction.risk_factors]
-            logger.info(f"[{symbol}] Step 4/4: LLM 预测完成")
+            logger.info(f"[{symbol}] Step 4/4: 多Agent辩论预测完成 → {prediction.outlook}")
 
             state.mark_complete()
 

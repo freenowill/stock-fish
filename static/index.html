@@ -393,6 +393,44 @@ function renderAnalysis(data) {
     html += `</div>`;
   }
 
+  // ---- Multi-Agent Debate ----
+  const pred = data.prediction_summary || {};
+  const agents = [
+    { key: 'tech_view', label: '技术面分析师', icon: '◆', data: pred.tech_view },
+    { key: 'fund_view', label: '基本面分析师', icon: '■', data: pred.fund_view },
+    { key: 'sent_view', label: '舆情分析师', icon: '●', data: pred.sent_view },
+  ];
+
+  const hasAgentViews = agents.some(a => a.data);
+  if (hasAgentViews) {
+    html += `<div class="section-title">多 Agent 辩论</div>`;
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">`;
+
+    for (const a of agents) {
+      if (!a.data) continue;
+      const v = a.data;
+      const vcls = v.outlook === '看多' ? 'positive' : v.outlook === '看空' ? 'negative' : 'neutral';
+      html += `<div class="card" style="border-left:3px solid var(--${v.outlook==='看多'?'positive':v.outlook==='看空'?'negative':'neutral'}-color, ${v.outlook==='看多'?'#ff4757':v.outlook==='看空'?'#00d4aa':'#ffa502'});">
+        <div class="label">${a.icon} ${a.label}</div>
+        <div style="font-size:18px;font-weight:600;margin:4px 0;" class="${vcls}">${v.outlook || '-'} <span style="font-size:12px;font-weight:400;">置信度: ${v.confidence || '-'} 评分: ${v.score != null ? (v.score>0?'+':'')+v.score : '-'}</span></div>
+        <div style="font-size:12px;color:#8ab4f8;margin-top:6px;">关键论点:</div>
+        ${(v.key_points || []).map(p => `<div style="font-size:12px;padding:2px 0;color:#c0c8d0;">+ ${p}</div>`).join('')}
+        ${(v.risks || []).length > 0 ? `<div style="font-size:12px;color:#ff6b7a;margin-top:6px;">风险:</div>` : ''}
+        ${(v.risks || []).map(r => `<div style="font-size:12px;padding:2px 0;color:#ff6b7a;">- ${r}</div>`).join('')}
+      </div>`;
+    }
+    html += `</div>`;
+
+    // Moderator verdict
+    html += `<div class="card" style="margin-top:12px;background:rgba(255,165,2,.08);border:1px solid #ffa502;">
+      <div class="label">◆ 主持人综合裁决</div>
+      <div style="font-size:15px;font-weight:600;margin:6px 0;" class="${pred.outlook === '看多' ? 'positive' : pred.outlook === '看空' ? 'negative' : 'neutral'}">
+        最终判断: ${pred.outlook || '-'}  置信度: ${pred.confidence || '-'}
+      </div>
+      <div style="font-size:13px;line-height:1.6;color:#c0c8d0;">${pred.reason || ''}</div>
+    </div>`;
+  }
+
   if (data.llm_analysis) {
     html += `<div class="section-title">AI 分析详情</div>`;
     html += `<div style="padding:16px;background:#152436;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap;">${data.llm_analysis}</div>`;
