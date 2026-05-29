@@ -451,6 +451,23 @@ function renderAnalysis(data) {
           <div style="font-size:11px;color:#6b8db5;margin-top:4px;">${long.reason || ''}</div>
         </div>
       </div>
+      ${pred.suggested_action ? `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px;">
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:10px;text-align:center;">
+          <div class="label">操作建议</div>
+          <div style="font-size:18px;font-weight:700;" class="${pred.suggested_action.action==='买入'||pred.suggested_action.action==='加仓'?'positive':pred.suggested_action.action==='卖出'||pred.suggested_action.action==='减仓'?'negative':'neutral'}">${pred.suggested_action.action || '-'}</div>
+          <div style="font-size:11px;color:#6b8db5;margin-top:4px;">${pred.suggested_action.reason || ''}</div>
+        </div>
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:10px;text-align:center;">
+          <div class="label">止损价</div>
+          <div style="font-size:18px;font-weight:600;color:#00d4aa;">${pred.suggested_action.stop_loss != null ? pred.suggested_action.stop_loss.toFixed(2) : '-'}</div>
+        </div>
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:10px;text-align:center;">
+          <div class="label">止盈价</div>
+          <div style="font-size:18px;font-weight:600;color:#ff4757;">${pred.suggested_action.take_profit != null ? pred.suggested_action.take_profit.toFixed(2) : '-'}</div>
+        </div>
+      </div>
+      ` : ''}
     </div>`;
   }
 

@@ -45,10 +45,11 @@ class PredictionResult:
     fund_view: Optional[Dict] = None
     sent_view: Optional[Dict] = None
 
-    # 主持人多周期预测
-    short_term: Optional[Dict] = None   # {direction, change_pct, confidence, reason}
+    # 主持人多周期预测 + 操作建议
+    short_term: Optional[Dict] = None
     mid_term: Optional[Dict] = None
     long_term: Optional[Dict] = None
+    suggested_action: Optional[Dict] = None  # {action, reason, stop_loss, take_profit}
 
     # 兼容旧字段
     price_target_current: Optional[float] = None
@@ -126,6 +127,7 @@ class PredictionNode:
             short_term=final.get('short_term'),
             mid_term=final.get('mid_term'),
             long_term=final.get('long_term'),
+            suggested_action=final.get('suggested_action'),
             price_target_current=price,
             price_target_low=final.get('price_target_low'),
             price_target_high=final.get('price_target_high'),
@@ -249,9 +251,29 @@ class PredictionNode:
     def _moderator_prompt(self, state: dict, debate_text: str) -> str:
         q = state.get('quote', {}) or {}
         price = q.get('price', 0) if isinstance(q, dict) else 0
+        cost = state.get('cost_price', 0) or 0
+        val = state.get('valuation_level', '正常')
+        sug = state.get('suggested_buy_price', 0) or 0
+
+        cost_lines = ""
+        if cost > 0:
+            pnl_pct = (price - cost) / cost * 100
+            cost_lines = f"""
+## 持仓信息
+- 成本价: {cost}  现价: {price}
+- 浮动盈亏: {pnl_pct:+.1f}%
+- 估值等级: {val}  建议买入价: {sug}
+"""
+        else:
+            cost_lines = f"""
+## 参考价位
+- 现价: {price}  估值等级: {val}
+- 建议买入价: {sug}
+"""
+
         return f"""## 股票信息
 {state.get('stock_name', '')}({state.get('symbol', '')})  现价: {price}
-
+{cost_lines}
 ## 三位分析师独立观点
 
 {debate_text}
@@ -264,6 +286,7 @@ class PredictionNode:
 2. **指出分歧** — 哪些判断相互矛盾？你更认同一方的理由是什么？
 3. **综合裁决** — 给出最终的多空判断和置信度
 4. **多周期预测** — 综合技术面(短期)、估值(中长期)、舆情(情绪面)给出短/中/长期涨跌预测
+5. **操作建议** — 综合{'持仓盈亏、' if cost else ''}估值分位、技术信号，给出具体操作建议
 
 输出JSON:
 {{
@@ -288,6 +311,12 @@ class PredictionNode:
     "change_pct": 15.0,
     "confidence": "高/中/低",
     "reason": "6~12月预测依据(40字内)"
+  }},
+  "suggested_action": {{
+    "action": "买入/加仓/持有/减仓/卖出",
+    "reason": "操作理由(60字内)",
+    "stop_loss": {price * 0.93:.1f},
+    "take_profit": {price * 1.15:.1f}
   }},
   "price_target_low": {price * 0.93:.1f},
   "price_target_high": {price * 1.10:.1f},
