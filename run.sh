@@ -54,12 +54,14 @@ if [ "$MODE" = "--local" ]; then
     STOCKFISH_PID=$!
     echo "  PID: $STOCKFISH_PID"
 
-    # 等待启动
-    for i in $(seq 1 10); do
-        if curl -s -o /dev/null -w "" http://localhost:8000/ 2>/dev/null; then
+    # 等待启动 (Flask debug 会重启子进程, 需等待 API 可用)
+    echo "  等待 Flask 就绪..."
+    for i in $(seq 1 20); do
+        if curl -s http://localhost:8000/api/config 2>/dev/null | grep -q backend; then
+            echo "  服务就绪"
             break
         fi
-        sleep 1
+        sleep 2
     done
 
     echo ""

@@ -12,7 +12,7 @@ class DataApi:
 
     def query(self, api_name, **kwargs):
         params = {'api_name': api_name, 'token': self.__token, 'params': kwargs, 'fields': ''}
-        r = requests.post(self.__http_url, data=json.dumps(params))
+        r = requests.post(self.__http_url, data=json.dumps(params), timeout=10)
         result = r.json()
         if result.get('code') != 0:
             raise Exception(result.get('msg', 'Unknown error'))

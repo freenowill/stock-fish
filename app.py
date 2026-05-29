@@ -32,9 +32,7 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 
 # ===== 全局状态 =====
-agent = StockAnalysisAgent()  # 从 STOCK_BACKEND env 自动读取
-# 初始化后端（触发自动检测）
-_ = agent.provider.backend
+agent = StockAnalysisAgent()
 orchestrator = SimulationOrchestrator()
 report_gen = PredictionReportGenerator()
 predictions = {}
