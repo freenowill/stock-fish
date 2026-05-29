@@ -124,32 +124,6 @@
 <script>
 const API = '';
 
-function renderProgress(step, total, message) {
-  const pct = Math.round(step / total * 100);
-  const steps = [
-    { num: 1, label: '数据采集', desc: '行情/财务/新闻/股吧' },
-    { num: 2, label: '情感分析', desc: '新闻与股吧舆情打分' },
-    { num: 3, label: '信号生成', desc: '技术指标与估值评估' },
-    { num: 4, label: '多Agent辩论', desc: '3专家并行+主持人裁决' },
-  ];
-  let html = '<div style="padding:20px;">';
-  html += `<div style="font-size:15px;font-weight:600;margin-bottom:16px;color:#8ab4f8;">${message}</div>`;
-  html += `<div style="background:#1a2d42;border-radius:8px;height:6px;margin-bottom:16px;"><div style="background:linear-gradient(90deg,#ff4757,#ff6348);height:6px;border-radius:8px;transition:width .4s;width:${pct}%;"></div></div>`;
-  for (const s of steps) {
-    const done = step > s.num;
-    const active = step === s.num;
-    const cls = done ? 'positive' : active ? 'neutral' : '';
-    const icon = done ? '✓' : active ? '●' : '○';
-    html += `<div style="display:flex;align-items:center;padding:6px 0;font-size:13px;color:${done?'#c0c8d0':active?'#ffa502':'#4a5a70'};">
-      <span style="width:24px;text-align:center;" class="${cls}">${icon}</span>
-      <span style="font-weight:${active?'600':'400'};margin-left:8px;">${s.label}</span>
-      <span style="margin-left:auto;font-size:11px;color:#6b8db5;">${s.desc}</span>
-    </div>`;
-  }
-  html += '</div>';
-  return html;
-}
-
 async function analyze() {
   const symbol = document.getElementById('symbolInput').value.trim();
   const costEl = document.getElementById('costInput');
@@ -159,48 +133,23 @@ async function analyze() {
 
   if (!symbol) { alert('请输入股票代码'); return; }
   btn.disabled = true;
-  resultDiv.innerHTML = renderProgress(0, 4, '正在启动分析引擎...');
+  resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析...</div>';
 
   try {
     const body = { symbol };
     if (costPrice > 0) body.cost_price = costPrice;
 
-    const resp = await fetch(`${API}/api/analyze/stream`, {
+    const resp = await fetch(`${API}/api/analyze`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let data = null;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const raw = line.slice(6);
-          if (raw === '[DONE]') continue;
-          try {
-            const event = JSON.parse(raw);
-            if (event.result) {
-              data = event.result;
-            } else if (event.step != null) {
-              resultDiv.innerHTML = renderProgress(event.step, event.total, event.message);
-            }
-          } catch (e) {}
-        }
-      }
+    if (!resp.ok) {
+      const err = await resp.json();
+      resultDiv.innerHTML = `<div class="error">${err.error || '请求失败'}</div>`;
+      return;
     }
-    if (data) {
-      renderAnalysis(data);
-    } else {
-      resultDiv.innerHTML = '<div class="error">未收到分析结果</div>';
-    }
+    const data = await resp.json();
+    renderAnalysis(data);
   } catch (e) {
     resultDiv.innerHTML = `<div class="error">网络错误: ${e.message}</div>`;
   } finally { btn.disabled = false; }
@@ -538,7 +487,6 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch(`${API}/api/config`).then(r => r.json()).then(cfg => {
     document.getElementById('backendStatus').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
   }).catch(() => {});
-  analyze();
 });
 </script>
 </body>
