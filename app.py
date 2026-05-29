@@ -45,7 +45,7 @@ _predictions_lock = threading.Lock()
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
-    """完整多因子分析（同步，兼容旧版）"""
+    """完整多因子分析"""
     data = request.get_json(silent=True) or {}
     symbol = data.get('symbol', '').strip().upper()
     cost_price = data.get('cost_price', 0)
@@ -56,71 +56,6 @@ def analyze():
     result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0)
     logger.info(f"[{symbol}] 分析完成 (状态: {result.get('status')})")
     return jsonify(result)
-
-
-@app.route('/api/analyze/stream', methods=['POST'])
-def analyze_stream():
-    """SSE 实时进度流 — 显示 4 步执行进度"""
-    data = request.get_json(silent=True) or {}
-    symbol = data.get('symbol', '').strip().upper()
-    cost_price = float(data.get('cost_price', 0) or 0)
-    if not symbol:
-        return jsonify({'error': '请提供股票代码'}), 400
-
-    import threading, queue
-    progress_q = queue.Queue()
-    result_holder = {}
-
-    steps = {
-        'gathering':        (1, 'Step 1/4: 正在采集市场数据 (行情/财务/新闻/股吧)...'),
-        'analyzing':        (2, 'Step 2/4: 正在进行舆情情感分析...'),
-        'predicting':       (3, 'Step 3/4: 正在生成技术信号与估值评估...'),
-        'predicting_multi': (4, 'Step 4/4: 正在运行多Agent并行辩论预测...'),
-    }
-
-    def _run():
-        try:
-            result_holder['result'] = agent.analyze(
-                symbol, cost_price=cost_price,
-                progress_callback=lambda status: progress_q.put(status),
-            )
-        except Exception as e:
-            result_holder['error'] = str(e)
-        progress_q.put('__DONE__')
-
-    thread = threading.Thread(target=_run, daemon=True)
-    thread.start()
-
-    def generate():
-        last_step = 0
-        while True:
-            try:
-                status = progress_q.get(timeout=30)
-            except queue.Empty:
-                yield f"data: {json.dumps({'step': last_step, 'total': 4, 'message': '处理超时...', 'status': 'timeout'}, ensure_ascii=False)}\n\n"
-                break
-
-            if status == '__DONE__':
-                break
-
-            step_info = steps.get(status)
-            if step_info:
-                step_num, desc = step_info
-                if step_num != last_step:
-                    last_step = step_num
-                    yield f"data: {json.dumps({'step': step_num, 'total': 4, 'message': desc, 'status': status}, ensure_ascii=False)}\n\n"
-
-        if 'result' in result_holder:
-            result_data = {'step': 4, 'total': 4, 'message': '分析完成', 'status': 'complete', 'result': result_holder['result']}
-            yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
-        elif 'error' in result_holder:
-            err_data = {'step': 0, 'total': 4, 'message': '分析失败: ' + str(result_holder['error']), 'status': 'error'}
-            yield f"data: {json.dumps(err_data, ensure_ascii=False)}\n\n"
-        yield "data: [DONE]\n\n"
-
-    return Response(stream_with_context(generate()),
-                    mimetype='text/event-stream',
-                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
 # ==========================================

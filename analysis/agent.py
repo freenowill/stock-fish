@@ -20,6 +20,7 @@ from market_data.a_stock_provider import AStockProvider
 from market_data.sentiment_collector import SentimentCollector
 from analysis.state.state import AnalysisState
 from analysis.nodes.prediction_node import PredictionNode
+from analysis.scoring import ScoringEngine
 
 
 class StockAnalysisAgent:
@@ -28,23 +29,20 @@ class StockAnalysisAgent:
         bk = backend or os.environ.get('STOCK_BACKEND') or getattr(settings, 'STOCK_BACKEND', None) or 'auto'
         self.provider = AStockProvider(backend=bk)
         self.sentiment = SentimentCollector(enable_sentiment=True)
+        self.scoring = ScoringEngine()
         self.prediction_node = PredictionNode(
             api_key=os.environ.get('LLM_API_KEY') or getattr(settings, 'LLM_API_KEY', None),
             base_url=os.environ.get('LLM_BASE_URL') or getattr(settings, 'LLM_BASE_URL', None),
             model=os.environ.get('LLM_MODEL_NAME') or getattr(settings, 'LLM_MODEL_NAME', None),
         )
-        self._last_status = ''
 
-    def analyze(self, symbol: str, cost_price: float = 0.0,
-                progress_callback=None) -> Dict[str, Any]:
+    def analyze(self, symbol: str, cost_price: float = 0.0) -> Dict[str, Any]:
         """执行一次完整分析，返回结构化结果"""
         state = AnalysisState(symbol=symbol, cost_price=cost_price, created_at=datetime.now().isoformat())
 
         try:
             # Step 1: 采集市场数据
             state.status = "gathering"
-            self._last_status = 'gathering'
-            if progress_callback: progress_callback('gathering')
             market = self.provider.get_all_market_data(symbol)
             state.stock_name = market.get('name', symbol)
             state.quote = market.get('quote')
@@ -56,8 +54,6 @@ class StockAnalysisAgent:
 
             # Step 2: 舆情情感分析
             state.status = "analyzing"
-            self._last_status = 'analyzing'
-            if progress_callback: progress_callback('analyzing')
             news_texts = [n.get('title', '') for n in state.news]
             guba_texts = [p.get('title', '') for p in state.guba_posts]
             if news_texts:
@@ -73,18 +69,32 @@ class StockAnalysisAgent:
             logger.info(f"[{symbol}] Step 2/4: 情感分析完成")
 
             # Step 3: 估值分析 + 综合信号
-            state.status = "predicting"
-            self._last_status = 'predicting'
-            if progress_callback: progress_callback('predicting')
+            state.status = "analyzing"
             self._compute_valuation(symbol, state)
-            signals = self._generate_signals(state)
-            state.signals = signals
-            logger.info(f"[{symbol}] Step 3/4: 信号生成完成 (总体: {signals.get('overall')}, 评分: {signals.get('score')})")
+            score_result = self.scoring.compute(state)
+            state.signals = self._score_to_signals(score_result)
+            state.score_breakdown = {
+                'final': score_result.final,
+                'label': score_result.label,
+                'technical': score_result.technical,
+                'fundamental': score_result.fundamental,
+                'sentiment': score_result.sentiment,
+                'regime': score_result.regime,
+                'confidence': score_result.confidence,
+                'weights': score_result.weights,
+                'breakdown': [
+                    {'factor': d.factor, 'impact': d.impact,
+                     'contribution': d.contribution, 'description': d.description}
+                    for d in score_result.breakdown
+                ],
+            }
+            logger.info(f"[{symbol}] Step 3/4: 信号生成完成 "
+                       f"(总分: {score_result.final}, 评级: {score_result.label}, "
+                       f"技术: {score_result.technical}, 基本面: {score_result.fundamental}, "
+                       f"舆情: {score_result.sentiment}, 市场状态: {score_result.regime})")
 
             # Step 4: LLM 综合预测
-            state.status = "predicting_multi"
-            self._last_status = 'predicting_multi'
-            if progress_callback: progress_callback('predicting_multi')
+            state.status = "predicting"
             state_dict = state.to_dict()
             prediction = self.prediction_node.predict(state_dict)
             state.llm_analysis = prediction.analysis_text
@@ -180,106 +190,36 @@ class StockAnalysisAgent:
             state.valuation_level = '正常'
             state.suggested_buy_price = round((state.quote or {}).get('price', 100) * 0.95, 2)
 
-    # ---- 信号生成 ----
+    # ---- 信号生成（新版 ScoringEngine）----
 
-    def _generate_signals(self, state: AnalysisState) -> dict:
-        """根据技术面 + 舆情 + 估值生成综合信号"""
-        signals = {'overall': 'neutral', 'score': 0, 'details': []}
-        score = 0
-        ti = state.technical_indicators or {}
-        quote = state.quote or {}
-        price = quote.get('price', 0) if isinstance(quote, dict) else 0
-
-        # RSI
-        rsi = ti.get('rsi_14')
-        if rsi is not None:
-            if rsi > 70:
-                signals['details'].append({'factor': 'RSI超买', 'impact': 'negative', 'weight': 1})
-                score -= 1
-            elif rsi < 30:
-                signals['details'].append({'factor': 'RSI超卖', 'impact': 'positive', 'weight': 1})
-                score += 1
-
-        # MACD
-        macd = ti.get('macd_hist')
-        if macd is not None:
-            if macd > 0:
-                signals['details'].append({'factor': 'MACD金叉', 'impact': 'positive', 'weight': 1})
-                score += 1
-            else:
-                signals['details'].append({'factor': 'MACD死叉', 'impact': 'negative', 'weight': 1})
-                score -= 1
-
-        # 价格 vs 均线
-        for ma in ['ma5', 'ma10', 'ma20']:
-            val = ti.get(ma)
-            if price and val:
-                if price > val:
-                    score += 0.5
-                    signals['details'].append({'factor': f'价格>MA{ma.upper()}', 'impact': 'positive', 'weight': 0.5})
-                else:
-                    score -= 0.5
-                    signals['details'].append({'factor': f'价格<MA{ma.upper()}', 'impact': 'negative', 'weight': 0.5})
-
-        # KDJ
-        kj = ti.get('kdj_j')
-        if kj is not None:
-            if kj > 80:
-                signals['details'].append({'factor': 'KDJ超买', 'impact': 'negative', 'weight': 0.5})
-                score -= 0.5
-            elif kj < 20:
-                signals['details'].append({'factor': 'KDJ超卖', 'impact': 'positive', 'weight': 0.5})
-                score += 0.5
-
-        # 布林带
-        bu = ti.get('boll_upper')
-        bl = ti.get('boll_lower')
-        if price and bu and bl:
-            if price >= bu:
-                signals['details'].append({'factor': '价格触及布林上轨', 'impact': 'negative', 'weight': 0.5})
-                score -= 0.5
-            elif price <= bl:
-                signals['details'].append({'factor': '价格触及布林下轨', 'impact': 'positive', 'weight': 0.5})
-                score += 0.5
-
-        # 估值信号
-        vl = state.valuation_level
-        if vl == '很低':
-            signals['details'].append({'factor': '估值极低', 'impact': 'positive', 'weight': 2})
-            score += 2
-        elif vl == '偏低':
-            signals['details'].append({'factor': '估值偏低', 'impact': 'positive', 'weight': 1})
-            score += 1
-        elif vl == '偏高':
-            signals['details'].append({'factor': '估值偏高', 'impact': 'negative', 'weight': 1})
-            score -= 1
-        elif vl == '很高':
-            signals['details'].append({'factor': '估值极高', 'impact': 'negative', 'weight': 2})
-            score -= 2
-
-        # 舆情
-        ns = state.sentiment_news or {}
-        gs = state.sentiment_guba or {}
-        news_score = ns.get('avg_score', 0) or 0
-        guba_score = gs.get('avg_score', 0) or 0
-        sent_avg = (news_score + guba_score) / 2
-        score += sent_avg * 2
-        if sent_avg != 0:
-            signals['details'].append({
-                'factor': '舆情情感',
-                'impact': 'positive' if sent_avg > 0 else 'negative',
-                'weight': 2,
-            })
-
-        signals['score'] = round(score, 2)
-        if score > 3:
-            signals['overall'] = 'bullish'
-        elif score < -3:
-            signals['overall'] = 'bearish'
-        else:
-            signals['overall'] = 'neutral'
-
-        return signals
+    @staticmethod
+    def _score_to_signals(result) -> dict:
+        """将 ScoreResult 映射为兼容旧格式的 signals dict"""
+        outlook_map = {
+            '强烈看多': 'bullish', '看多': 'bullish', '偏多': 'bullish',
+            '中性': 'neutral',
+            '偏空': 'bearish', '看空': 'bearish', '强烈看空': 'bearish',
+        }
+        return {
+            'overall': outlook_map.get(result.label, 'neutral'),
+            'score': result.final,
+            'label': result.label,
+            'technical': result.technical,
+            'fundamental': result.fundamental,
+            'sentiment': result.sentiment,
+            'regime': result.regime,
+            'confidence': result.confidence,
+            'details': [
+                {
+                    'factor': d.factor,
+                    'impact': d.impact,
+                    'weight': round(abs(d.contribution), 2),
+                    'contribution': d.contribution,
+                    'description': d.description,
+                }
+                for d in result.breakdown
+            ],
+        }
 
     # ---- 工具 ----
 

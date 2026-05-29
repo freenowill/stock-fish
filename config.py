@@ -42,6 +42,67 @@ class Settings(BaseSettings):
     TUSHARE_TOKEN: Optional[str] = None
     STOCK_BACKEND: str = "mock"
 
+    # ---- 多源数据渠道 Token ----
+    LONGBRIDGE_APP_KEY: Optional[str] = None
+    LONGBRIDGE_APP_SECRET: Optional[str] = None
+    LONGBRIDGE_ACCESS_TOKEN: Optional[str] = None
+    FINNHUB_API_KEY: Optional[str] = None
+    ALPHAVANTAGE_API_KEY: Optional[str] = None
+    TICKFLOW_API_KEY: Optional[str] = None
+    SOCIAL_SENTIMENT_API_KEY: Optional[str] = None
+    SOCIAL_SENTIMENT_API_URL: str = "https://api.adanos.org"
+
+    # ---- 搜索引擎 Key ----
+    BOCHA_API_KEY: Optional[str] = None
+    BOCHA_API_KEYS: Optional[str] = None  # comma-separated multi-key
+    TAVILY_API_KEY: Optional[str] = None
+    TAVILY_API_KEYS: Optional[str] = None
+    BRAVE_API_KEY: Optional[str] = None
+    BRAVE_API_KEYS: Optional[str] = None
+    SERPAPI_API_KEY: Optional[str] = None
+    SERPAPI_KEYS: Optional[str] = None
+    ANSPIRE_API_KEY: Optional[str] = None
+    ANSPIRE_API_KEYS: Optional[str] = None
+    MINIMAX_API_KEY: Optional[str] = None
+    MINIMAX_API_KEYS: Optional[str] = None
+    SEARXNG_BASE_URL: Optional[str] = None
+    SEARXNG_BASE_URLS: Optional[str] = None
+    SEARXNG_PUBLIC_INSTANCES_ENABLED: bool = True
+
+    # ---- 实时行情优先级 ----
+    REALTIME_SOURCE_PRIORITY: str = "tencent,akshare_sina,efinance,akshare_em"
+    REALTIME_CACHE_TTL: int = 600
+    CIRCUIT_BREAKER_COOLDOWN: int = 300
+
+    # ---- 特性开关 ----
+    ENABLE_REALTIME_QUOTE: bool = True
+    ENABLE_REALTIME_TECHNICAL_INDICATORS: bool = True
+    ENABLE_CHIP_DISTRIBUTION: bool = True
+    ENABLE_EASTMONEY_PATCH: bool = False
+    ENABLE_FUNDAMENTAL_PIPELINE: bool = True
+    PREFETCH_REALTIME_QUOTES: bool = True
+    STOCK_INDEX_REMOTE_UPDATE_ENABLED: bool = True
+
+    # ---- 基本面超时 ----
+    FUNDAMENTAL_STAGE_TIMEOUT_SECONDS: float = 8.0
+    FUNDAMENTAL_FETCH_TIMEOUT_SECONDS: float = 3.0
+    FUNDAMENTAL_RETRY_MAX: int = 1
+    FUNDAMENTAL_CACHE_TTL_SECONDS: int = 120
+    FUNDAMENTAL_CACHE_MAX_ENTRIES: int = 256
+
+    # ---- 流控 ----
+    AKSHARE_SLEEP_MIN: float = 2.0
+    AKSHARE_SLEEP_MAX: float = 5.0
+    TUSHARE_RATE_LIMIT_PER_MINUTE: int = 80
+    MAX_RETRIES: int = 3
+    RETRY_BASE_DELAY: float = 1.0
+    RETRY_MAX_DELAY: float = 30.0
+
+    # ---- 新闻 ----
+    NEWS_MAX_AGE_DAYS: int = 3
+    NEWS_STRATEGY_PROFILE: str = "short"
+    BIAS_THRESHOLD: float = 5.0
+
     # ===== BettaFish 路径（情感分析复用） =====
     BETTAFISH_PATH: str = BETTAFISH_DIR
 

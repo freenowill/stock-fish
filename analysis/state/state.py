@@ -41,6 +41,9 @@ class AnalysisState:
     long_term_pred: Optional[Dict] = None    # 长期 (6~12月): {direction, change_pct, confidence, reason}
     suggested_action: Optional[Dict] = None  # {action, reason, stop_loss, take_profit}
 
+    # 评分分解（新版 ScoringEngine）
+    score_breakdown: Optional[Dict] = None
+
     # 估值分析
     valuation_level: str = ""
     valuation_percentile: float = 0.0

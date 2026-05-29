@@ -6,7 +6,7 @@
 """
 import re
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from email.utils import parsedate_to_datetime
 
@@ -15,6 +15,12 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 from market_data.a_stock_provider import NewsItem, GubaPost
+
+
+# 新闻时间窗口：近 N 天
+NEWS_WINDOW_DAYS = 3
+_NEWS_CUTOFF = (datetime.now() - timedelta(days=NEWS_WINDOW_DAYS)).strftime('%Y-%m-%d')
+_GUBA_CUTOFF = (datetime.now() - timedelta(days=NEWS_WINDOW_DAYS)).strftime('%m-%d')
 
 
 # ── 抽象基类 ──
@@ -69,7 +75,7 @@ class SinaNewsSource(BaseNewsSource):
                 m = re.search(r'(\d{4}-\d{2}-\d{2}\s*\d{2}:\d{2})', text)
                 if m:
                     publish_time = m.group(1)
-            if publish_time[:10] != today:
+            if publish_time[:10] < _NEWS_CUTOFF:
                 continue
             results.append(NewsItem(
                 title=title, url=href, publish_time=publish_time, source=self.name,
@@ -107,7 +113,7 @@ class EastMoneyGubaSource(BaseGubaSource):
                 comment_count = int(reply_div.text.strip()) if reply_div and reply_div.text.strip().isdigit() else 0
                 update_div = item.select_one('.update')
                 publish_time = update_div.text.strip() if update_div else ''
-                if publish_time[:5] != today:
+                if publish_time[:5] < _GUBA_CUTOFF:
                     continue
                 results.append(GubaPost(
                     title=title, author=author, publish_time=publish_time,
@@ -131,7 +137,6 @@ class YahooFinanceNewsSource(BaseNewsSource):
         url = f'https://feeds.finance.yahoo.com/rss/2.0/headline?s={code}.{suffix}&region=CN&lang=zh-CN'
         r = requests.get(url, timeout=15, headers={'User-Agent': 'Mozilla/5.0'})
         soup = BeautifulSoup(r.text, 'xml')
-        today = datetime.now().strftime('%Y-%m-%d')
         results = []
         for item in soup.find_all('item'):
             title = item.title.text.strip() if item.title else ''
@@ -141,7 +146,7 @@ class YahooFinanceNewsSource(BaseNewsSource):
                 pubdate = parsedate_to_datetime(pubdate_str).strftime('%Y-%m-%d %H:%M')
             except Exception:
                 pubdate = ''
-            if not title or pubdate[:10] != today:
+            if not title or pubdate[:10] < _NEWS_CUTOFF:
                 continue
             results.append(NewsItem(title=title, url=link, publish_time=pubdate, source=self.name))
         return results

@@ -41,6 +41,7 @@ class Quote:
     pe: Optional[float] = None
     pb: Optional[float] = None
     market_cap: Optional[float] = None
+    dividend: Optional[float] = None  # 每股分红（税后，元/股）
     timestamp: str = ""
 
     def to_dict(self) -> dict:
@@ -685,6 +686,7 @@ class AStockProvider:
 
     自动选择可用后端（逐级降级）：
     1. TushareBackend（Tushare Pro，推荐，需token）
+    1.5 AdvancedBackend（多源策略：efinance/akshare/tushare/pytdx/baostock/yfinance + 搜索/社交情感）
     2. AkShareBackend（东方财富，需中国大陆网络）
     3. BaoStockBackend（免费，无需token）
     4. MockBackend（内置模拟数据，保底）
@@ -728,6 +730,20 @@ class AStockProvider:
                     return self._backend
             except Exception as e:
                 logger.warning(f"TushareBackend 不可用: {e}")
+
+        # 1.5 Advanced（DataFetcherManager 多源策略，11 个数据源自动切换）
+        if self._requested_backend in ('advanced', 'auto'):
+            try:
+                from .provider_adapter import AdvancedBackend
+                bk = AdvancedBackend()
+                test = bk.get_quote("600519")
+                if test is not None and test.price > 0:
+                    self._backend = bk
+                    self._active_backend_name = 'advanced'
+                    logger.info("使用 AdvancedBackend（多源策略：efinance/akshare/tushare/pytdx/baostock/yfinance + 搜索/社交情感）")
+                    return self._backend
+            except Exception as e:
+                logger.warning(f"AdvancedBackend 不可用: {e}")
 
         # 2. AkShare
         if self._requested_backend in ('akshare', 'auto'):
@@ -822,17 +838,19 @@ class AStockProvider:
             'symbol': symbol,
             'timestamp': datetime.now().isoformat(),
             'name': '',
+            'data_source': self._active_backend_name,
             'quote': None,
             'technical_indicators': None,
             'financial_summary': None,
             'news': [],
             'guba_posts': [],
+            'social_sentiment': None,
+            'search_news': [],
         }
         quote = self.get_quote(symbol)
         result['quote'] = quote
         if quote:
             result['name'] = quote.name
-            # 注入股票名称到 NewsNowSource 用于标题匹配
             try:
                 from market_data.news_sources import NewsNowSource
                 NewsNowSource.set_stock_name(symbol, quote.name)
@@ -844,6 +862,16 @@ class AStockProvider:
         result['news'] = self.get_news(symbol)
         result['guba_posts'] = self.get_guba_posts(symbol)
 
+        # AdvancedBackend: 附加搜索服务结果和社交情感
+        if self._active_backend_name == 'advanced' and hasattr(self._backend, 'search_news'):
+            try:
+                name = quote.name if quote else symbol
+                result['search_news'] = [n.to_dict() for n in self._backend.search_news(symbol, name, max_results=5)]
+                result['social_sentiment'] = self._backend.get_social_sentiment(symbol)
+                logger.info(f"[{symbol}] 高级数据渠道: search_news={len(result['search_news'])}条, social_sentiment={'有' if result['social_sentiment'] else '无'}")
+            except Exception as e:
+                logger.warning(f"[{symbol}] 高级数据渠道获取失败: {e}")
+
         # 转 dict 方便序列化
         for key in ('quote', 'technical_indicators', 'financial_summary'):
             if hasattr(result[key], 'to_dict'):
@@ -852,7 +880,15 @@ class AStockProvider:
         result['news'] = [n.to_dict() for n in result['news']]
         result['guba_posts'] = [p.to_dict() for p in result['guba_posts']]
 
-        logger.info(f"[{symbol}] 数据获取完成")
+        # Log which sources were used
+        sources = set()
+        for n in result['news']:
+            if n.get('source'):
+                sources.add(n['source'])
+        for n in result['search_news']:
+            if n.get('source'):
+                sources.add(n['source'])
+        logger.info(f"[{symbol}] 数据获取完成 (backend={self._active_backend_name}, news_sources={list(sources)})")
         return result
 
 

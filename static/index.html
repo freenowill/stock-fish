@@ -90,6 +90,12 @@
     .sent-bar .neg { background: #00d4aa; }
     .sent-bar .mid { background: #2a3f5a; }
 
+    /* Score breakdown */
+    .score-bar-wrap { background: #0f1923; border-radius: 6px; height: 8px; margin: 8px 0; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 6px; transition: width .3s; }
+    .score-bar-fill.negative { background: linear-gradient(90deg, #00d4aa, #ffa502); }
+    .score-bar-fill.positive { background: linear-gradient(90deg, #ffa502, #ff4757); }
+
     .loading { text-align: center; padding: 40px; color: #6b8db5; }
     .spinner { width: 32px; height: 32px; border: 3px solid #1e3a5f; border-top-color: #ff4757; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -108,7 +114,7 @@
 <body>
 <div class="container">
   <header>
-    <div><h1>StockFish</h1><div class="subtitle">A 股实时分析 · 多智能体推演</div></div>
+    <div><h1>StockFish</h1><div class="subtitle">A 股实时分析 · 多智能体推演 | <a href="https://github.com/freenowill/qlib-zh" target="_blank" style="color:#8ab4f8;text-decoration:none;">qlib-zh 因子选股 → StockFish 深度分析</a></div></div>
     <div id="backendStatus" style="font-size:12px;color:#6b8db5;">加载中...</div>
   </header>
 
@@ -183,13 +189,14 @@ function renderAnalysis(data) {
   const signals = data.signals || {};
   const sn = data.sentiment_news || {};
   const sg = data.sentiment_guba || {};
+  const sb = data.score_breakdown || {};
 
   const price = q.price;
   const changePct = q.change_pct;
   const overall = signals.overall || 'neutral';
   const sigClass = `signal-${overall}`;
   const sigEmoji = overall === 'bullish' ? '▲' : overall === 'bearish' ? '▼' : '◆';
-  const sigLabel = overall === 'bullish' ? '看多' : overall === 'bearish' ? '看空' : '中性';
+  const sigLabel = signals.label || (overall === 'bullish' ? '看多' : overall === 'bearish' ? '看空' : '中性');
   const changeFmt = cfmt(changePct, 2);
   const costPrice = data.cost_price || 0;
 
@@ -198,10 +205,24 @@ function renderAnalysis(data) {
   <div class="signal-box ${sigClass}">
     <span class="signal-icon ${overall === 'bullish' ? 'positive' : overall === 'bearish' ? 'negative' : 'neutral'}">${sigEmoji}</span>
     <div>
-      <div class="signal-label">综合信号: ${sigLabel}${costPrice > 0 ? `<span class="cost-badge">成本 ¥${costPrice.toFixed(2)}</span>` : ''}</div>
-      <div class="signal-meta">评分: ${signals.score ?? '-'} | ${data.stock_name || data.symbol} | PE分位: ${data.valuation_percentile ?? '-'}%</div>
+      <div class="signal-label">${sigLabel} (${sb.final != null ? sb.final : signals.score ?? '-'} / 5)${costPrice > 0 ? '<span class="cost-badge">成本 ¥' + costPrice.toFixed(2) + '</span>' : ''}</div>
+      <div class="signal-meta">${data.stock_name || data.symbol} | 置信度: ${sb.confidence || '-'} | 市场状态: ${sb.regime || '-'} | PE分位: ${data.valuation_percentile != null ? data.valuation_percentile + '%' : '-'}</div>
     </div>
   </div>`;
+
+  // ---- SCORE BREAKDOWN BAR ----
+  if (sb.final != null) {
+    const pct = (sb.final + 5) / 10 * 100; // map -5..5 to 0..100
+    const fillCls = sb.final >= 0 ? 'positive' : 'negative';
+    html += `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:13px;color:#6b8db5;">
+      <span>技术面 ${sb.technical != null ? (sb.technical>0?'+':'')+sb.technical.toFixed(1) : '-'}</span>
+      <span>基本面 ${sb.fundamental != null ? (sb.fundamental>0?'+':'')+sb.fundamental.toFixed(1) : '-'}</span>
+      <span>舆情面 ${sb.sentiment != null ? (sb.sentiment>0?'+':'')+sb.sentiment.toFixed(1) : '-'}</span>
+    </div>`;
+    html += `<div class="score-bar-wrap"><div class="score-bar-fill ${fillCls}" style="width:${pct}%"></div></div>`;
+    html += `<div style="display:flex;justify-content:space-between;font-size:10px;color:#6b8db5;margin-bottom:16px;">
+      <span>-5</span><span>强烈看空</span><span>看空</span><span>偏空</span><span>中性</span><span>偏多</span><span>看多</span><span>强烈看多</span><span>+5</span></div>`;
+  }
 
   // ---- CARDS GRID (7 cards) ----
   const buyPrice = data.suggested_buy_price;
@@ -228,6 +249,11 @@ function renderAnalysis(data) {
       <div class="label">当前价格</div>
       <div class="value ${changeFmt.cls}">${price != null ? price.toFixed(2) : '-'}</div>
       <div class="sub ${changeFmt.cls}">涨跌 ${changeFmt.text}%</div>
+    </div>
+    <div class="card">
+      <div class="label">每股分红 (税后)</div>
+      <div class="value" style="color:#ffa502;">${q.dividend != null ? q.dividend.toFixed(3) + '元' : '-'}</div>
+      <div class="sub">${q.dividend && price ? '股息率 ' + (q.dividend/price*100).toFixed(2) + '%' : ''}</div>
     </div>
     <div class="card">
       <div class="label">成本价格</div>
@@ -263,8 +289,8 @@ function renderAnalysis(data) {
   const lt = data.long_term_pred || {};
 
   if (st.direction || mt.direction || lt.direction) {
-    html += `<div class="section-title">LLM 多周期预测</div>`;
-    html += `<div class="pred-timeline">`;
+    html += '<div class="section-title">LLM 多周期预测</div>';
+    html += '<div class="pred-timeline">';
 
     const preds = [
       { label: '短期 (1~2周)', p: st },
@@ -285,7 +311,7 @@ function renderAnalysis(data) {
         <div class="pred-reason">${p.reason || ''}</div>
       </div>`;
     }
-    html += `</div>`;
+    html += '</div>';
   }
 
   // ---- SUGGESTED ACTION ----
@@ -301,99 +327,84 @@ function renderAnalysis(data) {
       <div class="action-text">
         <div class="action-label ${actCls}">建议操作: ${action.action}</div>
         <div class="action-reason">${action.reason || ''}</div>
-        ${action.stop_loss || action.take_profit ? `<div class="action-levels">止损位: ¥${action.stop_loss || '-'} | 止盈位: ¥${action.take_profit || '-'}</div>` : ''}
+        ${action.stop_loss || action.take_profit ? '<div class="action-levels">止损位: ¥' + (action.stop_loss || '-') + ' | 止盈位: ¥' + (action.take_profit || '-') + '</div>' : ''}
       </div>
     </div>`;
   }
 
-  // ---- TWO COLUMNS ----
-  html += `<div class="two-col">
-    <div>
-      <div class="section-title">技术指标</div>
-      <div class="detail-grid">
-        <div class="detail-item"><div class="label">MA5</div><div class="value ${price != null && ti.ma5 != null ? (price > ti.ma5 ? 'positive' : 'negative') : ''}">${ti.ma5 != null ? ti.ma5 : '-'}</div></div>
-        <div class="detail-item"><div class="label">MA10</div><div class="value ${price != null && ti.ma10 != null ? (price > ti.ma10 ? 'positive' : 'negative') : ''}">${ti.ma10 != null ? ti.ma10 : '-'}</div></div>
-        <div class="detail-item"><div class="label">MA20</div><div class="value ${price != null && ti.ma20 != null ? (price > ti.ma20 ? 'positive' : 'negative') : ''}">${ti.ma20 != null ? ti.ma20 : '-'}</div></div>
-        <div class="detail-item"><div class="label">RSI(14)</div><div class="value ${ti.rsi_14 != null ? (ti.rsi_14 > 70 ? 'negative' : ti.rsi_14 < 30 ? 'positive' : '') : ''}">${ti.rsi_14 != null ? ti.rsi_14 : '-'}</div></div>
-        <div class="detail-item"><div class="label">MACD</div><div class="value ${(ti.macd_hist || 0) >= 0 ? 'positive' : 'negative'}">${ti.macd_hist != null ? ti.macd_hist.toFixed(3) : '-'}</div></div>
-        <div class="detail-item"><div class="label">KDJ-K/D/J</div><div class="value">${ti.kdj_k != null ? ti.kdj_k.toFixed(1)+'/'+ti.kdj_d.toFixed(1)+'/'+ti.kdj_j.toFixed(1) : '-'}</div></div>
-        <div class="detail-item"><div class="label">布林上轨</div><div class="value">${ti.boll_upper != null ? ti.boll_upper : '-'}</div></div>
-        <div class="detail-item"><div class="label">布林中轨</div><div class="value">${ti.boll_middle != null ? ti.boll_middle : '-'}</div></div>
-        <div class="detail-item"><div class="label">布林下轨</div><div class="value">${ti.boll_lower != null ? ti.boll_lower : '-'}</div></div>
-        <div class="detail-item"><div class="label">量比</div><div class="value">${ti.volume_ratio != null ? ti.volume_ratio : '-'}</div></div>
-      </div>
-    </div>
-    <div>
-      <div class="section-title">基本面</div>
-      <div class="detail-grid">
-        <div class="detail-item"><div class="label">EPS</div><div class="value">${fs.eps != null ? fs.eps : '-'}</div></div>
-        <div class="detail-item"><div class="label">ROE</div><div class="value">${fs.roe != null ? fs.roe + '%' : '-'}</div></div>
-        <div class="detail-item"><div class="label">营收</div><div class="value">${fs.revenue != null ? fs.revenue + '亿' : '-'}</div></div>
-        <div class="detail-item"><div class="label">净利润</div><div class="value">${fs.net_profit != null ? fs.net_profit + '亿' : '-'}</div></div>
-        <div class="detail-item"><div class="label">毛利率</div><div class="value">${fs.gross_margin != null ? fs.gross_margin + '%' : '-'}</div></div>
-        <div class="detail-item"><div class="label">负债率</div><div class="value">${fs.debt_ratio != null ? fs.debt_ratio + '%' : '-'}</div></div>
-      </div>
+  // ---- TWO COLUMNS: Technical + Fundamental/Signals ----
+  html += '<div class="two-col"><div>';
+  html += '<div class="section-title">技术指标</div>';
+  html += '<div class="detail-grid">';
+  html += `<div class="detail-item"><div class="label">MA5</div><div class="value ${price != null && ti.ma5 != null ? (price > ti.ma5 ? 'positive' : 'negative') : ''}">${ti.ma5 != null ? ti.ma5 : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">MA10</div><div class="value ${price != null && ti.ma10 != null ? (price > ti.ma10 ? 'positive' : 'negative') : ''}">${ti.ma10 != null ? ti.ma10 : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">MA20</div><div class="value ${price != null && ti.ma20 != null ? (price > ti.ma20 ? 'positive' : 'negative') : ''}">${ti.ma20 != null ? ti.ma20 : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">RSI(14)</div><div class="value ${ti.rsi_14 != null ? (ti.rsi_14 > 70 ? 'negative' : ti.rsi_14 < 30 ? 'positive' : '') : ''}">${ti.rsi_14 != null ? ti.rsi_14 : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">MACD</div><div class="value ${(ti.macd_hist || 0) >= 0 ? 'positive' : 'negative'}">${ti.macd_hist != null ? ti.macd_hist.toFixed(3) : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">KDJ-K/D/J</div><div class="value">${ti.kdj_k != null ? ti.kdj_k.toFixed(1)+'/'+ti.kdj_d.toFixed(1)+'/'+ti.kdj_j.toFixed(1) : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">布林上轨</div><div class="value">${ti.boll_upper != null ? ti.boll_upper : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">布林中轨</div><div class="value">${ti.boll_middle != null ? ti.boll_middle : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">布林下轨</div><div class="value">${ti.boll_lower != null ? ti.boll_lower : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">量比</div><div class="value">${ti.volume_ratio != null ? ti.volume_ratio : '-'}</div></div>`;
+  html += '</div></div><div>';
+  html += '<div class="section-title">基本面</div>';
+  html += '<div class="detail-grid">';
+  html += `<div class="detail-item"><div class="label">EPS</div><div class="value">${fs.eps != null ? fs.eps : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">ROE</div><div class="value">${fs.roe != null ? fs.roe + '%' : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">营收</div><div class="value">${fs.revenue != null ? fs.revenue + '亿' : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">净利润</div><div class="value">${fs.net_profit != null ? fs.net_profit + '亿' : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">毛利率</div><div class="value">${fs.gross_margin != null ? fs.gross_margin + '%' : '-'}</div></div>`;
+  html += `<div class="detail-item"><div class="label">负债率</div><div class="value">${fs.debt_ratio != null ? fs.debt_ratio + '%' : '-'}</div></div>`;
+  html += '</div>';
 
-      <div class="section-title" style="margin-top:16px;">信号明细</div>
-      ${(signals.details || []).map(s => {
-        const arrow = s.impact === 'positive' ? '▲' : '▼';
-        const cls = s.impact === 'positive' ? 'positive' : 'negative';
-        return `<div style="padding:5px 0;font-size:13px;border-bottom:1px solid #1a2d42;">
-          <span class="${cls}">${arrow}</span> ${s.factor}
-          <span style="color:#6b8db5;float:right;">${s.weight}</span>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
+  // Score breakdown details
+  if (sb.breakdown && sb.breakdown.length > 0) {
+    html += '<div class="section-title" style="margin-top:16px;">评分明细</div>';
+    for (const d of sb.breakdown) {
+      const arrow = d.impact === 'positive' ? '▲' : d.impact === 'negative' ? '▼' : '◆';
+      const cls = d.impact === 'positive' ? 'positive' : d.impact === 'negative' ? 'negative' : 'neutral';
+      html += `<div style="padding:5px 0;font-size:13px;border-bottom:1px solid #1a2d42;">
+        <span class="${cls}">${arrow}</span> ${d.factor}
+        <span style="color:#6b8db5;float:right;">${d.contribution != null ? (d.contribution>0?'+':'')+d.contribution.toFixed(1) : ''} ${d.description||''}</span>
+      </div>`;
+    }
+  }
+  html += '</div></div>';
 
-  // ---- NEWS / GUBA SUMMARIES ----
+  // ---- IMPORTANT NEWS (LLM-selected bull/bear, last 3 days) ----
   const bullNews = data.important_bullish_news || [];
   const bearNews = data.important_bearish_news || [];
   if (bullNews.length > 0 || bearNews.length > 0) {
-    html += `<div class="section-title">重要新闻摘要</div>`;
+    html += '<div class="section-title">重要新闻摘要 <span style="font-weight:400;font-size:11px;color:#6b8db5;">(近3天 · LLM 筛选)</span></div>';
     for (const n of bullNews) {
-      html += `<div class="summary-item bullish"><span class="tag tag-positive">利好</span>${n.title}<span class="src"> [${n.source}]</span></div>`;
+      html += `<div class="summary-item bullish"><span class="tag tag-positive">利好</span>${n.title}<span class="src"> [${n.source || ''} ${n.publish_time ? n.publish_time.slice(0,10) : ''}]</span></div>`;
     }
     for (const n of bearNews) {
-      html += `<div class="summary-item bearish"><span class="tag tag-negative">利空</span>${n.title}<span class="src"> [${n.source}]</span></div>`;
+      html += `<div class="summary-item bearish"><span class="tag tag-negative">利空</span>${n.title}<span class="src"> [${n.source || ''} ${n.publish_time ? n.publish_time.slice(0,10) : ''}]</span></div>`;
     }
   }
 
-  html += `<div class="section-title">全部新闻 (${data.news ? data.news.length : 0}条)</div><div class="summary-list">`;
-  if (data.news && data.news.length > 0) {
-    for (const n of data.news.slice(0, 8)) {
-      html += `<div class="summary-item" style="border-left-color:#1e3a5f;">${n.title}<span class="src"> [${n.source || ''}]</span></div>`;
-    }
-  } else { html += `<div style="color:#6b8db5;padding:8px;">暂无新闻</div>`; }
-  html += `</div>`;
-
+  // ---- GUBA SUMMARY ----
   const bullGuba = data.important_bullish_guba || [];
   const bearGuba = data.important_bearish_guba || [];
   if (bullGuba.length > 0 || bearGuba.length > 0) {
-    html += `<div class="section-title">股吧热议摘要</div>`;
+    html += '<div class="section-title">股吧热议摘要</div>';
     for (const g of bullGuba) {
-      html += `<div class="summary-item bullish"><span class="tag tag-positive">看多</span>${g.title}<span class="src"> [@${g.source}]</span></div>`;
+      html += `<div class="summary-item bullish"><span class="tag tag-positive">看多</span>${g.title}<span class="src"> [@${g.source || g.author || ''}]</span></div>`;
     }
     for (const g of bearGuba) {
-      html += `<div class="summary-item bearish"><span class="tag tag-negative">看空</span>${g.title}<span class="src"> [@${g.source}]</span></div>`;
+      html += `<div class="summary-item bearish"><span class="tag tag-negative">看空</span>${g.title}<span class="src"> [@${g.source || g.author || ''}]</span></div>`;
     }
   }
 
-  html += `<div class="section-title">全部股吧热议 (${data.guba_posts ? data.guba_posts.length : 0}条)</div><div class="summary-list">`;
-  if (data.guba_posts && data.guba_posts.length > 0) {
-    for (const g of data.guba_posts.slice(0, 8)) {
-      html += `<div class="summary-item" style="border-left-color:#1e3a5f;">${g.title}<span class="src"> [@${g.author || ''} 阅${g.read_count||0}]</span></div>`;
-    }
-  } else { html += `<div style="color:#6b8db5;padding:8px;">暂无股吧数据</div>`; }
-  html += `</div>`;
-
+  // ---- RISK FACTORS ----
   if (data.risk_factors && data.risk_factors.length > 0) {
-    html += `<div class="section-title">风险提示</div><div class="factor-tags">`;
-    for (const r of data.risk_factors) { html += `<span class="factor-tag negative">${r.factor || r}</span>`; }
-    html += `</div>`;
+    html += '<div class="section-title">风险提示</div><div class="factor-tags">';
+    for (const r of data.risk_factors) { html += '<span class="factor-tag negative">' + (r.factor || r) + '</span>'; }
+    html += '</div>';
   }
 
-  // ---- Multi-Agent Debate ----
+  // ---- MULTI-AGENT DEBATE ----
   const pred = data.prediction_summary || {};
   const agents = [
     { key: 'tech_view', label: '技术面分析师', icon: '◆', data: pred.tech_view },
@@ -403,25 +414,26 @@ function renderAnalysis(data) {
 
   const hasAgentViews = agents.some(a => a.data);
   if (hasAgentViews) {
-    html += `<div class="section-title">多 Agent 辩论</div>`;
-    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">`;
+    html += '<div class="section-title">多 Agent 辩论</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">';
 
     for (const a of agents) {
       if (!a.data) continue;
       const v = a.data;
       const vcls = v.outlook === '看多' ? 'positive' : v.outlook === '看空' ? 'negative' : 'neutral';
-      html += `<div class="card" style="border-left:3px solid var(--${v.outlook==='看多'?'positive':v.outlook==='看空'?'negative':'neutral'}-color, ${v.outlook==='看多'?'#ff4757':v.outlook==='看空'?'#00d4aa':'#ffa502'});">
+      const bdrColor = v.outlook === '看多' ? '#ff4757' : v.outlook === '看空' ? '#00d4aa' : '#ffa502';
+      html += `<div class="card" style="border-left:3px solid ${bdrColor};">
         <div class="label">${a.icon} ${a.label}</div>
         <div style="font-size:18px;font-weight:600;margin:4px 0;" class="${vcls}">${v.outlook || '-'} <span style="font-size:12px;font-weight:400;">置信度: ${v.confidence || '-'} 评分: ${v.score != null ? (v.score>0?'+':'')+v.score : '-'}</span></div>
         <div style="font-size:12px;color:#8ab4f8;margin-top:6px;">关键论点:</div>
-        ${(v.key_points || []).map(p => `<div style="font-size:12px;padding:2px 0;color:#c0c8d0;">+ ${p}</div>`).join('')}
-        ${(v.risks || []).length > 0 ? `<div style="font-size:12px;color:#ff6b7a;margin-top:6px;">风险:</div>` : ''}
-        ${(v.risks || []).map(r => `<div style="font-size:12px;padding:2px 0;color:#ff6b7a;">- ${r}</div>`).join('')}
+        ${(v.key_points || []).map(p => '<div style="font-size:12px;padding:2px 0;color:#c0c8d0;">+ ' + p + '</div>').join('')}
+        ${(v.risks || []).length > 0 ? '<div style="font-size:12px;color:#ff6b7a;margin-top:6px;">风险:</div>' : ''}
+        ${(v.risks || []).map(r => '<div style="font-size:12px;padding:2px 0;color:#ff6b7a;">- ' + r + '</div>').join('')}
       </div>`;
     }
-    html += `</div>`;
+    html += '</div>';
 
-    // Moderator verdict with multi-period predictions
+    // Moderator verdict
     const short = pred.short_term || {};
     const mid = pred.mid_term || {};
     const long = pred.long_term || {};
@@ -472,7 +484,7 @@ function renderAnalysis(data) {
   }
 
   if (data.llm_analysis) {
-    html += `<div class="section-title">AI 分析详情</div>`;
+    html += '<div class="section-title">AI 分析详情</div>';
     html += `<div style="padding:16px;background:#152436;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap;">${data.llm_analysis}</div>`;
   }
 
