@@ -338,207 +338,38 @@ class AkShareBackend(BaseStockBackend):
             return None
 
     def get_news(self, symbol: str) -> List[NewsItem]:
-        today = datetime.now().strftime('%Y-%m-%d')
+        """插件式新闻聚合：遍历所有已启用的新闻源"""
+        from market_data.news_sources import NEWS_SOURCES
         results = []
-        # 新浪财经 (中文)
-        try:
-            results = self._fetch_sina_news(symbol)
-        except Exception:
-            pass
-        # Yahoo Finance (英文)
-        try:
-            yahoo_news = self._fetch_yahoo_finance_news(symbol)
-            results.extend(yahoo_news)
-        except Exception:
-            pass
-        # 雪球热度
-        try:
-            xq = self.get_xueqiu_popularity(symbol)
-            if xq.get('follow_count', 0) > 0:
-                results.append(NewsItem(
-                    title=f"雪球关注度: {xq.get('follow_count', 0):.0f}人关注 最新价: {xq.get('latest_price', '?')}",
-                    source='雪球', publish_time=today,
-                ))
-        except Exception:
-            pass
-        # Fallback: AkShare
-        if not results:
-            try:
-                ak = self._get_ak()
-                df = ak.stock_news_em(symbol=symbol.zfill(6))
-                if df is not None and not df.empty:
-                    for _, row in df.iterrows():
-                        results.append(NewsItem(
-                            title=str(row.get('新闻标题', '')),
-                            url=str(row.get('新闻内容', '')),
-                            publish_time=str(row.get('发布时间', '')),
-                            source='东方财富',
-                        ))
-            except Exception:
-                pass
-        # 仅保留当日消息
-        today_news = [n for n in results if n.publish_time[:10] == today]
-        if today_news:
-            return today_news
-        return results  # 降级：无当日消息时返回全部
-
-    def _sina_market_prefix(self, symbol: str) -> str:
-        code = symbol.strip().zfill(6)
-        return 'sh' if code.startswith(('6', '9')) else 'sz'
-
-    def _fetch_sina_news(self, symbol: str) -> List[NewsItem]:
-        import re
-        import requests
-        from bs4 import BeautifulSoup
-        prefix = self._sina_market_prefix(symbol)
-        code = symbol.strip().zfill(6)
-        url = f'https://vip.stock.finance.sina.com.cn/corp/go.php/vCB_AllNewsStock/symbol/{prefix}{code}.phtml'
-        r = requests.get(url, timeout=15, headers={'User-Agent': 'Mozilla/5.0'})
-        r.encoding = 'gb2312'
-        soup = BeautifulSoup(r.text, 'html.parser')
-        datelist = soup.select_one('.datelist ul')
-        if not datelist:
-            return []
-        results = []
-        for a_tag in datelist.select('a'):
-            title = a_tag.text.strip()
-            href = a_tag.get('href', '')
-            if not title:
+        for src in NEWS_SOURCES:
+            if not src.enabled:
                 continue
-            publish_time = ''
-            prev = a_tag.previous_sibling
-            if prev is not None and prev.name is None:
-                text = prev.strip()
-                m = re.search(r'(\d{4}-\d{2}-\d{2}\s*\d{2}:\d{2})', text)
-                if m:
-                    publish_time = m.group(1)
-            results.append(NewsItem(
-                title=title, url=href,
-                publish_time=publish_time,
-                source='新浪财经',
-            ))
+            try:
+                items = src.fetch(symbol)
+                if items:
+                    logger.debug(f"[{symbol}] {src.name}: {len(items)} 条")
+                results.extend(items)
+            except Exception as e:
+                logger.warning(f"[{symbol}] 新闻源 {src.name} 失败: {e}")
+        if not results:
+            logger.warning(f"[{symbol}] 所有新闻源均无数据")
         return results
 
     def get_guba(self, symbol: str) -> List[GubaPost]:
-        today = datetime.now().strftime('%m-%d')
-        result = []
-        try:
-            result = self._fetch_eastmoney_guba(symbol)
-        except Exception:
-            pass
-        today_posts = [p for p in result if p.publish_time[:5] == today]
-        return today_posts if today_posts else result
-
-    def _yf_symbol(self, symbol: str) -> str:
-        """600519.SH → 600519.SS, 000858.SZ → 000858.SZ"""
-        code = symbol.strip().zfill(6)
-        suffix = 'SS' if code.startswith(('6', '9')) else 'SZ'
-        return f'{code}.{suffix}'
-
-    def _fetch_yahoo_finance_news(self, symbol: str) -> List[NewsItem]:
-        import requests
-        from bs4 import BeautifulSoup
-        from datetime import datetime, timedelta
-        yf_sym = self._yf_symbol(symbol)
-        url = f'https://feeds.finance.yahoo.com/rss/2.0/headline?s={yf_sym}&region=CN&lang=zh-CN'
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(url, timeout=15, headers=headers)
-        soup = BeautifulSoup(r.text, 'xml')
+        """插件式股吧聚合"""
+        from market_data.news_sources import GUBA_SOURCES
         results = []
-        today = datetime.now().strftime('%Y-%m-%d')
-        for item in soup.find_all('item'):
-            title = item.title.text.strip() if item.title else ''
-            link = item.link.text.strip() if item.link else ''
-            pubdate_str = item.pubDate.text if item.pubDate else ''
-            try:
-                from email.utils import parsedate_to_datetime
-                pub_dt = parsedate_to_datetime(pubdate_str)
-                pubdate = pub_dt.strftime('%Y-%m-%d %H:%M')
-            except Exception:
-                pubdate = ''
-            if not title:
+        for src in GUBA_SOURCES:
+            if not src.enabled:
                 continue
-            results.append(NewsItem(
-                title=title, url=link, publish_time=pubdate,
-                source='Yahoo Finance',
-            ))
-        return results
-
-    def _fetch_eastmoney_guba(self, symbol: str) -> List[GubaPost]:
-        import re
-        import requests
-        from bs4 import BeautifulSoup
-        code = symbol.strip().zfill(6)
-        url = f'https://guba.eastmoney.com/list,{code},f_1.html'
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-            'Accept': 'text/html,application/xhtml+xml',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-        }
-        r = requests.get(url, timeout=15, headers=headers)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        results = []
-        for item in soup.select('.listitem'):
             try:
-                title_div = item.select_one('.title a, a[href*="news"]')
-                if not title_div:
-                    continue
-                title = title_div.text.strip()
-                author_div = item.select_one('.author')
-                author = author_div.text.strip() if author_div else ''
-                read_div = item.select_one('.read')
-                read_count = int(read_div.text.strip()) if read_div and read_div.text.strip().isdigit() else 0
-                reply_div = item.select_one('.reply')
-                comment_count = int(reply_div.text.strip()) if reply_div and reply_div.text.strip().isdigit() else 0
-                update_div = item.select_one('.update')
-                publish_time = update_div.text.strip() if update_div else ''
-                results.append(GubaPost(
-                    title=title, author=author,
-                    publish_time=publish_time,
-                    read_count=read_count,
-                    comment_count=comment_count,
-                ))
-            except Exception:
-                continue
+                items = src.fetch(symbol)
+                if items:
+                    logger.debug(f"[{symbol}] {src.name}: {len(items)} 条")
+                results.extend(items)
+            except Exception as e:
+                logger.warning(f"[{symbol}] 股吧源 {src.name} 失败: {e}")
         return results
-
-    _xq_cache = None  # 雪球热度缓存（一次会话只请求一次 5605 条）
-
-    def get_xueqiu_popularity(self, symbol: str) -> dict:
-        """获取雪球关注热度（缓存 1 小时，避免每次请求 5605 条数据）"""
-        try:
-            import akshare as ak
-            # 缓存控制
-            if AkShareBackend._xq_cache is not None:
-                df = AkShareBackend._xq_cache
-            else:
-                import warnings, os
-                with warnings.catch_warnings():
-                    warnings.simplefilter('ignore')
-                    # 抑制 tqdm 进度条输出
-                    import io, sys as _sys
-                    _old_stderr = _sys.stderr
-                    _sys.stderr = io.StringIO()
-                    try:
-                        df = ak.stock_hot_follow_xq()
-                    finally:
-                        _sys.stderr = _old_stderr
-                AkShareBackend._xq_cache = df
-            if df is None or df.empty:
-                return {}
-            code = symbol.strip().zfill(6)
-            prefix = 'SH' if code.startswith(('6', '9')) else 'SZ'
-            full_code = f'{prefix}{code}'
-            match = df[df['股票代码'] == full_code]
-            if not match.empty:
-                row = match.iloc[0]
-                return {
-                    'follow_count': float(row.get('关注', 0)),
-                    'latest_price': float(row.get('最新价', 0)) if '最新价' in df.columns else 0,
-                }
-        except Exception:
-            pass
-        return {}
 
     @staticmethod
     def _safe_float(val) -> Optional[float]:
