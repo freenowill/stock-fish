@@ -16,6 +16,9 @@ class AnalysisState:
     created_at: str = ""
     completed_at: Optional[str] = None
 
+    # 用户输入
+    cost_price: float = 0.0  # 用户成本价格
+
     # 各阶段输出
     quote: Optional[Dict] = None
     technical_indicators: Optional[Dict] = None
@@ -32,17 +35,23 @@ class AnalysisState:
     risk_factors: List[Dict] = field(default_factory=list)
     price_target: Optional[Dict] = None
 
+    # 多周期预测
+    short_term_pred: Optional[Dict] = None   # 短期 (1~2周): {direction, change_pct, confidence, reason}
+    mid_term_pred: Optional[Dict] = None     # 中期 (1~3月): {direction, change_pct, confidence, reason}
+    long_term_pred: Optional[Dict] = None    # 长期 (6~12月): {direction, change_pct, confidence, reason}
+    suggested_action: Optional[Dict] = None  # {action, reason, stop_loss, take_profit}
+
     # 估值分析
-    valuation_level: str = ""          # 很低/偏低/正常/偏高/很高
-    valuation_percentile: float = 0.0  # PE 历史分位数
-    suggested_buy_price: float = 0.0   # 建议买入价
-    historical_pe_avg: float = 0.0     # 历史平均 PE
+    valuation_level: str = ""
+    valuation_percentile: float = 0.0
+    suggested_buy_price: float = 0.0
+    historical_pe_avg: float = 0.0
 
     # 重要新闻/股吧摘要
-    important_bullish_news: List[Dict] = field(default_factory=list)  # 利好新闻
-    important_bearish_news: List[Dict] = field(default_factory=list)  # 利空新闻
-    important_bullish_guba: List[Dict] = field(default_factory=list)  # 利好股吧
-    important_bearish_guba: List[Dict] = field(default_factory=list)  # 利空股吧
+    important_bullish_news: List[Dict] = field(default_factory=list)
+    important_bearish_news: List[Dict] = field(default_factory=list)
+    important_bullish_guba: List[Dict] = field(default_factory=list)
+    important_bearish_guba: List[Dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         d = asdict(self)

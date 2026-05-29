@@ -34,9 +34,9 @@ class StockAnalysisAgent:
             model=os.environ.get('LLM_MODEL_NAME') or getattr(settings, 'LLM_MODEL_NAME', None),
         )
 
-    def analyze(self, symbol: str) -> Dict[str, Any]:
+    def analyze(self, symbol: str, cost_price: float = 0.0) -> Dict[str, Any]:
         """执行一次完整分析，返回结构化结果"""
-        state = AnalysisState(symbol=symbol, created_at=datetime.now().isoformat())
+        state = AnalysisState(symbol=symbol, cost_price=cost_price, created_at=datetime.now().isoformat())
 
         try:
             # Step 1: 采集市场数据
@@ -91,6 +91,10 @@ class StockAnalysisAgent:
                 'low': prediction.price_target_low,
                 'high': prediction.price_target_high,
             }
+            state.short_term_pred = prediction.short_term
+            state.mid_term_pred = prediction.mid_term
+            state.long_term_pred = prediction.long_term
+            state.suggested_action = prediction.suggested_action
             state.risk_factors = [{'factor': f} for f in prediction.risk_factors]
             logger.info(f"[{symbol}] Step 4/4: LLM 预测完成")
 

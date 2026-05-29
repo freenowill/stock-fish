@@ -50,11 +50,12 @@ def analyze():
     """完整多因子分析"""
     data = request.get_json(silent=True) or {}
     symbol = data.get('symbol', '').strip().upper()
+    cost_price = data.get('cost_price', 0)
     if not symbol:
         return jsonify({'error': '请提供股票代码'}), 400
 
-    logger.info(f"开始深度分析 [{symbol}]")
-    result = agent.analyze(symbol)
+    logger.info(f"开始深度分析 [{symbol}] 成本价={cost_price}")
+    result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0)
     logger.info(f"[{symbol}] 分析完成 (状态: {result.get('status')})")
     return jsonify(result)
 
@@ -69,6 +70,7 @@ def predict():
     data = request.get_json(silent=True) or {}
     symbol = data.get('symbol', '').strip().upper()
     scenario = data.get('scenario', 'base')
+    cost_price = data.get('cost_price', 0)
 
     if not symbol:
         return jsonify({'error': '请提供股票代码'}), 400
@@ -79,6 +81,7 @@ def predict():
         'task_id': task_id,
         'symbol': symbol,
         'scenario': scenario,
+        'cost_price': float(cost_price) if cost_price else 0.0,
         'status': 'pending',
         'progress': 0.0,
         'message': '',
@@ -100,7 +103,7 @@ def predict():
         try:
             # Step 1: 分析
             _update_prediction(task_id, 0.1, 'analyzing', '正在进行多因子分析...')
-            result = agent.analyze(symbol)
+            result = agent.analyze(symbol, cost_price=pred_data.get('cost_price', 0))
             if result.get('status') == 'error':
                 _update_prediction(task_id, 1.0, 'failed', f"分析失败: {result.get('error')}")
                 return
