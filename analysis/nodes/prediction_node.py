@@ -89,8 +89,8 @@ class PredictionNode:
         views: Dict[str, AgentView] = {}
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
-                executor.submit(self._call_agent, client, role, prompt_fn(state), data): role
-                for role, (prompt_fn, data) in agents.items()
+                executor.submit(self._call_agent, client, role, prompt, data): role
+                for role, (prompt, data) in agents.items()
             }
             for future in as_completed(futures):
                 role = futures[future]
