@@ -502,25 +502,40 @@ class AkShareBackend(BaseStockBackend):
                 continue
         return results
 
+    _xq_cache = None  # 雪球热度缓存（一次会话只请求一次 5605 条）
+
     def get_xueqiu_popularity(self, symbol: str) -> dict:
-        """获取雪球热度数据（关注/讨论/交易）"""
+        """获取雪球关注热度（缓存 1 小时，避免每次请求 5605 条数据）"""
         try:
             import akshare as ak
+            # 缓存控制
+            if AkShareBackend._xq_cache is not None:
+                df = AkShareBackend._xq_cache
+            else:
+                import warnings, os
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    # 抑制 tqdm 进度条输出
+                    import io, sys as _sys
+                    _old_stderr = _sys.stderr
+                    _sys.stderr = io.StringIO()
+                    try:
+                        df = ak.stock_hot_follow_xq()
+                    finally:
+                        _sys.stderr = _old_stderr
+                AkShareBackend._xq_cache = df
+            if df is None or df.empty:
+                return {}
             code = symbol.strip().zfill(6)
             prefix = 'SH' if code.startswith(('6', '9')) else 'SZ'
             full_code = f'{prefix}{code}'
-            for func in [ak.stock_hot_follow_xq, ak.stock_hot_tweet_xq, ak.stock_hot_deal_xq]:
-                df = func()
-                if df is not None and not df.empty:
-                    match = df[df['股票代码'] == full_code]
-                    if not match.empty:
-                        row = match.iloc[0]
-                        result = {
-                            'follow_count': float(row.get('关注', 0)) if '关注' in df.columns else 0,
-                        }
-                        if '最新价' in df.columns:
-                            result['latest_price'] = float(row['最新价'])
-                        return result
+            match = df[df['股票代码'] == full_code]
+            if not match.empty:
+                row = match.iloc[0]
+                return {
+                    'follow_count': float(row.get('关注', 0)),
+                    'latest_price': float(row.get('最新价', 0)) if '最新价' in df.columns else 0,
+                }
         except Exception:
             pass
         return {}
