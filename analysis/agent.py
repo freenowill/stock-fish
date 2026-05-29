@@ -33,14 +33,17 @@ class StockAnalysisAgent:
             base_url=os.environ.get('LLM_BASE_URL') or getattr(settings, 'LLM_BASE_URL', None),
             model=os.environ.get('LLM_MODEL_NAME') or getattr(settings, 'LLM_MODEL_NAME', None),
         )
+        self._last_status = ''
 
-    def analyze(self, symbol: str, cost_price: float = 0.0) -> Dict[str, Any]:
+    def analyze(self, symbol: str, cost_price: float = 0.0,
+                progress_callback=None) -> Dict[str, Any]:
         """执行一次完整分析，返回结构化结果"""
         state = AnalysisState(symbol=symbol, cost_price=cost_price, created_at=datetime.now().isoformat())
 
         try:
             # Step 1: 采集市场数据
             state.status = "gathering"
+            self._last_status = 'gathering'
             market = self.provider.get_all_market_data(symbol)
             state.stock_name = market.get('name', symbol)
             state.quote = market.get('quote')
@@ -52,6 +55,7 @@ class StockAnalysisAgent:
 
             # Step 2: 舆情情感分析
             state.status = "analyzing"
+            self._last_status = 'analyzing'
             news_texts = [n.get('title', '') for n in state.news]
             guba_texts = [p.get('title', '') for p in state.guba_posts]
             if news_texts:
@@ -67,14 +71,16 @@ class StockAnalysisAgent:
             logger.info(f"[{symbol}] Step 2/4: 情感分析完成")
 
             # Step 3: 估值分析 + 综合信号
-            state.status = "analyzing"
+            state.status = "predicting"
+            self._last_status = 'predicting'
             self._compute_valuation(symbol, state)
             signals = self._generate_signals(state)
             state.signals = signals
             logger.info(f"[{symbol}] Step 3/4: 信号生成完成 (总体: {signals.get('overall')}, 评分: {signals.get('score')})")
 
             # Step 4: LLM 综合预测
-            state.status = "predicting"
+            state.status = "predicting_multi"
+            self._last_status = 'predicting_multi'
             state_dict = state.to_dict()
             prediction = self.prediction_node.predict(state_dict)
             state.llm_analysis = prediction.analysis_text

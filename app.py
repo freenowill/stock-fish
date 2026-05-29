@@ -45,7 +45,7 @@ _predictions_lock = threading.Lock()
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
-    """完整多因子分析"""
+    """完整多因子分析（同步，兼容旧版）"""
     data = request.get_json(silent=True) or {}
     symbol = data.get('symbol', '').strip().upper()
     cost_price = data.get('cost_price', 0)
@@ -56,6 +56,71 @@ def analyze():
     result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0)
     logger.info(f"[{symbol}] 分析完成 (状态: {result.get('status')})")
     return jsonify(result)
+
+
+@app.route('/api/analyze/stream', methods=['POST'])
+def analyze_stream():
+    """SSE 实时进度流 — 显示 4 步执行进度"""
+    data = request.get_json(silent=True) or {}
+    symbol = data.get('symbol', '').strip().upper()
+    cost_price = float(data.get('cost_price', 0) or 0)
+    if not symbol:
+        return jsonify({'error': '请提供股票代码'}), 400
+
+    def generate():
+        steps = {
+            'gathering':  (1, '正在采集市场数据 (行情/财务/新闻/股吧)...'),
+            'analyzing':  (2, '正在进行舆情情感分析...'),
+            'predicting': (3, '正在生成技术信号与估值评估...'),
+            'predicting_multi': (4, '正在运行多Agent并行辩论预测...'),
+        }
+        last_step = 0
+        result_holder = {}
+
+        def progress_callback(status: str, msg: str = ''):
+            nonlocal last_step
+            step_info = steps.get(status)
+            if step_info:
+                step_num, desc = step_info
+                if step_num != last_step:
+                    last_step = step_num
+                    yield f"data: {json.dumps({'step': step_num, 'total': 4, 'message': desc, 'status': status}, ensure_ascii=False)}\n\n"
+
+        # 在后台线程运行分析
+        import threading
+        done = threading.Event()
+
+        def _run():
+            try:
+                result_holder['result'] = agent.analyze(
+                    symbol, cost_price=cost_price,
+                    progress_callback=lambda s, m: None,  # 不在此线程内 yield
+                )
+            except Exception as e:
+                result_holder['error'] = str(e)
+            done.set()
+
+        thread = threading.Thread(target=_run, daemon=True)
+        thread.start()
+
+        # 轮询状态直到完成
+        while not done.is_set():
+            status = agent._last_status
+            if status:
+                for line in progress_callback(status):
+                    yield line
+            done.wait(timeout=0.3)
+
+        # 发送最终结果
+        if 'result' in result_holder:
+            yield f"data: {json.dumps({'step': 4, 'total': 4, 'message': '分析完成', 'status': 'complete', 'result': result_holder['result']}, ensure_ascii=False)}\n\n"
+        elif 'error' in result_holder:
+            yield f"data: {json.dumps({'step': 0, 'total': 4, 'message': f'分析失败: {result_holder[\"error\"]}', 'status': 'error'}, ensure_ascii=False)}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return Response(stream_with_context(generate()),
+                    mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
 # ==========================================
