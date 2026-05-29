@@ -735,11 +735,11 @@ class AStockProvider:
     def get_quote(self, symbol: str) -> Optional[Quote]:
         return self.backend.get_quote(symbol)
 
-    def get_historical(self, symbol: str, days: int = 365) -> Optional[List[dict]]:
+    def get_historical(self, symbol: str, days: int = 120) -> Optional[List[dict]]:
         return self.backend.get_historical(symbol, days)
 
     def get_technical_indicators(self, symbol: str) -> Optional[TechnicalIndicators]:
-        hist = self.get_historical(symbol, days=365)
+        hist = self.get_historical(symbol, days=120)
         if hist and len(hist) >= 20:
             return TechnicalIndicatorCalculator.compute(hist)
         logger.warning(f"历史数据不足，无法计算技术指标: {symbol}")

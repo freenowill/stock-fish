@@ -111,7 +111,7 @@ class StockAnalysisAgent:
     def _compute_valuation(self, symbol: str, state: AnalysisState):
         """计算 PE 历史分位数、估值等级、建议买入价"""
         try:
-            pe_values = self.provider.get_historical_pe(symbol, days=365 * 3)
+            pe_values = self.provider.get_historical_pe(symbol, days=365)
             quote = state.quote or {}
             current_pe = quote.get('pe') if isinstance(quote, dict) else None
             current_price = quote.get('price', 0) if isinstance(quote, dict) else 0

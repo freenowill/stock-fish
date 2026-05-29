@@ -163,7 +163,7 @@ class TushareBackend(BaseStockBackend):
 
     # ---- 历史 K 线 ----
 
-    def get_historical(self, symbol: str, days: int = 365) -> Optional[List[Dict]]:
+    def get_historical(self, symbol: str, days: int = 120) -> Optional[List[Dict]]:
         try:
             ts_code = self._ts_code(symbol)
             end = datetime.now()
