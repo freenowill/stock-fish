@@ -832,6 +832,12 @@ class AStockProvider:
         result['quote'] = quote
         if quote:
             result['name'] = quote.name
+            # 注入股票名称到 NewsNowSource 用于标题匹配
+            try:
+                from market_data.news_sources import NewsNowSource
+                NewsNowSource.set_stock_name(symbol, quote.name)
+            except Exception:
+                pass
 
         result['technical_indicators'] = self.get_technical_indicators(symbol)
         result['financial_summary'] = self.get_financial_summary(symbol)

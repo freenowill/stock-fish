@@ -187,6 +187,73 @@ class XueqiuPopularitySource(BaseNewsSource):
             return []
 
 
+# ── NewsNow 聚合 API（财联社+雪球+华尔街见闻）──
+
+class NewsNowSource(BaseNewsSource):
+    """newsnow.busiyi.world 聚合 API，一次请求覆盖 3 个财经源"""
+    name = "NewsNow聚合"
+    _session = None
+    _stock_names: dict = {}  # symbol → name 缓存
+
+    SOURCES = ['cls-hot', 'xueqiu', 'wallstreetcn']
+
+    @classmethod
+    def _get_session(cls):
+        if cls._session is None:
+            cls._session = requests.Session()
+            cls._session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                'Accept': 'application/json',
+                'Accept-Language': 'zh-CN,zh;q=0.9',
+                'Referer': 'https://newsnow.busiyi.world/',
+            })
+            cls._session.get('https://newsnow.busiyi.world/', timeout=10)
+        return cls._session
+
+    def fetch(self, symbol: str) -> List[NewsItem]:
+        try:
+            s = self._get_session()
+            code = symbol.strip().zfill(6)
+            today = datetime.now().strftime('%Y-%m-%d')
+            results = []
+            for src in self.SOURCES:
+                try:
+                    r = s.get(f'https://newsnow.busiyi.world/api/s?id={src}&latest', timeout=10)
+                    if r.status_code != 200:
+                        continue
+                    data = r.json()
+                    for item in data.get('items', []):
+                        title = item.get('title', '')
+                        if not title:
+                            continue
+                        # 标题中包含股票代码或简称才收录
+                        if code in title or self._match_stock_name(symbol, title):
+                            results.append(NewsItem(
+                                title=title,
+                                url=item.get('url', ''),
+                                publish_time=today,
+                                source=f'NewsNow-{src}',
+                            ))
+                except Exception:
+                    continue
+            return results
+        except Exception:
+            return []
+
+    @classmethod
+    def _match_stock_name(cls, symbol: str, title: str) -> bool:
+        """检查标题是否提及该股票简称"""
+        if symbol not in cls._stock_names:
+            return False
+        name = cls._stock_names[symbol]
+        return name in title and len(name) >= 2
+
+    @classmethod
+    def set_stock_name(cls, symbol: str, name: str):
+        """外部注入股票名称，用于标题匹配"""
+        cls._stock_names[symbol] = name
+
+
 # ── 财联社（预留，API 当前不可用）──
 
 class CLSNewsSource(BaseNewsSource):
@@ -203,9 +270,10 @@ class CLSNewsSource(BaseNewsSource):
 
 NEWS_SOURCES: List[BaseNewsSource] = [
     SinaNewsSource(),
+    NewsNowSource(),             # 财联社+雪球+华尔街见闻聚合
     YahooFinanceNewsSource(),
     XueqiuPopularitySource(),
-    CLSNewsSource(),         # 待 API 可用后启用
+    CLSNewsSource(),             # 待 API 可用后启用
 ]
 
 GUBA_SOURCES: List[BaseGubaSource] = [
