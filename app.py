@@ -67,18 +67,42 @@ def analyze_stream():
     if not symbol:
         return jsonify({'error': '请提供股票代码'}), 400
 
-    def generate():
-        steps = {
-            'gathering':  (1, '正在采集市场数据 (行情/财务/新闻/股吧)...'),
-            'analyzing':  (2, '正在进行舆情情感分析...'),
-            'predicting': (3, '正在生成技术信号与估值评估...'),
-            'predicting_multi': (4, '正在运行多Agent并行辩论预测...'),
-        }
-        last_step = 0
-        result_holder = {}
+    import threading, queue
+    progress_q = queue.Queue()
+    result_holder = {}
 
-        def progress_callback(status: str, msg: str = ''):
-            nonlocal last_step
+    steps = {
+        'gathering':        (1, 'Step 1/4: 正在采集市场数据 (行情/财务/新闻/股吧)...'),
+        'analyzing':        (2, 'Step 2/4: 正在进行舆情情感分析...'),
+        'predicting':       (3, 'Step 3/4: 正在生成技术信号与估值评估...'),
+        'predicting_multi': (4, 'Step 4/4: 正在运行多Agent并行辩论预测...'),
+    }
+
+    def _run():
+        try:
+            result_holder['result'] = agent.analyze(
+                symbol, cost_price=cost_price,
+                progress_callback=lambda status: progress_q.put(status),
+            )
+        except Exception as e:
+            result_holder['error'] = str(e)
+        progress_q.put('__DONE__')
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+
+    def generate():
+        last_step = 0
+        while True:
+            try:
+                status = progress_q.get(timeout=30)
+            except queue.Empty:
+                yield f"data: {json.dumps({'step': last_step, 'total': 4, 'message': '处理超时...', 'status': 'timeout'}, ensure_ascii=False)}\n\n"
+                break
+
+            if status == '__DONE__':
+                break
+
             step_info = steps.get(status)
             if step_info:
                 step_num, desc = step_info
@@ -86,37 +110,11 @@ def analyze_stream():
                     last_step = step_num
                     yield f"data: {json.dumps({'step': step_num, 'total': 4, 'message': desc, 'status': status}, ensure_ascii=False)}\n\n"
 
-        # 在后台线程运行分析
-        import threading
-        done = threading.Event()
-
-        def _run():
-            try:
-                result_holder['result'] = agent.analyze(
-                    symbol, cost_price=cost_price,
-                    progress_callback=lambda s, m: None,  # 不在此线程内 yield
-                )
-            except Exception as e:
-                result_holder['error'] = str(e)
-            done.set()
-
-        thread = threading.Thread(target=_run, daemon=True)
-        thread.start()
-
-        # 轮询状态直到完成
-        while not done.is_set():
-            status = agent._last_status
-            if status:
-                for line in progress_callback(status):
-                    yield line
-            done.wait(timeout=0.3)
-
-        # 发送最终结果
         if 'result' in result_holder:
-            yield f"data: {json.dumps({'step': 4, 'total': 4, 'message': '分析完成', 'status': 'complete', 'result': result_holder['result']}, ensure_ascii=False)}\n\n"
+            result_data = {'step': 4, 'total': 4, 'message': '分析完成', 'status': 'complete', 'result': result_holder['result']}
+            yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
         elif 'error' in result_holder:
-            err_msg = '分析失败: ' + str(result_holder['error'])
-            err_data = {'step': 0, 'total': 4, 'message': err_msg, 'status': 'error'}
+            err_data = {'step': 0, 'total': 4, 'message': '分析失败: ' + str(result_holder['error']), 'status': 'error'}
             yield f"data: {json.dumps(err_data, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
