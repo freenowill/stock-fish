@@ -115,7 +115,9 @@ def analyze_stream():
         if 'result' in result_holder:
             yield f"data: {json.dumps({'step': 4, 'total': 4, 'message': '分析完成', 'status': 'complete', 'result': result_holder['result']}, ensure_ascii=False)}\n\n"
         elif 'error' in result_holder:
-            yield f"data: {json.dumps({'step': 0, 'total': 4, 'message': f'分析失败: {result_holder[\"error\"]}', 'status': 'error'}, ensure_ascii=False)}\n\n"
+            err_msg = '分析失败: ' + str(result_holder['error'])
+            err_data = {'step': 0, 'total': 4, 'message': err_msg, 'status': 'error'}
+            yield f"data: {json.dumps(err_data, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
     return Response(stream_with_context(generate()),
