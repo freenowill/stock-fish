@@ -89,6 +89,10 @@ class StockAnalysisAgent:
                 'tech_view': prediction.tech_view,
                 'fund_view': prediction.fund_view,
                 'sent_view': prediction.sent_view,
+                # 多周期预测
+                'short_term': prediction.short_term,
+                'mid_term': prediction.mid_term,
+                'long_term': prediction.long_term,
             }
             state.price_target = {
                 'current': prediction.price_target_current,

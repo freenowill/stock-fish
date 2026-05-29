@@ -421,13 +421,36 @@ function renderAnalysis(data) {
     }
     html += `</div>`;
 
-    // Moderator verdict
+    // Moderator verdict with multi-period predictions
+    const short = pred.short_term || {};
+    const mid = pred.mid_term || {};
+    const long = pred.long_term || {};
+    const dirclass = (d) => d === '上涨' ? 'positive' : d === '下跌' ? 'negative' : 'neutral';
+    const pctfmt = (p) => p != null ? (p > 0 ? '+' : '') + p.toFixed(1) + '%' : '-';
+
     html += `<div class="card" style="margin-top:12px;background:rgba(255,165,2,.08);border:1px solid #ffa502;">
       <div class="label">◆ 主持人综合裁决</div>
       <div style="font-size:15px;font-weight:600;margin:6px 0;" class="${pred.outlook === '看多' ? 'positive' : pred.outlook === '看空' ? 'negative' : 'neutral'}">
         最终判断: ${pred.outlook || '-'}  置信度: ${pred.confidence || '-'}
       </div>
-      <div style="font-size:13px;line-height:1.6;color:#c0c8d0;">${pred.reason || ''}</div>
+      <div style="font-size:13px;line-height:1.6;color:#c0c8d0;margin-bottom:12px;">${pred.reason || ''}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
+        <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px;">
+          <div class="label">短期 (1~2周)</div>
+          <div style="font-size:16px;font-weight:600;" class="${dirclass(short.direction)}">${short.direction || '-'} <span style="font-size:13px;">${pctfmt(short.change_pct)}</span></div>
+          <div style="font-size:11px;color:#6b8db5;margin-top:4px;">${short.reason || ''}</div>
+        </div>
+        <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px;">
+          <div class="label">中期 (1~3月)</div>
+          <div style="font-size:16px;font-weight:600;" class="${dirclass(mid.direction)}">${mid.direction || '-'} <span style="font-size:13px;">${pctfmt(mid.change_pct)}</span></div>
+          <div style="font-size:11px;color:#6b8db5;margin-top:4px;">${mid.reason || ''}</div>
+        </div>
+        <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px;">
+          <div class="label">长期 (6~12月)</div>
+          <div style="font-size:16px;font-weight:600;" class="${dirclass(long.direction)}">${long.direction || '-'} <span style="font-size:13px;">${pctfmt(long.change_pct)}</span></div>
+          <div style="font-size:11px;color:#6b8db5;margin-top:4px;">${long.reason || ''}</div>
+        </div>
+      </div>
     </div>`;
   }
 

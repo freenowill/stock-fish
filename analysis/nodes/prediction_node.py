@@ -45,7 +45,12 @@ class PredictionResult:
     fund_view: Optional[Dict] = None
     sent_view: Optional[Dict] = None
 
-    # 主持人综合 (兼容旧字段)
+    # 主持人多周期预测
+    short_term: Optional[Dict] = None   # {direction, change_pct, confidence, reason}
+    mid_term: Optional[Dict] = None
+    long_term: Optional[Dict] = None
+
+    # 兼容旧字段
     price_target_current: Optional[float] = None
     price_target_low: Optional[float] = None
     price_target_high: Optional[float] = None
@@ -118,6 +123,9 @@ class PredictionNode:
             tech_view=self._view_to_dict(views.get('tech')),
             fund_view=self._view_to_dict(views.get('fundamental')),
             sent_view=self._view_to_dict(views.get('sentiment')),
+            short_term=final.get('short_term'),
+            mid_term=final.get('mid_term'),
+            long_term=final.get('long_term'),
             price_target_current=price,
             price_target_low=final.get('price_target_low'),
             price_target_high=final.get('price_target_high'),
@@ -255,7 +263,7 @@ class PredictionNode:
 1. **指出共识** — 三位分析师在哪些判断上一致？
 2. **指出分歧** — 哪些判断相互矛盾？你更认同一方的理由是什么？
 3. **综合裁决** — 给出最终的多空判断和置信度
-4. **价格目标** — 综合技术支撑/估值均值回归/市场情绪，给出合理价格区间
+4. **多周期预测** — 综合技术面(短期)、估值(中长期)、舆情(情绪面)给出短/中/长期涨跌预测
 
 输出JSON:
 {{
@@ -263,11 +271,34 @@ class PredictionNode:
   "outlook": "看多/看空/中性",
   "confidence": "高/中/低",
   "reason": "核心裁决逻辑(80字内)",
+  "short_term": {{
+    "direction": "上涨/下跌/震荡",
+    "change_pct": 3.5,
+    "confidence": "高/中/低",
+    "reason": "1~2周预测依据(40字内)"
+  }},
+  "mid_term": {{
+    "direction": "上涨/下跌/震荡",
+    "change_pct": 8.0,
+    "confidence": "高/中/低",
+    "reason": "1~3月预测依据(40字内)"
+  }},
+  "long_term": {{
+    "direction": "上涨/下跌/震荡",
+    "change_pct": 15.0,
+    "confidence": "高/中/低",
+    "reason": "6~12月预测依据(40字内)"
+  }},
   "price_target_low": {price * 0.93:.1f},
   "price_target_high": {price * 1.10:.1f},
   "risk_factors": ["风险1", "风险2"],
   "positive_factors": ["积极因素1", "积极因素2"]
-}}"""
+}}
+
+注意:
+- short_term.change_pct: 预计1-2周内的涨跌幅度，正数上涨负数下跌
+- mid_term.change_pct: 预计1-3月内的涨跌幅度，侧重估值回归
+- long_term.change_pct: 预计6-12月内的涨跌幅度，侧重基本面和行业趋势"""
 
     # ── 数据构造 (每个 Agent 只看自己的领域) ──
 
