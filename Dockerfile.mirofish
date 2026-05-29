@@ -1,8 +1,9 @@
 FROM python:3.11-slim
 
-# 安装 Node.js 20 + ps（Vite 7 要求 Node 20.19+）
+# 安装 Node.js 20 + 构建工具 + Cairo（camel-oasis 需要 cairocffi）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc build-essential xz-utils curl procps \
+    libcairo2-dev libgirepository1.0-dev pkg-config \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL https://nodejs.org/dist/v20.19.0/node-v20.19.0-linux-x64.tar.xz \
     | tar xJ -C /usr/local --strip-components=1
@@ -13,19 +14,18 @@ COPY package.json package-lock.json ./
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 COPY backend/pyproject.toml backend/uv.lock ./backend/
 
-# 只安装必要依赖，跳过 camel-ai/camel-oasis（LLM API 模式不需要 torch/cuda）
-# 需要从 pyproject.toml 摘出：flask, flask-cors, openai, python-dotenv, pydantic, PyMuPDF, charset-normalizer, chardet, zep-cloud
+# 安装 npm + pip 依赖（LLM API 模式不需要本地 GPU，torch 仅作为 camel-oasis 依赖安装）
 RUN npm ci && npm ci --prefix frontend \
     && cd backend && pip install --no-cache-dir \
     "flask>=3.0.0" "flask-cors>=6.0.0" "openai>=1.0.0" \
     "python-dotenv>=1.0.0" "pydantic>=2.0.0" \
     "PyMuPDF>=1.24.0" "charset-normalizer>=3.0.0" "chardet>=5.0.0" \
-    "zep-cloud==3.13.0"
+    "zep-cloud==3.13.0" \
+    "camel-ai==0.2.78" "camel-oasis==0.2.5"
 
 COPY . .
 
 EXPOSE 3000 5001
 
-# 直接启动 backend（Python）和 frontend（Vite），绕过 uv（避免重装 camel-ai/torch）
-# --force 清除 Vite dep 缓存避免锁文件哈希错误
+# 直接启动 backend（Python）和 frontend（Vite），绕过 uv（Python 依赖已 pip install）
 CMD ["sh", "-c", "cd /app/backend && python run.py & cd /app/frontend && npx vite --host --force"]

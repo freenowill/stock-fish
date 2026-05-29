@@ -136,7 +136,7 @@ class MiroFishHTTPClient:
                 raise RuntimeError(result.get('error', '查询准备状态失败'))
             data = result['data']
             status = data.get('status', '')
-            if status == 'completed':
+            if status in ('completed', 'ready'):
                 return data
             elif status == 'failed':
                 raise RuntimeError(data.get('error', '模拟准备失败'))
@@ -164,7 +164,7 @@ class MiroFishHTTPClient:
             if not result.get('success'):
                 raise RuntimeError(result.get('error', '查询模拟状态失败'))
             data = result['data']
-            status = data.get('status', '')
+            status = data.get('runner_status', data.get('status', ''))
             progress = data.get('progress', 0)
             if status == 'completed':
                 return data
@@ -287,7 +287,7 @@ class SimulationOrchestrator:
             graph_data = self.client.build_graph(project_id)
             task_id = graph_data['task_id']
             graph_result = self.client.poll_graph_task(task_id)
-            graph_id = graph_result.get('graph_id', ont_data.get('graph_id', ''))
+            graph_id = (graph_result.get('result') or {}).get('graph_id') or ont_data.get('graph_id', '')
             logger.info(f"图谱构建完成: {graph_id}")
 
             if progress_callback:
@@ -309,28 +309,33 @@ class SimulationOrchestrator:
                 progress_callback(0.7, "Agent 配置完成，启动 OASIS 模拟...")
 
             # Step 7: 启动模拟
-            self.client.start_simulation(simulation_id, max_rounds=20)
+            self.client.start_simulation(simulation_id, max_rounds=5)
 
             if progress_callback:
                 progress_callback(0.8, "模拟运行中（约 5-10 分钟）...")
 
-            # Step 8: 等待模拟完成
-            sim_result = self.client.poll_simulation_status(simulation_id)
-            logger.info(f"模拟完成: {simulation_id}")
+            # Step 8: 等待模拟完成（较短超时，失败时降级为 standalone）
+            try:
+                sim_result = self.client.poll_simulation_status(simulation_id, timeout=900)
+                logger.info(f"模拟完成: {simulation_id}")
 
-            if progress_callback:
-                progress_callback(0.9, "模拟完成，生成预测报告...")
+                if progress_callback:
+                    progress_callback(0.9, "模拟完成，生成预测报告...")
 
-            # Step 9: 生成报告
-            report_data = self.client.generate_report(simulation_id)
-            report_task_id = report_data.get('task_id', '')
-            report_result = self.client.poll_report_status(report_task_id)
-            report_id = report_result.get('report_id', '')
-            report = self.client.get_report(report_id)
-            result['report'] = report
+                # Step 9: 生成报告
+                report_data = self.client.generate_report(simulation_id)
+                report_task_id = report_data.get('task_id', '')
+                report_result = self.client.poll_report_status(report_task_id)
+                report_id = (report_result.get('result') or {}).get('report_id', '')
+                report = self.client.get_report(report_id)
+                result['report'] = report
+                result['status'] = 'simulated'
+                logger.info(f"StockFish→MiroFish 推演完成: {symbol}")
 
-            result['status'] = 'simulated'
-            logger.info(f"StockFish→MiroFish 推演完成: {symbol}")
+            except Exception as sim_e:
+                logger.warning(f"MiroFish 模拟运行失败，降级为 standalone: {sim_e}")
+                result['status'] = 'standalone'
+                result['simulation_note'] = f"模拟引擎不可用，使用分析数据生成报告: {sim_e}"
 
         except Exception as e:
             logger.error(f"MiroFish 推演失败: {e}")

@@ -108,11 +108,18 @@ class PredictionReportGenerator:
         }
 
         if simulation_result:
+            mreport = simulation_result.get('report') or {}
             report['simulation'] = {
                 'status': simulation_result.get('status'),
                 'scenario': simulation_result.get('scenario'),
                 'scenarios': simulation_result.get('scenarios', []),
                 'seed_text': simulation_result.get('seed_text', '')[:500],
+                'mirofish_report': {
+                    'markdown': (mreport.get('markdown_content') or '')[:3000],
+                    'sections': (mreport.get('sections') or [])[:5],
+                    'simulation_rounds': mreport.get('simulation_rounds', 0),
+                    'agent_count': mreport.get('agent_count', 0),
+                } if mreport.get('markdown_content') or mreport.get('sections') else None,
             }
 
         return report
@@ -128,6 +135,17 @@ class PredictionReportGenerator:
         color = signal_color.get(s['overall_signal'], '#888')
 
         outlook_icon = {'看多': '📈', '看空': '📉', '中性': '➡️'}
+
+        sim = report.get('simulation') or {}
+        mr = sim.get('mirofish_report') or {}
+        if mr.get('markdown'):
+            sim_section = f'''  <div class="section">
+    <div class="section-title">MiroFish 群体智能推演报告</div>
+    <div class="analysis">{mr['markdown']}</div>
+  </div>
+'''
+        else:
+            sim_section = ''
 
         return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -201,6 +219,8 @@ class PredictionReportGenerator:
       for sig in report['signals']
     )}
   </div>
+
+  {sim_section}
 
   <div class="footer">
     StockFish AI Prediction · {datetime.now().strftime('%Y-%m-%d %H:%M')}<br/>

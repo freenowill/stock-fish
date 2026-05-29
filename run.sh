@@ -93,29 +93,55 @@ if ! command -v docker &> /dev/null; then
 fi
 echo "  ✓ Docker $(docker --version | cut -d' ' -f3 | tr -d ',')"
 
-# 测试 Docker 能否拉取镜像
-echo "  测试 Docker 网络..."
-# 用 docker.io 上不存在于本地的镜像测试拉取
-docker pull nginx:alpine --quiet 2>/dev/null && DOCKER_OK=true || DOCKER_OK=false
-docker rmi nginx:alpine 2>/dev/null || true
+# 检查本地是否已有镜像，避免不必要的拉取测试
+echo "  检查本地镜像..."
+NEEDED_IMAGES="stockfish-stockfish stockfish-mirofish"
+ALL_LOCAL=true
+for img in $NEEDED_IMAGES; do
+    if ! docker image inspect "$img" >/dev/null 2>&1; then
+        ALL_LOCAL=false
+        break
+    fi
+done
 
-if [ "$DOCKER_OK" = "false" ]; then
-    echo "  ⚠ Docker 无法访问镜像仓库（网络限制）"
-    echo "  自动切换到本地模式..."
-    echo ""
-    exec bash "$0" --local
-    exit 0
+if [ "$ALL_LOCAL" = "false" ]; then
+    # 缺少镜像，测试是否可拉取
+    echo "  测试 Docker 网络..."
+    docker pull nginx:alpine --quiet 2>/dev/null && DOCKER_OK=true || DOCKER_OK=false
+    docker rmi nginx:alpine 2>/dev/null || true
+
+    if [ "$DOCKER_OK" = "false" ]; then
+        echo "  ⚠ Docker 无法访问镜像仓库（网络限制），且本地缺少所需镜像"
+        echo "  自动切换到本地模式..."
+        echo ""
+        exec bash "$0" --local
+        exit 0
+    fi
+    echo "  ✓ Docker 网络正常"
+else
+    echo "  ✓ 所有镜像已在本地，跳过网络测试"
 fi
-echo "  ✓ Docker 网络正常"
 
 echo ""
-echo "[2/3] 构建镜像..."
+# 只在镜像缺失时构建
+NEED_BUILD=false
 if [ "$MODE" = "--no-mirofish" ]; then
-    docker compose build stockfish
-    echo "  ✓ StockFish 镜像构建完成（跳过 MiroFish）"
+    docker image inspect stockfish-stockfish >/dev/null 2>&1 || NEED_BUILD=true
 else
-    docker compose build
+    docker image inspect stockfish-stockfish >/dev/null 2>&1 || NEED_BUILD=true
+    docker image inspect stockfish-mirofish >/dev/null 2>&1 || NEED_BUILD=true
+fi
+
+if [ "$NEED_BUILD" = "true" ]; then
+    echo "[2/3] 构建镜像..."
+    if [ "$MODE" = "--no-mirofish" ]; then
+        docker compose build stockfish
+    else
+        docker compose build
+    fi
     echo "  ✓ 镜像构建完成"
+else
+    echo "[2/3] 镜像已存在，跳过构建"
 fi
 
 echo ""
