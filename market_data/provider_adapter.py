@@ -169,10 +169,15 @@ class AdvancedBackend(BaseStockBackend):
             api = sx.get_api(env='prd')
 
             code = symbol.strip().upper()
-            if code.startswith('SH') or code.startswith('SZ'):
+            if code.startswith('SH') or code.startswith('SZ') or code.startswith('BJ'):
                 ts_code = code
             elif code.isdigit() and len(code) == 6:
-                ts_code = f"{code}.SH" if code.startswith(('6', '9')) else f"{code}.SZ"
+                if code.startswith(('92', '43', '83', '87', '88')):
+                    ts_code = f"{code}.BJ"
+                elif code.startswith(('6', '9', '5')):
+                    ts_code = f"{code}.SH"
+                else:
+                    ts_code = f"{code}.SZ"
             else:
                 return None
 
@@ -378,10 +383,15 @@ class AdvancedBackend(BaseStockBackend):
             api = sx.get_api(env='prd')
 
             code = symbol.strip().upper()
-            if code.startswith('SH') or code.startswith('SZ'):
+            if code.startswith('SH') or code.startswith('SZ') or code.startswith('BJ'):
                 ts_code = code
             elif code.isdigit() and len(code) == 6:
-                ts_code = f"{code}.SH" if code.startswith(('6', '9')) else f"{code}.SZ"
+                if code.startswith(('92', '43', '83', '87', '88')):
+                    ts_code = f"{code}.BJ"
+                elif code.startswith(('6', '9', '5')):
+                    ts_code = f"{code}.SH"
+                else:
+                    ts_code = f"{code}.SZ"
             else:
                 return None
 
