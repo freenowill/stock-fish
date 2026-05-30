@@ -12,7 +12,7 @@ services:
         condition: service_started
     restart: unless-stopped
     volumes:
-      - ./:/app
+      - ./:/app                      # 项目代码挂载，改代码即时生效
     networks:
       - stockfish-net
 
@@ -27,9 +27,7 @@ services:
       - "5001:5001"
     restart: unless-stopped
     volumes:
-      - ./:/app                          # StockFish 代码（含 Dockerfile.mirofish 等）
-      - ../MiroFish/backend:/app/backend # MiroFish 后端代码
-      - ../MiroFish/frontend:/app/frontend # MiroFish 前端代码
+      - ../MiroFish/backend:/app/backend          # 后端代码挂载
       - mirofish-uploads:/app/backend/uploads
     networks:
       - stockfish-net
