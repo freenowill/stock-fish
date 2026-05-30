@@ -5,6 +5,8 @@ services:
     container_name: stockfish
     env_file:
       - .env
+    environment:
+      - OASIS_DEBUG=${OASIS_DEBUG:-false}
     ports:
       - "8000:8000"
     depends_on:
@@ -27,7 +29,7 @@ services:
       - "5001:5001"
     restart: unless-stopped
     volumes:
-      - ../MiroFish/backend:/app/backend          # 后端代码挂载
+      - ./MiroFish/backend:/app/backend          # 后端代码挂载
       - mirofish-uploads:/app/backend/uploads
     networks:
       - stockfish-net
