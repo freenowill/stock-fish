@@ -370,10 +370,10 @@ StockFish/
 
 ## 🔗 引用
 
-- [DeepSeek](https://api.deepseek.com) — LLM 推理
+- [DeepSeek](https://platform.deepseek.com/usage) — LLM 推理
 - [Tushare Pro](https://tushare.pro/) — A 股数据接口
 - [Tavily](https://tavily.com) — AI 搜索 API
 - [AkShare](https://github.com/akfamily/akshare) — 金融数据接口
-- [BettaFish](https://github.com/freenowill/BettaFish) — 多智能体舆情分析
-- [MiroFish](https://github.com/freenowill/MiroFish) — OASIS 群体智能模拟引擎
+- [BettaFish](https://github.com/666ghj/BettaFish) — 多智能体舆情分析
+- [MiroFish](https://github.com/666ghj/MiroFish) — OASIS 群体智能模拟引擎
 - [qlib-zh](https://github.com/freenowill/qlib-zh) — A 股因子选股模型
