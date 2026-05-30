@@ -113,6 +113,7 @@ class Settings(BaseSettings):
     ZEP_API_KEY: Optional[str] = None
     OASIS_DEFAULT_MAX_ROUNDS: int = 20
     OASIS_SIMULATION_AGENT_COUNT: int = 15
+    OASIS_DEBUG: bool = False  # debug模式：2 Agent / 2轮
 
     # ===== 行情缓存 =====
     CACHE_TTL_SECONDS: int = 60

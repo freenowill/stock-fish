@@ -212,11 +212,13 @@ class SeedDocumentBuilder:
         return "\n".join(lines)
 
     @staticmethod
-    def build_scenario_scenarios(analysis_result: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """生成三种推演场景的参数"""
+    def build_scenario_scenarios(analysis_result: Dict[str, Any], debug: bool = False) -> List[Dict[str, Any]]:
+        """生成三种推演场景的参数。debug=True 时使用 2 个 Agent。"""
         signals = analysis_result.get('signals', {}) or {}
         base_score = signals.get('score', 0) or 0
         ps = analysis_result.get('prediction_summary', {}) or {}
+
+        agent_count = 7  # 两种模式都是 7 Agent，轮数在 orchestrator 控制
 
         scenarios = [
             {
@@ -225,7 +227,7 @@ class SeedDocumentBuilder:
                 "description": "基于当前市场信号的自然演化",
                 "sentiment_bias": round(base_score / 10, 2),
                 "volatility": 0.3,
-                "agent_count": 15,
+                "agent_count": agent_count,
             },
             {
                 "name": "bull",
@@ -233,7 +235,7 @@ class SeedDocumentBuilder:
                 "description": "假设利好消息催化",
                 "sentiment_bias": min(0.8, round((base_score + 5) / 10, 2)),
                 "volatility": 0.5,
-                "agent_count": 20,
+                "agent_count": agent_count,
             },
             {
                 "name": "bear",
@@ -241,7 +243,7 @@ class SeedDocumentBuilder:
                 "description": "假设利空打击",
                 "sentiment_bias": max(-0.8, round((base_score - 5) / 10, 2)),
                 "volatility": 0.6,
-                "agent_count": 20,
+                "agent_count": agent_count,
             },
         ]
         return scenarios

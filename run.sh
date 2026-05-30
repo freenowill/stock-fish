@@ -14,9 +14,26 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 MODE="${1:-docker}"
+OASIS_DEBUG="false"
+
+# 解析参数
+for arg in "$@"; do
+    case "$arg" in
+        --debug)
+            OASIS_DEBUG="true"
+            ;;
+        --local)
+            MODE="--local"
+            ;;
+        --no-mirofish)
+            MODE="--no-mirofish"
+            ;;
+    esac
+done
 
 echo "========================================"
 echo "  StockFish - A 股分析 + 股价推演"
+[ "$OASIS_DEBUG" = "true" ] && echo "  🐛 Debug 模式: 2 Agent / 2轮"
 echo "========================================"
 echo ""
 
@@ -128,10 +145,12 @@ fi
 
 echo ""
 echo "[3/3] 启动服务..."
+# 导出 OASIS_DEBUG 供 docker compose 使用
+export OASIS_DEBUG
 if [ "$MODE" = "--no-mirofish" ]; then
-    docker compose up -d stockfish
+    OASIS_DEBUG="$OASIS_DEBUG" docker compose up -d stockfish
 else
-    docker compose up -d
+    OASIS_DEBUG="$OASIS_DEBUG" docker compose up -d
 fi
 echo ""
 

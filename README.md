@@ -1,8 +1,28 @@
+<p align="center">
+  <img src="document/label.png" alt="StockFish Logo" width="600">
+</p>
+
 # StockFish — A 股智能分析 + 股价推演系统
 
 > **完整决策链路**：[qlib-zh](https://github.com/freenowill/qlib-zh) 因子选股模型 → 选出 Top-K 候选股票 → StockFish 多因子深度分析 + MiroFish OASIS 群体智能推演 → 辅助投资决策
 
 A 股多因子分析引擎：多源行情采集 → 情感计算 → 估值评估 → 信号生成 → LLM 预测，支持 MiroFish OASIS 群体智能模拟推演。
+
+## 🎬 Demo 演示
+
+| 🧠 智能推演模式 | 📊 基础分析模式 |
+|:---:|:---:|
+| <video src="document/stockfish_mirofish.mp4" controls width="100%"></video> | <video src="document/stockfish_local.mp4" controls width="100%"></video> |
+| **StockFish + MiroFish OASIS 群体智能推演** | **StockFish 多因子分析（本地模式）** |
+| 多智能体社交模拟 → 知识图谱推理 → 推演报告 | 行情采集 → 情感分析 → 信号评分 → LLM 预测 |
+
+### 🧠 智能推演知识图谱
+
+<p align="center">
+  <img src="document/knowledge_graph.png" alt="MiroFish OASIS 群体智能知识图谱" width="900">
+</p>
+
+> MiroFish OASIS 引擎构建的群体智能知识图谱：7 种 Agent 角色（Buffett/Munger/估值/情绪/基本面/技术面/风控）在模拟社交网络中交互推演，Zep GraphRAG 提取实体关系，形成多维度股价预测推理网络。
 
 ---
 

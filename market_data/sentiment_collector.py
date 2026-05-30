@@ -48,20 +48,25 @@ class SentimentCollector:
     def __init__(self, enable_sentiment: bool = True):
         self._analyzer = None
         self._initialized = False
+        self._init_failed = False      # 初始化失败后不再重试，避免日志刷屏
         self._hf_checked = False
         self._hf_reachable = False
         self.enable_sentiment = enable_sentiment
 
     def _initialize(self):
-        """延迟初始化情感分析模型（失败则用规则降级）"""
+        """延迟初始化情感分析模型（失败则用规则降级，仅尝试一次）"""
         if self._initialized:
             return True
+        if self._init_failed:
+            return False
         if not self.enable_sentiment:
+            self._init_failed = True
             return False
 
         # 先检查 HuggingFace 是否可达（只检查一次），避免模型下载阻塞
         if not self._is_hf_available():
-            self.enable_sentiment = False
+            logger.warning("HuggingFace 不可达，情感分析使用规则降级")
+            self._init_failed = True
             return False
 
         try:
@@ -70,12 +75,18 @@ class SentimentCollector:
                 sys.path.insert(0, _bf_path)
 
             module_path = Path(_bf_path) / "InsightEngine" / "tools" / "sentiment_analyzer.py"
+            if not module_path.exists():
+                logger.warning(f"BettaFish 情感模型未找到 ({module_path})，使用规则降级")
+                self._init_failed = True
+                return False
+
             spec = importlib.util.spec_from_file_location(
                 "bettafish_sentiment", module_path,
                 submodule_search_locations=[]
             )
             if spec is None or spec.loader is None:
-                logger.warning("无法加载情感分析模块")
+                logger.warning("无法加载情感分析模块，使用规则降级")
+                self._init_failed = True
                 return False
 
             mod = importlib.util.module_from_spec(spec)
@@ -86,10 +97,12 @@ class SentimentCollector:
                 self._initialized = True
                 logger.info("情感分析模型初始化成功")
             else:
-                logger.warning("情感分析模型初始化失败，将使用规则降级")
+                logger.warning("情感分析模型初始化失败，使用规则降级")
+                self._init_failed = True
             return success
         except Exception as e:
             logger.warning(f"情感分析模型加载失败，使用规则降级: {e}")
+            self._init_failed = True
             return False
 
     def _is_hf_available(self) -> bool:
