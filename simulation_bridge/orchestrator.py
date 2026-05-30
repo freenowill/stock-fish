@@ -325,7 +325,7 @@ class SimulationOrchestrator:
                 # Step 9: 生成报告
                 report_data = self.client.generate_report(simulation_id)
                 report_task_id = report_data.get('task_id', '')
-                report_result = self.client.poll_report_status(report_task_id, timeout=120)
+                report_result = self.client.poll_report_status(report_task_id, timeout=600)
                 report_id = (report_result.get('result') or {}).get('report_id', '')
                 report = self.client.get_report(report_id)
                 result['report'] = report
