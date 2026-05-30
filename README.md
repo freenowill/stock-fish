@@ -6,51 +6,35 @@
 
 ### 完整决策链路
 
-<div align="center">
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2563eb', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#3b82f6', 'lineColor': '#64748b', 'secondaryColor': '#1e293b', 'tertiaryColor': '#334155'}}}%%
-flowchart LR
-  A[qlib-zh<br/>因子选股模型] -->|Top-K 候选| B[StockFish<br/>多因子深度分析]
-  B -->|种子文档 + 场景| C[MiroFish OASIS<br/>群体智能推演]
-  C -->|推演报告| D[🎯 辅助投资决策]
-  click A "https://github.com/freenowill/qlib-zh" _blank
-```
-
-</div>
+<p align="center">
+  <img src="document/pipeline_flow.png" alt="完整决策链路" width="800">
+</p>
 
 ### StockFish 多因子分析引擎
 
-<div align="center">
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2563eb', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#3b82f6', 'lineColor': '#64748b', 'secondaryColor': '#1e293b', 'tertiaryColor': '#334155'}}}%%
-flowchart LR
-  A[多源行情采集] --> B[情感计算]
-  B --> C[估值评估]
-  C --> D[信号生成]
-  D --> E[LLM 综合预测]
-  E --> F{启用 MiroFish?}
-  F -->|是| G[OASIS 群体智能推演]
-  F -->|否| H[📊 直接输出报告]
-  G --> H
-```
-
-</div>
+<p align="center">
+  <img src="document/stockfish_flow.png" alt="StockFish 多因子分析引擎" width="960">
+</p>
 
 ## 🎬 Demo 演示
 
 <table>
 <tr>
 <td align="center" width="50%">
-  <video src="https://raw.githubusercontent.com/freenowill/stock-fish/master/document/stockfish_mirofish.mp4" controls poster="https://raw.githubusercontent.com/freenowill/stock-fish/master/document/knowledge_graph.png" width="100%"></video>
+  <a href="https://github.com/freenowill/stock-fish/blob/master/document/stockfish_mirofish.mp4">
+    <img src="document/knowledge_graph.png" alt="🧠 智能推演模式" width="100%">
+  </a>
   <br><b>🧠 智能推演模式</b>
   <br>StockFish + MiroFish OASIS 群体智能推演
+  <br><sub>👆 点击上图播放 Demo 视频</sub>
 </td>
 <td align="center" width="50%">
-  <video src="https://raw.githubusercontent.com/freenowill/stock-fish/master/document/stockfish_local.mp4" controls width="100%"></video>
+  <a href="https://github.com/freenowill/stock-fish/blob/master/document/stockfish_local.mp4">
+    <img src="document/knowledge_graph.png" alt="📊 基础分析模式" width="100%">
+  </a>
   <br><b>📊 基础分析模式</b>
   <br>StockFish 多因子分析（本地模式）
+  <br><sub>👆 点击上图播放 Demo 视频</sub>
 </td>
 </tr>
 </table>
