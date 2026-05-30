@@ -115,7 +115,7 @@ class PredictionReportGenerator:
                 'scenarios': simulation_result.get('scenarios', []),
                 'seed_text': simulation_result.get('seed_text', '')[:500],
                 'mirofish_report': {
-                    'markdown': (mreport.get('markdown_content') or '')[:3000],
+                    'markdown': mreport.get('markdown_content') or '',
                     'sections': (mreport.get('sections') or [])[:5],
                     'simulation_rounds': mreport.get('simulation_rounds', 0),
                     'agent_count': mreport.get('agent_count', 0),
@@ -139,9 +139,13 @@ class PredictionReportGenerator:
         sim = report.get('simulation') or {}
         mr = sim.get('mirofish_report') or {}
         if mr.get('markdown'):
+            md = mr['markdown']
+            md = md.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            md = md.replace('### ', '<strong>').replace('## ', '<strong>')
+            md = md.replace('\n\n', '</p><p>').replace('\n', '<br/>')
             sim_section = f'''  <div class="section">
     <div class="section-title">MiroFish 群体智能推演报告</div>
-    <div class="analysis">{mr['markdown']}</div>
+    <div class="analysis"><p>{md}</p></div>
   </div>
 '''
         else:
