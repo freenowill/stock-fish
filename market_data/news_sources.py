@@ -48,8 +48,9 @@ class BaseGubaSource(ABC):
 # ── 新浪财经新闻 ──
 
 class SinaNewsSource(BaseNewsSource):
-    """新浪财经个股新闻，稳定可靠"""
+    """新浪财经个股新闻，境外环境常被403"""
     name = "新浪财经"
+    enabled = False  # 境外不可用，被HTTP 403
 
     def fetch(self, symbol: str) -> List[NewsItem]:
         today = datetime.now().strftime('%Y-%m-%d')

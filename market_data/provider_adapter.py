@@ -21,6 +21,27 @@ from market_data.a_stock_provider import (
 logger = logging.getLogger(__name__)
 
 
+def _yf_safe_float(value) -> Optional[float]:
+    """yfinance 安全浮点数转换"""
+    if value is None:
+        return None
+    try:
+        result = float(value)
+        if result != result:  # NaN
+            return None
+        return result
+    except (TypeError, ValueError):
+        return None
+
+
+def _yf_pct(value) -> Optional[float]:
+    """yfinance 比率转百分比（0.1 → 10.0）"""
+    raw = _yf_safe_float(value)
+    if raw is None:
+        return None
+    return round(raw * 100.0, 4)
+
+
 class AdvancedBackend(BaseStockBackend):
     """
     使用 DataFetcherManager 的多源策略后端。
@@ -95,6 +116,47 @@ class AdvancedBackend(BaseStockBackend):
 
     def _get_dividend(self, symbol: str) -> Optional[float]:
         """查询最近一次每股分红（税后，元/股）"""
+        # 1. 先尝试 Tushare（A 股精确数据）
+        div = self._get_tushare_dividend(symbol)
+        if div is not None:
+            return div
+
+        # 2. Tushare 无结果，尝试 yfinance（港股/美股/A 股通用）
+        try:
+            import yfinance as yf
+            code = symbol.strip().upper()
+            if code.startswith('HK'):
+                digits = code[2:].lstrip('0') or '0'
+                yf_symbol = f"{digits}.HK"
+            elif code in ('TSLA', 'AAPL', 'MSFT') or not code.isdigit():
+                yf_symbol = code
+            elif len(code) == 6:
+                suffix = 'SS' if code.startswith(('6', '9', '5')) else 'SZ'
+                yf_symbol = f"{code}.{suffix}"
+            else:
+                return None
+
+            ticker = yf.Ticker(yf_symbol)
+            import pandas as _pd
+            div_series = ticker.dividends
+            if div_series is not None and not div_series.empty:
+                cutoff = _pd.Timestamp.now(tz=div_series.index.tz) - _pd.Timedelta(days=365)
+                ttm_divs = [v for ts, v in div_series.items() if _pd.Timestamp(ts) >= cutoff]
+                if ttm_divs:
+                    total = sum(_yf_safe_float(v) or 0 for v in ttm_divs)
+                    if total > 0:
+                        logger.info(f"AdvancedBackend: yfinance 每股分红 {symbol}={total:.4f}")
+                        return round(total, 4)
+                last_div = _yf_safe_float(div_series.iloc[-1])
+                if last_div is not None and last_div > 0:
+                    return round(last_div, 4)
+        except Exception as e:
+            logger.debug(f"yfinance 分红查询失败 {symbol}: {e}")
+
+        return None
+
+    def _get_tushare_dividend(self, symbol: str) -> Optional[float]:
+        """通过 Tushare 查询最近一次每股分红"""
         try:
             from market_data.compat import get_config
             cfg = get_config()
@@ -102,7 +164,7 @@ class AdvancedBackend(BaseStockBackend):
             if not token:
                 return None
             import sxsc_tushare as sx
-            import pandas as pd
+            import pandas as _pd
             sx.set_token(token)
             api = sx.get_api(env='prd')
 
@@ -118,17 +180,16 @@ class AdvancedBackend(BaseStockBackend):
             if df is None or df.empty:
                 return None
 
-            # 取最近一期已实施的分红（cash_div_tax 为税后每股分红）
             for _, r in df.iterrows():
-                cash_div = float(r['cash_div']) if pd.notna(r.get('cash_div')) else 0
-                cash_div_tax = float(r['cash_div_tax']) if pd.notna(r.get('cash_div_tax')) else 0
+                cash_div = float(r['cash_div']) if _pd.notna(r.get('cash_div')) else 0
+                cash_div_tax = float(r['cash_div_tax']) if _pd.notna(r.get('cash_div_tax')) else 0
                 div = cash_div_tax or cash_div
                 if div > 0:
-                    logger.debug(f"AdvancedBackend: {symbol} 每股分红={div}元")
+                    logger.debug(f"AdvancedBackend: Tushare 每股分红 {symbol}={div}元")
                     return round(div, 3)
             return None
         except Exception as e:
-            logger.debug(f"_get_dividend failed: {e}")
+            logger.debug(f"_get_tushare_dividend failed: {e}")
             return None
 
     def get_historical(self, symbol: str, days: int = 365) -> Optional[List[dict]]:
@@ -171,14 +232,14 @@ class AdvancedBackend(BaseStockBackend):
             return None
         name = self._resolve_name(symbol)
 
-        # 1. 尝试基本面适配器（akshare，需要国内网络）
+        # 1. 尝试 DataFetcherManager 基本面管道（akshare/yfinance 多源）
         try:
             ctx = self.manager.get_fundamental_context(symbol)
             if ctx and ctx.get('status') not in ('failed', 'not_supported'):
-                valuation = ctx.get('valuation', {})
-                val_payload = valuation.get('payload', {}) or {}
                 earnings = ctx.get('earnings', {})
                 earn_payload = earnings.get('payload', {}) or {}
+                # financial_report 子结构包含核心财务数据
+                fin_report = earn_payload.get('financial_report', {}) or {}
                 growth = ctx.get('growth', {})
                 growth_payload = growth.get('payload', {}) or {}
 
@@ -192,22 +253,22 @@ class AdvancedBackend(BaseStockBackend):
 
                 fin = FinancialSummary(
                     symbol=symbol, name=name,
-                    revenue=_safe_float(val_payload.get('total_mv')),
+                    revenue=_safe_float(fin_report.get('revenue')),
                     revenue_yoy=_safe_float(growth_payload.get('revenue_yoy')),
-                    net_profit=_safe_float(earn_payload.get('net_profit')),
-                    net_profit_yoy=_safe_float(earn_payload.get('net_profit_yoy')),
-                    eps=_safe_float(earn_payload.get('eps')),
-                    roe=_safe_float(earn_payload.get('roe')),
+                    net_profit=_safe_float(fin_report.get('net_profit_parent')),
+                    net_profit_yoy=_safe_float(growth_payload.get('net_profit_yoy')),
+                    eps=_safe_float(fin_report.get('eps')),
+                    roe=_safe_float(growth_payload.get('roe')),
                     gross_margin=_safe_float(growth_payload.get('gross_margin')),
                     debt_ratio=_safe_float(growth_payload.get('debt_ratio')),
-                    report_date=earn_payload.get('report_date', ''),
+                    report_date=str(fin_report.get('report_date', '')),
                 )
-                if fin.eps or fin.roe or fin.revenue:
+                if fin.eps or fin.roe or fin.revenue or fin.net_profit:
                     return fin
         except Exception as e:
             logger.debug(f"AdvancedBackend: 基本面适配器不可用 ({e})")
 
-        # 2. Tushare 直接查询兜底
+        # 2. Tushare 直接查询兜底（仅 A 股）
         try:
             fin = self._get_tushare_financials(symbol, name)
             if fin and (fin.eps or fin.roe):
@@ -215,7 +276,92 @@ class AdvancedBackend(BaseStockBackend):
         except Exception as e:
             logger.debug(f"AdvancedBackend: Tushare 基本面兜底失败 ({e})")
 
+        # 3. yfinance 直接兜底（适用于 A 股/港股/美股）
+        try:
+            fin = self._get_yfinance_financials(symbol, name)
+            if fin and (fin.eps or fin.roe or fin.revenue):
+                logger.info(f"AdvancedBackend: yfinance 基本面兜底成功 {symbol}")
+                return fin
+        except Exception as e:
+            logger.debug(f"AdvancedBackend: yfinance 基本面兜底失败 ({e})")
+
         return FinancialSummary(symbol=symbol, name=name)
+
+    def _get_yfinance_financials(self, symbol: str, name: str) -> Optional[FinancialSummary]:
+        """通过 yfinance 获取基本面数据（港股/美股/A 股通用）"""
+        try:
+            import yfinance as yf
+            import pandas as pd
+
+            code = symbol.strip().upper()
+            # 转为 yfinance 格式
+            if code.startswith('HK'):
+                digits = code[2:].lstrip('0') or '0'
+                yf_symbol = f"{digits}.HK"
+            elif code in ('TSLA', 'AAPL', 'MSFT') or not code.isdigit():
+                yf_symbol = code  # 美股代码
+            elif len(code) == 6:
+                suffix = 'SS' if code.startswith(('6', '9', '5')) else 'SZ'
+                yf_symbol = f"{code}.{suffix}"
+            else:
+                return None
+
+            ticker = yf.Ticker(yf_symbol)
+            info = {}
+            try:
+                info = ticker.get_info() if hasattr(ticker, 'get_info') else (ticker.info or {})
+            except Exception:
+                pass
+            if not isinstance(info, dict):
+                info = {}
+
+            fin = FinancialSummary(symbol=symbol, name=name)
+
+            fin.eps = _yf_safe_float(info.get('trailingEps'))
+            fin.roe = _yf_pct(info.get('returnOnEquity'))
+            fin.revenue = _yf_safe_float(info.get('totalRevenue'))
+            fin.net_profit = _yf_safe_float(info.get('netIncomeToCommon'))
+            fin.revenue_yoy = _yf_pct(info.get('revenueGrowth'))
+            fin.net_profit_yoy = _yf_pct(info.get('earningsGrowth'))
+            fin.gross_margin = _yf_pct(info.get('grossMargins'))
+            fin.debt_ratio = _yf_pct(info.get('debtToEquity'))
+
+            # 尝试从财务报表提取更精确的值
+            try:
+                bs = ticker.balance_sheet
+                if bs is not None and not bs.empty:
+                    if 'Total Debt' in bs.index:
+                        total_debt = _yf_safe_float(bs.loc['Total Debt'].iloc[0])
+                        total_equity = _yf_safe_float(bs.loc['Stockholders Equity'].iloc[0]) if 'Stockholders Equity' in bs.index else None
+                        if total_debt is not None and total_equity not in (None, 0):
+                            fin.debt_ratio = round(total_debt / total_equity * 100, 2)
+            except Exception:
+                pass
+
+            # 尝试从季度报表获取最新营收/净利润
+            try:
+                income = ticker.quarterly_income_stmt
+                if income is not None and not income.empty:
+                    # Total Revenue
+                    for key in ('Total Revenue', 'TotalRevenue', 'Revenue'):
+                        if key in income.index:
+                            val = _yf_safe_float(income.loc[key].iloc[0])
+                            if val is not None:
+                                fin.revenue = val
+                                break
+                    # Net Income
+                    for key in ('Net Income', 'NetIncome', 'Net Income Common Stockholders'):
+                        if key in income.index:
+                            val = _yf_safe_float(income.loc[key].iloc[0])
+                            if val is not None:
+                                fin.net_profit = val
+                                break
+            except Exception:
+                pass
+
+            return fin
+        except Exception:
+            return None
 
     def _get_tushare_financials(self, symbol: str, name: str) -> Optional[FinancialSummary]:
         """通过 sxsc_tushare 查询 fina_indicator + daily_basic 补全基本面"""
