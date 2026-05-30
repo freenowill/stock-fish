@@ -114,6 +114,12 @@ def predict():
 
             _update_prediction(task_id, 0.4, 'simulating', '启动模拟推演引擎...')
             sim_result = orchestrator.orchestrate(result, scenario=scenario, progress_callback=_sim_progress)
+
+            # 检查推演是否失败（不再降级，失败即报错）
+            if sim_result.get('status') == 'failed':
+                err_msg = sim_result.get('error', 'MiroFish 推演失败')
+                raise RuntimeError(f"MiroFish 推演失败: {err_msg}")
+
             _update_prediction(task_id, 0.8, 'simulating', '模拟推演完成', simulation=sim_result)
 
             # Step 3: 生成报告
@@ -124,7 +130,8 @@ def predict():
             _update_prediction(task_id, 1.0, 'completed', '推演完成', report=report, report_html_path=html_path)
 
         except Exception as e:
-            logger.error(f"[{symbol}] 推演失败: {e}")
+            import traceback
+            logger.error(f"[{symbol}] 推演失败: {e}\n{traceback.format_exc()}")
             _update_prediction(task_id, 1.0, 'failed', f"推演异常: {str(e)}")
 
     thread = threading.Thread(target=_run_pipeline, daemon=True)

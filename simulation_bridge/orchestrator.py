@@ -38,6 +38,21 @@ class MiroFishHTTPClient:
     def _post(self, path: str, **kwargs):
         return self.session.post(self._url(path), **kwargs)
 
+    def _safe_data(self, result, endpoint: str = "") -> dict:
+        """安全提取 API 响应中的 data 字段，自动处理非预期格式"""
+        if isinstance(result, str):
+            raise RuntimeError(f"{endpoint} 返回非预期格式(字符串): {result[:200]}")
+        if not isinstance(result, dict):
+            raise RuntimeError(f"{endpoint} 返回非预期类型: {type(result).__name__}")
+        if not result.get('success'):
+            raise RuntimeError(result.get('error', f'{endpoint} 返回失败'))
+        data = result.get('data', {})
+        if isinstance(data, str):
+            raise RuntimeError(f"{endpoint} data 字段为非预期格式(字符串): {data[:200]}")
+        if not isinstance(data, dict):
+            raise RuntimeError(f"{endpoint} data 字段为非预期类型: {type(data).__name__}")
+        return data
+
     def health_check(self) -> bool:
         try:
             r = self._get("/graph/project/list", timeout=5)
@@ -64,30 +79,21 @@ class MiroFishHTTPClient:
                     'project_name': project_name,
                 }
                 r = self._post("/graph/ontology/generate", files=files, data=data)
-            result = r.json()
-            if not result.get('success'):
-                raise RuntimeError(result.get('error', '本体生成失败'))
-            return result['data']
+            return self._safe_data(r.json(), "本体生成")
         finally:
             os.unlink(tmp_path)
 
     def build_graph(self, project_id: str) -> Dict:
         """构建知识图谱（异步）"""
         r = self._post("/graph/build", json={"project_id": project_id})
-        result = r.json()
-        if not result.get('success'):
-            raise RuntimeError(result.get('error', '图谱构建失败'))
-        return result['data']
+        return self._safe_data(r.json(), "图谱构建")
 
-    def poll_graph_task(self, task_id: str, timeout: int = 300) -> Dict:
+    def poll_graph_task(self, task_id: str, timeout: int) -> Dict:
         """轮询图谱构建任务"""
         start = time.time()
         while time.time() - start < timeout:
             r = self._get(f"/graph/task/{task_id}")
-            result = r.json()
-            if not result.get('success'):
-                raise RuntimeError(result.get('error', '查询任务失败'))
-            data = result['data']
+            data = self._safe_data(r.json(), "图谱任务查询")
             status = data.get('status', '')
             if status == 'completed':
                 return data
@@ -106,35 +112,28 @@ class MiroFishHTTPClient:
             "enable_twitter": True,
             "enable_reddit": True,
         })
-        result = r.json()
-        if not result.get('success'):
-            raise RuntimeError(result.get('error', '创建模拟失败'))
-        return result['data']
+        return self._safe_data(r.json(), "模拟创建")
 
-    def prepare_simulation(self, simulation_id: str) -> Dict:
+    def prepare_simulation(self, simulation_id: str, entity_types: list = None) -> Dict:
         """准备模拟（实体→配置→Agent 画像）"""
+        if entity_types is None:
+            entity_types = ["Investor", "Analyst", "Media", "Company", "Regulator"]
         r = self._post("/simulation/prepare", json={
             "simulation_id": simulation_id,
-            "entity_types": ["Investor", "Analyst", "Media", "Company", "Regulator"],
+            "entity_types": entity_types,
             "use_llm_for_profiles": True,
             "parallel_profile_count": 5,
         })
-        result = r.json()
-        if not result.get('success'):
-            raise RuntimeError(result.get('error', '准备模拟失败'))
-        return result['data']
+        return self._safe_data(r.json(), "模拟准备")
 
-    def poll_prepare_status(self, simulation_id: str, timeout: int = 600) -> Dict:
+    def poll_prepare_status(self, simulation_id: str, timeout: int) -> Dict:
         """轮询模拟准备状态"""
         start = time.time()
         while time.time() - start < timeout:
             r = self._post("/simulation/prepare/status", json={
                 "simulation_id": simulation_id
             })
-            result = r.json()
-            if not result.get('success'):
-                raise RuntimeError(result.get('error', '查询准备状态失败'))
-            data = result['data']
+            data = self._safe_data(r.json(), "模拟准备状态")
             status = data.get('status', '')
             if status in ('completed', 'ready'):
                 return data
@@ -150,20 +149,14 @@ class MiroFishHTTPClient:
             "platform": "parallel",
             "max_rounds": max_rounds,
         })
-        result = r.json()
-        if not result.get('success'):
-            raise RuntimeError(result.get('error', '启动模拟失败'))
-        return result['data']
+        return self._safe_data(r.json(), "模拟启动")
 
-    def poll_simulation_status(self, simulation_id: str, timeout: int = 1800) -> Dict:
+    def poll_simulation_status(self, simulation_id: str, timeout: int) -> Dict:
         """轮询模拟运行状态"""
         start = time.time()
         while time.time() - start < timeout:
             r = self._get(f"/simulation/{simulation_id}/run-status")
-            result = r.json()
-            if not result.get('success'):
-                raise RuntimeError(result.get('error', '查询模拟状态失败'))
-            data = result['data']
+            data = self._safe_data(r.json(), "模拟运行状态")
             status = data.get('runner_status', data.get('status', ''))
             progress = data.get('progress', 0)
             if status == 'completed':
@@ -180,35 +173,27 @@ class MiroFishHTTPClient:
         r = self._post("/report/generate", json={
             "simulation_id": simulation_id,
         })
-        result = r.json()
-        if not result.get('success'):
-            raise RuntimeError(result.get('error', '生成报告失败'))
-        return result['data']
+        return self._safe_data(r.json(), "报告生成")
 
-    def poll_report_status(self, task_id: str, timeout: int = 600) -> Dict:
-        """轮询报告生成状态"""
+    def poll_report_status(self, task_id: str, timeout: Optional[int] = None) -> Dict:
+        """轮询报告生成状态（timeout=None 表示无超时限制）"""
         start = time.time()
-        while time.time() - start < timeout:
+        while True:
+            if timeout and time.time() - start > timeout:
+                raise TimeoutError("报告生成超时")
             r = self._post("/report/generate/status", json={"task_id": task_id})
-            result = r.json()
-            if not result.get('success'):
-                raise RuntimeError(result.get('error', '查询报告状态失败'))
-            data = result['data']
+            data = self._safe_data(r.json(), "报告状态轮询")
             status = data.get('status', '')
             if status == 'completed':
                 return data
             elif status == 'failed':
                 raise RuntimeError(data.get('error', '报告生成失败'))
             time.sleep(3)
-        raise TimeoutError("报告生成超时")
 
     def get_report(self, report_id: str) -> Dict:
         """获取报告内容"""
         r = self._get(f"/report/{report_id}")
-        result = r.json()
-        if not result.get('success'):
-            raise RuntimeError(result.get('error', '获取报告失败'))
-        return result['data']
+        return self._safe_data(r.json(), "获取报告")
 
 
 class SimulationOrchestrator:
@@ -224,6 +209,8 @@ class SimulationOrchestrator:
             os.path.dirname(__file__), '..', 'simulation_output'
         )
         os.makedirs(self.output_dir, exist_ok=True)
+        # debug 模式：2 Agent / 2轮
+        self.debug = bool(os.environ.get('OASIS_DEBUG', '').lower() in ('true', '1', 'yes')) or getattr(settings, 'OASIS_DEBUG', False)
 
     def orchestrate(self, analysis_result: Dict[str, Any],
                     scenario: str = "base",
@@ -251,7 +238,7 @@ class SimulationOrchestrator:
         # Step 1: 构建种子文档
         seed_text = SeedDocumentBuilder.build(analysis_result)
         result['seed_text'] = seed_text
-        scenarios = SeedDocumentBuilder.build_scenario_scenarios(analysis_result)
+        scenarios = SeedDocumentBuilder.build_scenario_scenarios(analysis_result, debug=self.debug)
         result['scenarios'] = scenarios
 
         # 保存到文件
@@ -286,7 +273,7 @@ class SimulationOrchestrator:
             # Step 4: 构建图谱
             graph_data = self.client.build_graph(project_id)
             task_id = graph_data['task_id']
-            graph_result = self.client.poll_graph_task(task_id)
+            graph_result = self.client.poll_graph_task(task_id, timeout=900)
             graph_id = (graph_result.get('result') or {}).get('graph_id') or ont_data.get('graph_id', '')
             logger.info(f"图谱构建完成: {graph_id}")
 
@@ -301,41 +288,70 @@ class SimulationOrchestrator:
             if progress_callback:
                 progress_callback(0.6, "模拟创建完成，准备 Agent 配置...")
 
-            # Step 6: 准备模拟
-            self.client.prepare_simulation(simulation_id)
-            self.client.poll_prepare_status(simulation_id)
+            # Step 6: 准备模拟（MiroFish 侧 LLM 生成 Agent 画像）
+            # entity_types 必须匹配 MiroFish 本体论中定义的类型
+            # 本体类型: Agent, Company, Regulator, MediaOutlet, RetailInvestor, FundManager, ...
+            # 7 个 Agent 角色全部映射到 "Agent" 类型
+            prepare_timeout = 600 if self.debug else 600
+            entity_types = ["Agent", "Company", "Regulator", "MediaOutlet",
+                           "RetailInvestor", "FundManager", "InstitutionalInvestor"]
+            self.client.prepare_simulation(simulation_id, entity_types=entity_types)
+            self.client.poll_prepare_status(simulation_id, timeout=prepare_timeout)
 
             if progress_callback:
-                progress_callback(0.7, "Agent 配置完成，启动 OASIS 模拟...")
+                if self.debug:
+                    msg = "Agent 配置完成，启动 OASIS 模拟 (debug: 7Agent/1轮)..."
+                else:
+                    msg = "Agent 配置完成，启动 OASIS 模拟 (7Agent/5轮)..."
+                progress_callback(0.7, msg)
 
             # Step 7: 启动模拟
-            self.client.start_simulation(simulation_id, max_rounds=5)
+            max_rounds = 1 if self.debug else 5
+            self.client.start_simulation(simulation_id, max_rounds=max_rounds)
 
             if progress_callback:
-                progress_callback(0.8, "模拟运行中（约 5-10 分钟）...")
+                msg = "模拟运行中..." if self.debug else "模拟运行中（约 5-10 分钟）..."
+                progress_callback(0.8, msg)
 
-            # Step 8: 等待模拟完成（较短超时，失败时降级为 standalone）
-            try:
-                sim_result = self.client.poll_simulation_status(simulation_id, timeout=900)
-                logger.info(f"模拟完成: {simulation_id}")
+            # Step 8: 等待模拟完成
+            sim_timeout = 600 if self.debug else 900
+            sim_result = self.client.poll_simulation_status(simulation_id, timeout=sim_timeout)
+            logger.info(f"模拟完成: {simulation_id}")
 
-                if progress_callback:
-                    progress_callback(0.9, "模拟完成，生成预测报告...")
+            if progress_callback:
+                progress_callback(0.9, "模拟完成，生成预测报告...")
 
-                # Step 9: 生成报告
-                report_data = self.client.generate_report(simulation_id)
+            # Step 9: 生成报告（MiroFish ReACT Agent 逐章节生成，较慢）
+            report_data = self.client.generate_report(simulation_id)
+
+            # 处理两种返回情况：
+            # A) 新生成: {simulation_id, report_id, task_id, status: "generating"}
+            # B) 已有报告: {simulation_id, report_id, status: "completed", already_generated: true}
+            if report_data.get('already_generated') or report_data.get('status') == 'completed':
+                # 报告已存在，直接获取
+                report_id = report_data.get('report_id', '')
+                if not report_id:
+                    raise RuntimeError("报告已存在但未获取到 report_id")
+                logger.info(f"报告已存在，直接获取: {report_id}")
+            else:
+                # 新生成，轮询等待完成（无超时限制）
                 report_task_id = report_data.get('task_id', '')
-                report_result = self.client.poll_report_status(report_task_id, timeout=600)
-                report_id = (report_result.get('result') or {}).get('report_id', '')
-                report = self.client.get_report(report_id)
-                result['report'] = report
-                result['status'] = 'simulated'
-                logger.info(f"StockFish→MiroFish 推演完成: {symbol}")
+                if not report_task_id:
+                    raise RuntimeError("报告生成未返回 task_id")
+                report_result = self.client.poll_report_status(report_task_id)
+                # 安全提取 report_id: result 字段可能是嵌套 dict 或字符串
+                raw_result = report_result.get('result', {})
+                if isinstance(raw_result, str):
+                    raw_result = {}
+                report_id = raw_result.get('report_id', '') if isinstance(raw_result, dict) else ''
+                if not report_id:
+                    raise RuntimeError("模拟完成但未获取到 report_id，报告生成失败")
 
-            except Exception as sim_e:
-                logger.warning(f"MiroFish 模拟运行失败，降级为 standalone: {sim_e}")
-                result['status'] = 'standalone'
-                result['simulation_note'] = f"模拟引擎不可用，使用分析数据生成报告: {sim_e}"
+            report = self.client.get_report(report_id)
+            logger.info(f"MiroFish 报告字段: {list(report.keys())}, markdown长度: {len(report.get('markdown_content', '') or '')}")
+            result['report'] = report
+            result['status'] = 'simulated'
+            logger.info(f"StockFish→MiroFish 推演完成: {symbol}")
 
         except Exception as e:
             logger.error(f"MiroFish 推演失败: {e}")

@@ -109,11 +109,13 @@ class PredictionReportGenerator:
 
         if simulation_result:
             mreport = simulation_result.get('report') or {}
+            sim_note = simulation_result.get('simulation_note', '')
             report['simulation'] = {
                 'status': simulation_result.get('status'),
                 'scenario': simulation_result.get('scenario'),
                 'scenarios': simulation_result.get('scenarios', []),
                 'seed_text': simulation_result.get('seed_text', '')[:500],
+                'simulation_note': sim_note,
                 'mirofish_report': {
                     'markdown': mreport.get('markdown_content') or '',
                     'sections': (mreport.get('sections') or [])[:5],
@@ -126,26 +128,35 @@ class PredictionReportGenerator:
 
     def to_html(self, report: Dict[str, Any]) -> str:
         """将报告渲染为 HTML"""
-        s = report['summary']
-        md = report['market_data']
-        sn = report['sentiment']
-        ri = report['risk_analysis']
+        s = report.get('summary', {})
+        md = report.get('market_data', {})
+        mq = md.get('quote', {}) if isinstance(md, dict) else {}
+        mtech = md.get('technical', {}) if isinstance(md, dict) else {}
+        sn = report.get('sentiment', {})
+        ri = report.get('risk_analysis', {})
 
-        signal_color = {'bullish': '#00d4aa', 'bearish': '#ff4757', 'neutral': '#ffa502'}
-        color = signal_color.get(s['overall_signal'], '#888')
+        signal_color = {'bullish': '#ff4757', 'bearish': '#00d4aa', 'neutral': '#ffa502'}
+        color = signal_color.get(s.get('overall_signal', 'neutral'), '#888')
 
         outlook_icon = {'看多': '📈', '看空': '📉', '中性': '➡️'}
 
         sim = report.get('simulation') or {}
         mr = sim.get('mirofish_report') or {}
-        if mr.get('markdown'):
-            md = mr['markdown']
-            md = md.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            md = md.replace('### ', '<strong>').replace('## ', '<strong>')
-            md = md.replace('\n\n', '</p><p>').replace('\n', '<br/>')
+        if mr and mr.get('markdown'):
+            md_text = mr['markdown']
+            # 使用 markdown-it-py 进行完整的 Markdown→HTML 渲染
+            try:
+                from markdown_it import MarkdownIt
+                md = MarkdownIt()
+                rendered = md.render(md_text)
+            except ImportError:
+                # 降级：基本转换
+                rendered = md_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                rendered = f'<p>{rendered}</p>'
+                rendered = rendered.replace('\n\n', '</p><p>').replace('\n', '<br/>')
             sim_section = f'''  <div class="section">
-    <div class="section-title">MiroFish 群体智能推演报告</div>
-    <div class="analysis"><p>{md}</p></div>
+    <div class="section-title">🐟 MiroFish 群体智能推演报告</div>
+    <div class="analysis mirofish-report">{rendered}</div>
   </div>
 '''
         else:
@@ -167,19 +178,38 @@ class PredictionReportGenerator:
   .value {{ font-size: 18px; font-weight: 500; margin-top: 4px; }}
   .section {{ margin: 20px 0; }}
   .section-title {{ font-size: 16px; font-weight: 600; color: #8ab4f8; margin-bottom: 8px; }}
-  .analysis {{ background: #152436; border-radius: 8px; padding: 16px; white-space: pre-wrap; line-height: 1.6; }}
+  .analysis {{ background: #152436; border-radius: 8px; padding: 16px; line-height: 1.6; }}
+  .mirofish-report h1 {{ font-size: 22px; color: #ffa502; border-bottom: 1px solid #2a3f5a; padding-bottom: 8px; margin: 24px 0 14px; }}
+  .mirofish-report h2 {{ font-size: 19px; color: #ffa502; margin: 20px 0 12px; }}
+  .mirofish-report h3 {{ font-size: 17px; color: #8ab4f8; margin: 18px 0 10px; }}
+  .mirofish-report h4, .mirofish-report h5, .mirofish-report h6 {{ font-size: 15px; color: #8ab4f8; margin: 14px 0 8px; }}
+  .mirofish-report p {{ margin: 8px 0; }}
+  .mirofish-report ul, .mirofish-report ol {{ margin: 8px 0; padding-left: 24px; }}
+  .mirofish-report li {{ margin: 4px 0; }}
+  .mirofish-report table {{ width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }}
+  .mirofish-report th {{ background: #1a2d42; color: #8ab4f8; padding: 8px 12px; text-align: left; border: 1px solid #1e3a5f; font-weight: 600; }}
+  .mirofish-report td {{ padding: 8px 12px; border: 1px solid #1e3a5f; }}
+  .mirofish-report tr:nth-child(even) {{ background: rgba(26,45,66,.5); }}
+  .mirofish-report blockquote {{ border-left: 3px solid #ffa502; margin: 12px 0; padding: 8px 16px; background: rgba(255,165,2,.08); color: #c0c8d0; }}
+  .mirofish-report code {{ background: #0f1923; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #ffa502; }}
+  .mirofish-report pre {{ background: #0f1923; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 12px 0; }}
+  .mirofish-report pre code {{ background: none; padding: 0; color: #e0e6ed; }}
+  .mirofish-report a {{ color: #ff6348; text-decoration: underline; }}
+  .mirofish-report hr {{ border: none; border-top: 1px solid #1e3a5f; margin: 20px 0; }}
+  .mirofish-report strong {{ color: #fff; }}
+  .mirofish-report em {{ color: #c0c8d0; }}
   .tag {{ display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin: 2px; }}
-  .tag-positive {{ background: rgba(0,212,170,.15); color: #00d4aa; }}
-  .tag-negative {{ background: rgba(255,71,87,.15); color: #ff4757; }}
+  .tag-positive {{ background: rgba(255,71,87,.15); color: #ff4757; }}
+  .tag-negative {{ background: rgba(0,212,170,.15); color: #00d4aa; }}
   .footer {{ text-align: center; color: #6b8db5; font-size: 12px; margin-top: 40px; }}
 </style></head>
 <body>
   <h1>{report['title']}</h1>
   <div class="summary">
-    <div style="font-size: 48px; text-align: center;">{outlook_icon.get(s['outlook'], '➡️')}</div>
+    <div style="font-size: 48px; text-align: center;">{outlook_icon.get(s.get('outlook', '中性'), '➡️')}</div>
     <div style="text-align: center; font-size: 14px; color: #6b8db5; margin-top: 8px;">
-      信号: <span style="color:{color};font-weight:600;">{s['overall_signal']}</span>
-      | 置信度: {s['confidence']} ({s['confidence_score']}%)
+      信号: <span style="color:{color};font-weight:600;">{s.get('overall_signal', 'neutral')}</span>
+      | 置信度: {s.get('confidence', '-')} ({s.get('confidence_score', 0)}%)
       | 生成: {report['generated_at'][:16]}
     </div>
   </div>
@@ -188,23 +218,23 @@ class PredictionReportGenerator:
     <div class="section-title">价格预测</div>
     <div style="text-align:center;padding:16px;">
       <span style="color:#6b8db5;">目标区间</span><br/>
-      <span class="price-target">{s['price_target_low']}</span>
+      <span class="price-target">{s.get('price_target_low', '-')}</span>
       <span style="font-size:20px;color:#6b8db5;"> ~ </span>
-      <span class="price-target">{s['price_target_high']}</span>
-      <br/><span style="color:#6b8db5;font-size:14px;">当前: {s['current_price']}</span>
+      <span class="price-target">{s.get('price_target_high', '-')}</span>
+      <br/><span style="color:#6b8db5;font-size:14px;">当前: {s.get('current_price', '-')}</span>
     </div>
   </div>
 
   <div class="grid">
-    <div class="card"><div class="label">PE / PB</div><div class="value">{md['quote']['pe']} / {md['quote']['pb']}</div></div>
-    <div class="card"><div class="label">市值</div><div class="value">{md['quote']['market_cap']}亿</div></div>
-    <div class="card"><div class="label">RSI / MACD</div><div class="value">{md['technical']['rsi_14']} / {md['technical']['macd']}</div></div>
-    <div class="card"><div class="label">舆情</div><div class="value">新闻{sn['news_score']} 股吧{sn['guba_score']}</div></div>
+    <div class="card"><div class="label">PE / PB</div><div class="value">{mq.get('pe', '-')} / {mq.get('pb', '-')}</div></div>
+    <div class="card"><div class="label">市值</div><div class="value">{mq.get('market_cap', '-')}亿</div></div>
+    <div class="card"><div class="label">RSI / MACD</div><div class="value">{mtech.get('rsi_14', '-')} / {mtech.get('macd', '-')}</div></div>
+    <div class="card"><div class="label">舆情</div><div class="value">新闻{sn.get('news_score', '-')} 股吧{sn.get('guba_score', '-')}</div></div>
   </div>
 
   <div class="section">
     <div class="section-title">风险因素</div>
-    {''.join(f'<span class="tag tag-negative">{f}</span> ' for f in ri['risk_factors']) or '暂无'}
+    {''.join(f'<span class="tag tag-negative">{f}</span> ' for f in ri.get('risk_factors', [])) or '暂无'}
   </div>
 
   <div class="section">

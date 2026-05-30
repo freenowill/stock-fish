@@ -105,6 +105,27 @@
     .two-col > div { flex: 1; min-width: 0; }
     .cost-badge { background: rgba(255,165,2,.15); color: #ffa502; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 6px; }
 
+    /* MiroFish Markdown 报告渲染样式 */
+    .mirofish-report h1 { font-size: 22px; color: #ffa502; border-bottom: 1px solid #2a3f5a; padding-bottom: 8px; margin: 24px 0 14px; }
+    .mirofish-report h2 { font-size: 19px; color: #ffa502; margin: 20px 0 12px; }
+    .mirofish-report h3 { font-size: 17px; color: #8ab4f8; margin: 18px 0 10px; }
+    .mirofish-report h4, .mirofish-report h5, .mirofish-report h6 { font-size: 15px; color: #8ab4f8; margin: 14px 0 8px; }
+    .mirofish-report p { margin: 8px 0; color: #c0c8d0; }
+    .mirofish-report ul, .mirofish-report ol { margin: 8px 0; padding-left: 24px; color: #c0c8d0; }
+    .mirofish-report li { margin: 4px 0; }
+    .mirofish-report table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    .mirofish-report th { background: #1a2d42; color: #8ab4f8; padding: 8px 12px; text-align: left; border: 1px solid #1e3a5f; font-weight: 600; }
+    .mirofish-report td { padding: 8px 12px; border: 1px solid #1e3a5f; color: #c0c8d0; }
+    .mirofish-report tr:nth-child(even) { background: rgba(26,45,66,.5); }
+    .mirofish-report blockquote { border-left: 3px solid #ffa502; margin: 12px 0; padding: 8px 16px; background: rgba(255,165,2,.08); color: #c0c8d0; }
+    .mirofish-report code { background: #0f1923; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #ffa502; }
+    .mirofish-report pre { background: #0f1923; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 12px 0; }
+    .mirofish-report pre code { background: none; padding: 0; color: #e0e6ed; }
+    .mirofish-report a { color: #ff6348; text-decoration: underline; }
+    .mirofish-report hr { border: none; border-top: 1px solid #1e3a5f; margin: 20px 0; }
+    .mirofish-report strong { color: #fff; }
+    .mirofish-report em { color: #c0c8d0; }
+
     @media (max-width: 768px) {
       .two-col { flex-direction: column; }
       .pred-timeline { grid-template-columns: 1fr; }
@@ -254,11 +275,11 @@ async function pollSimulation(taskId) {
   };
 }
 
-function renderDone(taskId, resultDiv, reportLinkDiv) {
+async function renderDone(taskId, resultDiv, reportLinkDiv) {
   const reportUrl = `${API}/api/predict/${taskId}/report`;
   reportLinkDiv.innerHTML = `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
     <a href="${reportUrl}" target="_blank" style="color:#00d4aa;font-size:14px;font-weight:500;text-decoration:none;">
-      📊 查看分析报告 →</a>
+      📊 在新窗口打开报告 →</a>
     <a href="${reportUrl}" download="report.html" target="_blank"
        style="padding:6px 14px;background:linear-gradient(135deg,#ff4757,#ff6348);color:#fff;border-radius:6px;font-size:12px;text-decoration:none;">
       📥 下载 HTML</a>
@@ -266,11 +287,39 @@ function renderDone(taskId, resultDiv, reportLinkDiv) {
        style="padding:6px 14px;background:#1a2d42;color:#8ab4f8;border:1px solid #1e3a5f;border-radius:6px;font-size:12px;cursor:pointer;">
       🖨️ 打印 / 导出 PDF</button>
   </div>`;
+
   resultDiv.innerHTML = `<div class="signal-box signal-bullish" style="justify-content:center;">
     <span style="font-size:24px;">✅</span>
     <div><div class="signal-label">推演完成</div>
-    <div class="signal-meta">已生成完整预测报告</div></div>
+    <div class="signal-meta">正在加载报告...</div></div>
   </div>`;
+
+  // 内联加载报告 HTML，提取 MiroFish 内容
+  try {
+    const resp = await fetch(reportUrl);
+    const html = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const miroSection = doc.querySelector('.mirofish-report');
+    const titleEl = doc.querySelector('h1');
+
+    let reportHTML = '';
+    if (titleEl) reportHTML += `<div style="font-size:20px;font-weight:600;color:#8ab4f8;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #1e3a5f;">${titleEl.textContent}</div>`;
+    if (miroSection) {
+      reportHTML += `<div class="mirofish-report" style="background:#152436;border-radius:10px;padding:20px;line-height:1.8;">${miroSection.innerHTML}</div>`;
+    }
+
+    resultDiv.innerHTML = reportHTML;
+    document.getElementById('simLog').style.display = 'none';
+  } catch(e) {
+    console.error('加载报告失败:', e);
+    resultDiv.innerHTML = `<div class="signal-box signal-bullish" style="justify-content:center;">
+      <span style="font-size:24px;">✅</span>
+      <div><div class="signal-label">推演完成</div>
+      <div class="signal-meta"><a href="${reportUrl}" target="_blank" style="color:#00d4aa;">点击查看完整报告 →</a></div></div>
+    </div>`;
+  }
 }
 
 async function pollLegacy(taskId) {
