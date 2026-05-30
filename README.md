@@ -21,20 +21,18 @@
 <table>
 <tr>
 <td align="center" width="50%">
-  <a href="https://github.com/freenowill/stock-fish/blob/master/document/stockfish_mirofish.mp4">
-    <img src="document/knowledge_graph.png" alt="🧠 智能推演模式" width="100%">
-  </a>
-  <br><b>🧠 智能推演模式</b>
-  <br>StockFish + MiroFish OASIS 群体智能推演
-  <br><sub>👆 点击上图播放 Demo 视频</sub>
-</td>
-<td align="center" width="50%">
-  <a href="https://github.com/freenowill/stock-fish/blob/master/document/stockfish_local.mp4">
-    <img src="document/knowledge_graph.png" alt="📊 基础分析模式" width="100%">
+  <a href="https://b23.tv/5etEKuw">
+    <img src="document/demo_local_thumb.png" alt="📊 基础分析模式" width="100%">
   </a>
   <br><b>📊 基础分析模式</b>
   <br>StockFish 多因子分析（本地模式）
-  <br><sub>👆 点击上图播放 Demo 视频</sub>
+</td>
+<td align="center" width="50%">
+  <a href="https://b23.tv/AJChmUb">
+    <img src="document/demo_mirofish_thumb.png" alt="🧠 智能推演模式" width="100%">
+  </a>
+  <br><b>🧠 智能推演模式</b>
+  <br>StockFish + MiroFish OASIS 群体智能推演
 </td>
 </tr>
 </table>
