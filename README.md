@@ -23,8 +23,11 @@ bash run.sh
 
 脚本自动完成：
 1. 拉取 `zhuhai123/stockfish-stockfish:latest` + `zhuhai123/stockfish-mirofish:latest`
-2. 启动两个容器，映射端口
+2. 将项目代码挂载到容器内，启动两个服务
 3. 等待服务就绪
+
+> **镜像只提供运行环境**（Python 包、Node.js、camel-ai 等），应用代码来自项目文件挂载。
+> 修改代码后执行 `docker compose up -d` 重建容器即可生效，无需重新构建镜像。
 
 ### 其他模式
 
