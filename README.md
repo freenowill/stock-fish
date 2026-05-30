@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="document/label.png" alt="StockFish Logo" width="600">
+  <img src="document/label.png" alt="StockFish Logo" width="320">
 </p>
 
 # StockFish — A 股智能分析 + 股价推演系统
@@ -10,11 +10,23 @@ A 股多因子分析引擎：多源行情采集 → 情感计算 → 估值评�
 
 ## 🎬 Demo 演示
 
-| 🧠 智能推演模式 | 📊 基础分析模式 |
-|:---:|:---:|
-| <video src="document/stockfish_mirofish.mp4" controls width="100%"></video> | <video src="document/stockfish_local.mp4" controls width="100%"></video> |
-| **StockFish + MiroFish OASIS 群体智能推演** | **StockFish 多因子分析（本地模式）** |
-| 多智能体社交模拟 → 知识图谱推理 → 推演报告 | 行情采集 → 情感分析 → 信号评分 → LLM 预测 |
+<table>
+<tr>
+<td align="center" width="50%">
+  <a href="document/stockfish_mirofish.mp4">
+    <img src="document/knowledge_graph.png" alt="智能推演 Demo" width="400"><br>
+    <b>🧠 点击播放：智能推演模式</b>
+  </a>
+  <br>StockFish + MiroFish OASIS 群体智能推演
+</td>
+<td align="center" width="50%">
+  <a href="document/stockfish_local.mp4">
+    <b>📊 点击播放：基础分析模式</b>
+  </a>
+  <br>StockFish 多因子分析（本地模式）
+</td>
+</tr>
+</table>
 
 ### 🧠 智能推演知识图谱
 
