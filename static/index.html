@@ -122,7 +122,15 @@
     <input id="symbolInput" type="text" placeholder="股票代码 (600519)" value="600519" />
     <input id="costInput" type="number" step="0.01" placeholder="成本价格 (选填)" />
     <button id="analyzeBtn" onclick="analyze()">分析</button>
+    <label id="simLabel" style="display:flex;flex-direction:column;gap:2px;cursor:pointer;user-select:none;">
+      <span style="display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" id="simCheck" style="width:16px;height:16px;cursor:pointer;" />
+        <span style="font-size:13px;color:#8ab4f8;">启用智能推演</span>
+      </span>
+      <span style="font-size:11px;color:#6b8db5;padding-left:22px;">勾选即启用群体智能推演，耗时较长</span>
+    </label>
   </div>
+  <div id="reportLink" style="display:none;margin-bottom:16px;padding:10px 14px;background:#152436;border:1px solid #1e3a5f;border-radius:8px;"></div>
 
   <div id="result"></div>
 </div>
@@ -136,29 +144,128 @@ async function analyze() {
   const costPrice = parseFloat(costEl.value) || 0;
   const btn = document.getElementById('analyzeBtn');
   const resultDiv = document.getElementById('result');
+  const reportLinkDiv = document.getElementById('reportLink');
+  const simEnabled = document.getElementById('simCheck').checked;
 
   if (!symbol) { alert('请输入股票代码'); return; }
   btn.disabled = true;
   resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析...</div>';
 
   try {
-    const body = { symbol };
-    if (costPrice > 0) body.cost_price = costPrice;
+    if (simEnabled) {
+      // 启用智能推演 → 调用 predict
+      reportLinkDiv.style.display = 'block';
+      reportLinkDiv.innerHTML = '<div style="color:#6b8db5;font-size:13px;"><span class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;vertical-align:middle;margin-right:8px;"></span>正在提交推演任务...</div>';
 
-    const resp = await fetch(`${API}/api/analyze`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!resp.ok) {
-      const err = await resp.json();
-      resultDiv.innerHTML = `<div class="error">${err.error || '请求失败'}</div>`;
-      return;
+      const body = { symbol, scenario: 'base' };
+      if (costPrice > 0) body.cost_price = costPrice;
+
+      const resp = await fetch(`${API}/api/predict`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const pred = await resp.json();
+      const taskId = pred.task_id;
+
+      // 先显示后端状态
+      const cfg = await fetch(`${API}/api/config`).then(r => r.json());
+      document.getElementById('backendStatus').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+
+      // 轮询任务状态
+      pollSimulation(taskId);
+    } else {
+      // 普通分析
+      const body = { symbol };
+      if (costPrice > 0) body.cost_price = costPrice;
+
+      const resp = await fetch(`${API}/api/analyze`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const err = await resp.json();
+        resultDiv.innerHTML = `<div class="error">${err.error || '请求失败'}</div>`;
+        return;
+      }
+      const data = await resp.json();
+      renderAnalysis(data);
     }
-    const data = await resp.json();
-    renderAnalysis(data);
   } catch (e) {
     resultDiv.innerHTML = `<div class="error">网络错误: ${e.message}</div>`;
   } finally { btn.disabled = false; }
+}
+
+async function pollSimulation(taskId) {
+  const resultDiv = document.getElementById('result');
+  const reportLinkDiv = document.getElementById('reportLink');
+  let pollCount = 0;
+
+  while (true) {
+    const resp = await fetch(`${API}/api/predict/${taskId}`);
+    const status = await resp.json();
+
+    if (status.status === 'failed') {
+      resultDiv.innerHTML = `<div class="error">推演失败: ${status.message || '未知错误'}</div>`;
+      reportLinkDiv.innerHTML = '<span style="color:#ff4757;font-size:13px;">✗ 推演失败</span>';
+      return;
+    }
+
+    if (status.status === 'completed') {
+      // 报告可用
+      reportLinkDiv.innerHTML = `<a href="${API}/api/predict/${taskId}/report" target="_blank" style="color:#00d4aa;font-size:14px;font-weight:500;text-decoration:none;">
+        📊 查看分析报告 →</a>`;
+
+      // 加载分析结果（如果有）
+      const detailResp = await fetch(`${API}/api/predict/${taskId}/report`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      const contentType = detailResp.headers.get('content-type') || '';
+      if (contentType.includes('json')) {
+        const detail = await detailResp.json();
+        if (detail && detail.summary) {
+          // 如果report返回的是JSON结构的数据，尝试用现有分析渲染
+          // 否则等待用户点击链接查看完整HTML报告
+          resultDiv.innerHTML = `<div class="signal-box signal-bullish" style="justify-content:center;">
+            <span style="font-size:24px;">✅</span>
+            <div><div class="signal-label">推演完成</div>
+            <div class="signal-meta">已生成完整预测报告，点击上方链接查看</div></div>
+          </div>`;
+        }
+      } else {
+        // HTML报告已就绪
+        resultDiv.innerHTML = `<div class="signal-box signal-bullish" style="justify-content:center;">
+          <span style="font-size:24px;">✅</span>
+          <div><div class="signal-label">推演完成</div>
+          <div class="signal-meta">已生成完整预测报告，点击上方链接查看</div></div>
+        </div>`;
+      }
+      return;
+    }
+
+    // 还在进行中
+    const progress = Math.round((status.progress || 0) * 100);
+    const elapsed = pollCount * 3;
+    const msg = status.message || '处理中...';
+
+    // 更新结果区域显示进度
+    resultDiv.innerHTML = `<div class="loading">
+      <div class="spinner"></div>
+      <div style="margin-bottom:8px;">${msg}</div>
+      <div style="width:100%;max-width:400px;margin:0 auto;background:#1a2d42;border-radius:6px;overflow:hidden;">
+        <div style="width:${progress}%;height:8px;background:linear-gradient(90deg,#ffa502,#ff4757);transition:width .5s;"></div>
+      </div>
+      <div style="font-size:12px;color:#6b8db5;margin-top:6px;">${progress}% · 已耗时 ${elapsed} 秒</div>
+    </div>`;
+
+    // 更新链接区域
+    reportLinkDiv.innerHTML = `<span style="color:#ffa502;font-size:13px;">
+      ⏳ 智能推演中（约15分钟）...
+      <span style="font-size:11px;color:#6b8db5;margin-left:6px;">${msg}</span>
+    </span>`;
+
+    await new Promise(r => setTimeout(r, 3000));
+    pollCount++;
+  }
 }
 
 function cfmt(val, digits) {
