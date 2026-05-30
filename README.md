@@ -40,7 +40,7 @@
 ### 🧠 智能推演知识图谱
 
 <p align="center">
-  <img src="document/knowledge_graph.png" alt="MiroFish OASIS 群体智能知识图谱" width="900">
+  <img src="document/knowledge_graph.png" alt="MiroFish OASIS 群体智能知识图谱" width="640">
 </p>
 
 > MiroFish OASIS 引擎构建的群体智能知识图谱：7 种 Agent 角色（Buffett/Munger/估值/情绪/基本面/技术面/风控）在模拟社交网络中交互推演，Zep GraphRAG 提取实体关系，形成多维度股价预测推理网络。
