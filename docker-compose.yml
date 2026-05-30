@@ -1,7 +1,7 @@
 services:
   # StockFish - A 股分析 + 推演编排
   stockfish:
-    build: .
+    image: zhuhai123/stockfish-stockfish:latest
     container_name: stockfish
     env_file:
       - .env
@@ -14,11 +14,9 @@ services:
     networks:
       - stockfish-net
 
-  # MiroFish - 群体智能模拟引擎（使用本地替代 Dockerfile 避免 ghcr.io 拉取）
+  # MiroFish - 群体智能模拟引擎
   mirofish:
-    build:
-      context: /Users/apple/github/stock_predict/MiroFish
-      dockerfile: /Users/apple/github/stock_predict/StockFish/Dockerfile.mirofish
+    image: zhuhai123/stockfish-mirofish:latest
     container_name: mirofish
     env_file:
       - .env
