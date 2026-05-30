@@ -6,56 +6,50 @@
 
 ### 完整决策链路
 
-```mermaid
-flowchart LR
-  A[<a href="https://github.com/freenowill/qlib-zh">qlib-zh<br/>因子选股模型</a>] -->|Top-K 候选| B[StockFish<br/>多因子深度分析]
-  B -->|种子文档 + 场景| C[MiroFish OASIS<br/>群体智能推演]
-  C -->|推演报告| D[辅助投资决策]
+<div align="center">
 
-  style A fill:#37474f,stroke:#00bcd4,color:#b0bec5
-  style B fill:#1a237e,stroke:#42a5f5,color:#bbdefb
-  style C fill:#004d40,stroke:#26a69a,color:#b2dfdb
-  style D fill:#e65100,stroke:#ff9800,color:#ffe0b2
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2563eb', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#3b82f6', 'lineColor': '#64748b', 'secondaryColor': '#1e293b', 'tertiaryColor': '#334155'}}}%%
+flowchart LR
+  A[qlib-zh<br/>因子选股模型] -->|Top-K 候选| B[StockFish<br/>多因子深度分析]
+  B -->|种子文档 + 场景| C[MiroFish OASIS<br/>群体智能推演]
+  C -->|推演报告| D[🎯 辅助投资决策]
+  click A "https://github.com/freenowill/qlib-zh" _blank
 ```
+
+</div>
 
 ### StockFish 多因子分析引擎
 
+<div align="center">
+
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2563eb', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#3b82f6', 'lineColor': '#64748b', 'secondaryColor': '#1e293b', 'tertiaryColor': '#334155'}}}%%
 flowchart LR
-  A[多源行情采集<br/>6 Fetcher + 7 搜索引擎] --> B[情感计算<br/>HuggingFace 多语言模型]
-  B --> C[估值评估<br/>PE 分位 + 均值回归]
-  C --> D[信号生成<br/>RSI/MACD/KDJ/均线/布林]
-  D --> E[LLM 综合预测<br/>3 Agent 辩论 + Moderator]
+  A[多源行情采集] --> B[情感计算]
+  B --> C[估值评估]
+  C --> D[信号生成]
+  D --> E[LLM 综合预测]
   E --> F{启用 MiroFish?}
   F -->|是| G[OASIS 群体智能推演]
-  F -->|否| H[直接输出报告]
+  F -->|否| H[📊 直接输出报告]
   G --> H
-
-  style A fill:#263238,stroke:#ff7043,color:#ffccbc
-  style B fill:#1a237e,stroke:#7c4dff,color:#d1c4e9
-  style C fill:#004d40,stroke:#26a69a,color:#b2dfdb
-  style D fill:#e65100,stroke:#ffb74d,color:#ffe0b2
-  style E fill:#4a148c,stroke:#ce93d8,color:#e1bee7
-  style F fill:#37474f,stroke:#eceff1,color:#cfd8dc
-  style G fill:#0d47a1,stroke:#42a5f5,color:#bbdefb
-  style H fill:#1b5e20,stroke:#66bb6a,color:#c8e6c9
 ```
+
+</div>
 
 ## 🎬 Demo 演示
 
 <table>
 <tr>
 <td align="center" width="50%">
-  <a href="document/stockfish_mirofish.mp4">
-    <img src="document/knowledge_graph.png" alt="智能推演 Demo" width="400"><br>
-    <b>🧠 点击播放：智能推演模式</b>
-  </a>
+  <video src="https://raw.githubusercontent.com/freenowill/stock-fish/master/document/stockfish_mirofish.mp4" controls poster="https://raw.githubusercontent.com/freenowill/stock-fish/master/document/knowledge_graph.png" width="100%"></video>
+  <br><b>🧠 智能推演模式</b>
   <br>StockFish + MiroFish OASIS 群体智能推演
 </td>
 <td align="center" width="50%">
-  <a href="document/stockfish_local.mp4">
-    <b>📊 点击播放：基础分析模式</b>
-  </a>
+  <video src="https://raw.githubusercontent.com/freenowill/stock-fish/master/document/stockfish_local.mp4" controls width="100%"></video>
+  <br><b>📊 基础分析模式</b>
   <br>StockFish 多因子分析（本地模式）
 </td>
 </tr>
