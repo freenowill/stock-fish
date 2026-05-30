@@ -132,6 +132,7 @@
     </label>
   </div>
   <div id="reportLink" style="display:none;margin-bottom:16px;padding:10px 14px;background:#152436;border:1px solid #1e3a5f;border-radius:8px;"></div>
+  <div id="simLog" style="display:none;margin-bottom:16px;background:#0a0f16;border:1px solid #1e3a5f;border-radius:8px;padding:12px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:12px;color:#8ab4f8;line-height:1.6;white-space:pre-wrap;"></div>
 
   <div id="result"></div>
 </div>
@@ -199,56 +200,39 @@ async function analyze() {
 async function pollSimulation(taskId) {
   const resultDiv = document.getElementById('result');
   const reportLinkDiv = document.getElementById('reportLink');
-  let pollCount = 0;
+  const simLogDiv = document.getElementById('simLog');
+  simLogDiv.style.display = 'block';
+  simLogDiv.textContent = '';
+  const startTime = Date.now();
 
-  while (true) {
-    const resp = await fetch(`${API}/api/predict/${taskId}`);
-    const status = await resp.json();
+  // 使用 SSE 实时获取推演日志
+  const evtSource = new EventSource(`${API}/api/predict/${taskId}/stream`);
 
-    if (status.status === 'failed') {
-      resultDiv.innerHTML = `<div class="error">推演失败: ${status.message || '未知错误'}</div>`;
+  evtSource.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    const status = data.status;
+    const progress = Math.round((data.progress || 0) * 100);
+    const msg = data.message || '处理中...';
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+    simLogDiv.textContent += `[${elapsed}s] ${msg}\n`;
+    simLogDiv.scrollTop = simLogDiv.scrollHeight;
+
+    if (status === 'completed') {
+      simLogDiv.textContent += `[${elapsed}s] ✅ 推演完成\n`;
+      renderDone(taskId, resultDiv, reportLinkDiv);
+      evtSource.close();
+      return;
+    }
+
+    if (status === 'failed') {
+      simLogDiv.textContent += `[${elapsed}s] ❌ 失败: ${msg}\n`;
+      resultDiv.innerHTML = `<div class="error">推演失败: ${msg}</div>`;
       reportLinkDiv.innerHTML = '<span style="color:#ff4757;font-size:13px;">✗ 推演失败</span>';
+      evtSource.close();
       return;
     }
 
-    if (status.status === 'completed') {
-      // 报告可用
-      reportLinkDiv.innerHTML = `<a href="${API}/api/predict/${taskId}/report" target="_blank" style="color:#00d4aa;font-size:14px;font-weight:500;text-decoration:none;">
-        📊 查看分析报告 →</a>`;
-
-      // 加载分析结果（如果有）
-      const detailResp = await fetch(`${API}/api/predict/${taskId}/report`, {
-        headers: { 'Accept': 'application/json' }
-      });
-      const contentType = detailResp.headers.get('content-type') || '';
-      if (contentType.includes('json')) {
-        const detail = await detailResp.json();
-        if (detail && detail.summary) {
-          // 如果report返回的是JSON结构的数据，尝试用现有分析渲染
-          // 否则等待用户点击链接查看完整HTML报告
-          resultDiv.innerHTML = `<div class="signal-box signal-bullish" style="justify-content:center;">
-            <span style="font-size:24px;">✅</span>
-            <div><div class="signal-label">推演完成</div>
-            <div class="signal-meta">已生成完整预测报告，点击上方链接查看</div></div>
-          </div>`;
-        }
-      } else {
-        // HTML报告已就绪
-        resultDiv.innerHTML = `<div class="signal-box signal-bullish" style="justify-content:center;">
-          <span style="font-size:24px;">✅</span>
-          <div><div class="signal-label">推演完成</div>
-          <div class="signal-meta">已生成完整预测报告，点击上方链接查看</div></div>
-        </div>`;
-      }
-      return;
-    }
-
-    // 还在进行中
-    const progress = Math.round((status.progress || 0) * 100);
-    const elapsed = pollCount * 3;
-    const msg = status.message || '处理中...';
-
-    // 更新结果区域显示进度
     resultDiv.innerHTML = `<div class="loading">
       <div class="spinner"></div>
       <div style="margin-bottom:8px;">${msg}</div>
@@ -258,7 +242,69 @@ async function pollSimulation(taskId) {
       <div style="font-size:12px;color:#6b8db5;margin-top:6px;">${progress}% · 已耗时 ${elapsed} 秒</div>
     </div>`;
 
-    // 更新链接区域
+    reportLinkDiv.innerHTML = `<span style="color:#ffa502;font-size:13px;">
+      ⏳ 智能推演中（约15分钟）...
+      <span style="font-size:11px;color:#6b8db5;margin-left:6px;">${msg}</span>
+    </span>`;
+  };
+
+  evtSource.onerror = function() {
+    evtSource.close();
+    pollLegacy(taskId);
+  };
+}
+
+function renderDone(taskId, resultDiv, reportLinkDiv) {
+  const reportUrl = `${API}/api/predict/${taskId}/report`;
+  reportLinkDiv.innerHTML = `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <a href="${reportUrl}" target="_blank" style="color:#00d4aa;font-size:14px;font-weight:500;text-decoration:none;">
+      📊 查看分析报告 →</a>
+    <a href="${reportUrl}" download="report.html" target="_blank"
+       style="padding:6px 14px;background:linear-gradient(135deg,#ff4757,#ff6348);color:#fff;border-radius:6px;font-size:12px;text-decoration:none;">
+      📥 下载 HTML</a>
+    <button onclick="window.open('${reportUrl}','_blank','width=900,height=700')"
+       style="padding:6px 14px;background:#1a2d42;color:#8ab4f8;border:1px solid #1e3a5f;border-radius:6px;font-size:12px;cursor:pointer;">
+      🖨️ 打印 / 导出 PDF</button>
+  </div>`;
+  resultDiv.innerHTML = `<div class="signal-box signal-bullish" style="justify-content:center;">
+    <span style="font-size:24px;">✅</span>
+    <div><div class="signal-label">推演完成</div>
+    <div class="signal-meta">已生成完整预测报告</div></div>
+  </div>`;
+}
+
+async function pollLegacy(taskId) {
+  const resultDiv = document.getElementById('result');
+  const reportLinkDiv = document.getElementById('reportLink');
+  const simLogDiv = document.getElementById('simLog');
+  const startTime = Date.now();
+  let pollCount = 0;
+
+  while (true) {
+    const resp = await fetch(`${API}/api/predict/${taskId}`);
+    const st = await resp.json();
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    const msg = st.message || '处理中...';
+    const progress = Math.round((st.progress || 0) * 100);
+
+    simLogDiv.textContent += `[${elapsed}s] ${msg}\n`;
+    simLogDiv.scrollTop = simLogDiv.scrollHeight;
+
+    if (st.status === 'completed') { renderDone(taskId, resultDiv, reportLinkDiv); return; }
+    if (st.status === 'failed') {
+      resultDiv.innerHTML = `<div class="error">推演失败: ${msg}</div>`;
+      reportLinkDiv.innerHTML = '<span style="color:#ff4757;font-size:13px;">✗ 推演失败</span>';
+      return;
+    }
+
+    resultDiv.innerHTML = `<div class="loading">
+      <div class="spinner"></div>
+      <div style="margin-bottom:8px;">${msg}</div>
+      <div style="width:100%;max-width:400px;margin:0 auto;background:#1a2d42;border-radius:6px;overflow:hidden;">
+        <div style="width:${progress}%;height:8px;background:linear-gradient(90deg,#ffa502,#ff4757);transition:width .5s;"></div>
+      </div>
+      <div style="font-size:12px;color:#6b8db5;margin-top:6px;">${progress}% · 已耗时 ${elapsed} 秒</div>
+    </div>`;
     reportLinkDiv.innerHTML = `<span style="color:#ffa502;font-size:13px;">
       ⏳ 智能推演中（约15分钟）...
       <span style="font-size:11px;color:#6b8db5;margin-left:6px;">${msg}</span>

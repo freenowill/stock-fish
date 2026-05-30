@@ -4,7 +4,8 @@ Seed Document Builder
 将 StockEngine 分析结果转换为 MiroFish 兼容的种子文档，
 供 Zep GraphRAG 构建知识图谱。
 
-使用自然语言叙事结构，便于 Zep 提取实体和关系。
+使用自然语言叙事结构，包含 7 个专业 Agent 角色描述，
+便于 Zep 提取实体和关系。
 """
 import json
 from datetime import datetime
@@ -118,20 +119,61 @@ class SeedDocumentBuilder:
                 lines.append(f"操作建议：{action}，建议止损价 {stop_loss} 元，止盈价 {take_profit} 元。")
                 lines.append("")
 
-        # 市场参与者（叙事段落用于实体提取）
+        # ---- 7 位专业 Agent 角色定义 ----
         lines.append("## 市场参与者")
-        total_score = abs(score) if score else 3
-        bullish_count = max(1, int(total_score + 3))
-        bearish_count = max(1, int(5 - total_score)) if total_score < 5 else 1
-        total_investors = bullish_count + bearish_count + max(1, 10 - bullish_count - bearish_count)
 
-        lines.append(f"市场上约有 {total_investors} 位投资者关注 {name}。看多方约 {bullish_count} 人，"
-                     f"认为技术面和基本面积极，预期股价上涨。看空方约 {bearish_count} 人，"
-                     f"认为存在技术面风险和估值回调压力。另有部分投资者持中性观望态度。")
-        lines.append(f"多位证券分析师（FinancialAnalyst）发布了研究报告，机构投资者（InstitutionalInvestor）"
-                     f"正在密切关注该股票。财经媒体（MediaOutlet）对此进行了报道，"
-                     f"社交媒体上的财经博主（SocialMediaInfluencer）也在讨论该股走势。"
-                     f"中国证监会（Regulator）负责监管该公司的信息披露。")
+        # Agent 1: 沃伦·巴菲特的代理人
+        lines.append(f"沃伦·巴菲特的代理人正在关注{name}。巴菲特的价值投资理念强调以合理的价格寻找优秀的公司，"
+                     f"拥有持久竞争优势和优秀管理层的企业。该代理人正在评估{name}是否具备\"经济护城河\"，"
+                     f"以及当前价格是否提供了足够的安全边际。")
+
+        # Agent 2: 查理·芒格的经纪人
+        lines.append(f"查理·芒格的经纪人与巴菲特一道审视{name}。芒格更强调\"以合理的价格收购优质企业\"，"
+                     f"关注企业的长期竞争格局和管理层的诚信与能力。他认为投资是\"等待最佳机会的艺术\"。")
+
+        # Agent 3: 估值代理
+        eps = fs.get('eps', 'N/A')
+        pe_val = quote.get('pe', 'N/A')
+        lines.append(f"估值代理正在计算{name}的内在价值。基于 DCF 模型、PE 估值分位、历史均值回归等工具，"
+                     f"该股票当前 PE 为 {pe_val}，每股收益 EPS 为 {eps}。估值代理将综合多个估值模型给出公允价值区间，"
+                     f"并与当前市场价格对比，生成买入/卖出/持有信号。")
+
+        # Agent 4: 情绪代理
+        news_count = len(news or []) + len(search_news or [])
+        guba_count = len(guba or [])
+        lines.append(f"情绪代理正在分析市场对{name}的整体情绪。通过监控新闻报道（{news_count}条）、"
+                     f"股吧讨论（{guba_count}条）和社交媒体热度，判断市场是过度乐观还是过度悲观。"
+                     f"情绪代理使用自然语言处理技术提取市场情绪倾向，生成基于情绪的反向或顺势交易信号。")
+
+        # Agent 5: 基本面分析师
+        roe_val = fs.get('roe', 'N/A')
+        rev = fs.get('revenue', 'N/A')
+        profit = fs.get('net_profit', 'N/A')
+        gm = fs.get('gross_margin', 'N/A')
+        dr = fs.get('debt_ratio', 'N/A')
+        lines.append(f"基本面分析师正在深入研究{name}的财务健康度。最新数据显示 ROE 为 {roe_val}%，"
+                     f"营收 {rev} 亿元，净利润 {profit} 亿元，毛利率 {gm}%，资产负债率 {dr}%。"
+                     f"分析师关注盈利增长趋势、现金流质量和竞争优势的可持续性，"
+                     f"结合行业对比和宏观经济环境，给出基本面维度的投资评级。")
+
+        # Agent 6: 技术分析师
+        rsi = ti.get('rsi_14', 'N/A')
+        ma5 = ti.get('ma5', 'N/A')
+        ma20 = ti.get('ma20', 'N/A')
+        boll_l = ti.get('boll_lower', 'N/A')
+        boll_u = ti.get('boll_upper', 'N/A')
+        lines.append(f"技术分析师正在分析{name}的价格走势图表。RSI(14)为 {rsi}，"
+                     f"MA5={ma5}，MA20={ma20}，布林带下轨 {boll_l}，上轨 {boll_u}。"
+                     f"技术分析师综合运用趋势跟踪、动量指标、支撑阻力位和成交量分析，"
+                     f"识别关键的价格模式和潜在的转折点，生成基于技术面的交易信号。")
+
+        # Agent 7: 风险经理
+        price = quote.get('price', 'N/A')
+        vol_ratio = ti.get('volume_ratio', 'N/A')
+        lines.append(f"风险经理正在评估持有{name}的风险敞口。基于当前股价 {price} 元、波动率指标和量比 {vol_ratio}，"
+                     f"计算 VaR（在险价值）、最大回撤和仓位风险。风险经理设定持仓限额、止损位和风险调整后的回报目标，"
+                     f"确保投资组合的整体风险在可接受范围内。")
+
         lines.append("")
 
         # 新闻和舆情
@@ -155,14 +197,17 @@ class SeedDocumentBuilder:
                     lines.append(f"- 股民{author}发帖称：{title}")
             lines.append("")
 
-        # 实体关系显式说明（辅助Zep提取）
+        # 实体关系显式说明（辅助 Zep 提取 7 个 Agent 类型）
         lines.append("## 实体关系总结")
-        lines.append(f"[Entity] {name}(Company) 是上海证券交易所(StockExchange)的上市公司。")
-        lines.append(f"[Entity] 机构投资者(InstitutionalInvestor) 和分析师(Analyst) 正在分析 {name} 的财务报表。")
-        lines.append(f"[Entity] 财经媒体(MediaOutlet) 发布了关于 {name} 的新闻报道。")
-        lines.append(f"[Entity] 散户投资者(Investor) 在东方财富股吧讨论 {name} 的股价走势。")
-        lines.append(f"[Entity] 中国证监会(Regulator) 监管 {name} 的信息披露合规性。")
-        lines.append(f"[Entity] 社交媒体财经博主(SocialMediaInfluencer) 发表了关于 {name} 投资价值的观点。")
+        lines.append(f"[Entity] 沃伦·巴菲特的代理人(BuffettProxy) 正在使用价值投资策略评估 {name}(Company)。")
+        lines.append(f"[Entity] 查理·芒格的经纪人(MungerProxy) 与 BuffettProxy 合作，共同分析 {name}(Company) 的长期竞争力。")
+        lines.append(f"[Entity] 估值代理(ValuationAgent) 通过 DCF 和 PE 分位计算 {name}(Company) 的内在价值。")
+        lines.append(f"[Entity] 情绪代理(SentimentAgent) 通过 NLP 分析市场对 {name}(Company) 的情绪倾向。")
+        lines.append(f"[Entity] 基本面分析师(FundamentalAnalyst) 分析 {name}(Company) 的财务数据和增长前景。")
+        lines.append(f"[Entity] 技术分析师(TechnicalAnalyst) 通过图表和技术指标分析 {name}(Company) 的价格趋势。")
+        lines.append(f"[Entity] 风险经理(RiskManager) 评估 {name}(Company) 的投资风险并设定仓位限制。")
+        lines.append(f"[Entity] 中国证监会(Regulator) 监管 {name}(Company) 的信息披露合规性。")
+        lines.append(f"[Entity] 财经媒体(MediaOutlet) 发布了关于 {name}(Company) 的新闻报道。")
 
         return "\n".join(lines)
 
@@ -173,13 +218,12 @@ class SeedDocumentBuilder:
         base_score = signals.get('score', 0) or 0
         ps = analysis_result.get('prediction_summary', {}) or {}
 
-        # 基准场景：当前信号方向
         scenarios = [
             {
                 "name": "base",
                 "label": "基准场景",
                 "description": "基于当前市场信号的自然演化",
-                "sentiment_bias": round(base_score / 10, 2),  # -1.0 ~ 1.0
+                "sentiment_bias": round(base_score / 10, 2),
                 "volatility": 0.3,
                 "agent_count": 15,
             },
