@@ -73,7 +73,7 @@ cp .env.example .env
 | `LLM_MODEL_NAME` | 模型名（如 `deepseek-v4-flash`） |
 | `STOCK_BACKEND` | 数据后端：`advanced` / `tushare` / `akshare` / `mock` |
 
-**数据源（`STOCK_BACKEND=advanced` 时自动启用）：**
+**数据源（`STOCK_BACKEND=advanced` 时自动启用，支持一个或多个搜索引擎，配置任一即可）：**
 
 | 变量 | 说明 |
 |------|------|
