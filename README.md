@@ -4,9 +4,42 @@
 
 # StockFish — A 股智能分析 + 股价推演系统
 
-> **完整决策链路**：[qlib-zh](https://github.com/freenowill/qlib-zh) 因子选股模型 → 选出 Top-K 候选股票 → StockFish 多因子深度分析 + MiroFish OASIS 群体智能推演 → 辅助投资决策
+### 完整决策链路
 
-A 股多因子分析引擎：多源行情采集 → 情感计算 → 估值评估 → 信号生成 → LLM 预测，支持 MiroFish OASIS 群体智能模拟推演。
+```mermaid
+flowchart LR
+  A[<a href="https://github.com/freenowill/qlib-zh">qlib-zh<br/>因子选股模型</a>] -->|Top-K 候选| B[StockFish<br/>多因子深度分析]
+  B -->|种子文档 + 场景| C[MiroFish OASIS<br/>群体智能推演]
+  C -->|推演报告| D[辅助投资决策]
+
+  style A fill:#37474f,stroke:#00bcd4,color:#b0bec5
+  style B fill:#1a237e,stroke:#42a5f5,color:#bbdefb
+  style C fill:#004d40,stroke:#26a69a,color:#b2dfdb
+  style D fill:#e65100,stroke:#ff9800,color:#ffe0b2
+```
+
+### StockFish 多因子分析引擎
+
+```mermaid
+flowchart LR
+  A[多源行情采集<br/>6 Fetcher + 7 搜索引擎] --> B[情感计算<br/>HuggingFace 多语言模型]
+  B --> C[估值评估<br/>PE 分位 + 均值回归]
+  C --> D[信号生成<br/>RSI/MACD/KDJ/均线/布林]
+  D --> E[LLM 综合预测<br/>3 Agent 辩论 + Moderator]
+  E --> F{启用 MiroFish?}
+  F -->|是| G[OASIS 群体智能推演]
+  F -->|否| H[直接输出报告]
+  G --> H
+
+  style A fill:#263238,stroke:#ff7043,color:#ffccbc
+  style B fill:#1a237e,stroke:#7c4dff,color:#d1c4e9
+  style C fill:#004d40,stroke:#26a69a,color:#b2dfdb
+  style D fill:#e65100,stroke:#ffb74d,color:#ffe0b2
+  style E fill:#4a148c,stroke:#ce93d8,color:#e1bee7
+  style F fill:#37474f,stroke:#eceff1,color:#cfd8dc
+  style G fill:#0d47a1,stroke:#42a5f5,color:#bbdefb
+  style H fill:#1b5e20,stroke:#66bb6a,color:#c8e6c9
+```
 
 ## 🎬 Demo 演示
 
