@@ -50,11 +50,16 @@ def analyze():
     symbol = data.get('symbol', '').strip().upper()
     cost_price = data.get('cost_price', 0)
     master = data.get('master', '').strip().lower()
+    shares = data.get('shares', 0) or 0
+    total_assets = data.get('total_assets', 0) or 0.0
+    available_cash = data.get('available_cash', 0) or 0.0
     if not symbol:
         return jsonify({'error': '请提供股票代码'}), 400
 
-    logger.info(f"开始深度分析 [{symbol}] 成本价={cost_price} master={master or 'off'}")
-    result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0, master=master)
+    logger.info(f"开始深度分析 [{symbol}] 成本价={cost_price} 持仓={shares}股 总资产={total_assets} 可用={available_cash} master={master or 'off'}")
+    result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0,
+                           master=master, shares=int(shares),
+                           total_assets=float(total_assets), available_cash=float(available_cash))
     logger.info(f"[{symbol}] 分析完成 (状态: {result.get('status')})")
     return jsonify(result)
 
@@ -71,6 +76,9 @@ def predict():
     scenario = data.get('scenario', 'base')
     cost_price = data.get('cost_price', 0)
     master = data.get('master', '').strip().lower()
+    shares = data.get('shares', 0) or 0
+    total_assets = data.get('total_assets', 0) or 0.0
+    available_cash = data.get('available_cash', 0) or 0.0
 
     if not symbol:
         return jsonify({'error': '请提供股票代码'}), 400
@@ -83,6 +91,9 @@ def predict():
         'scenario': scenario,
         'cost_price': float(cost_price) if cost_price else 0.0,
         'master': master,
+        'shares': int(shares),
+        'total_assets': float(total_assets),
+        'available_cash': float(available_cash),
         'status': 'pending',
         'progress': 0.0,
         'message': '',
@@ -105,7 +116,10 @@ def predict():
             # Step 1: 分析
             _update_prediction(task_id, 0.1, 'analyzing', '正在进行多因子分析...')
             result = agent.analyze(symbol, cost_price=pred_data.get('cost_price', 0),
-                                   master=pred_data.get('master', ''))
+                                   master=pred_data.get('master', ''),
+                                   shares=pred_data.get('shares', 0),
+                                   total_assets=pred_data.get('total_assets', 0),
+                                   available_cash=pred_data.get('available_cash', 0))
             if result.get('status') == 'error':
                 _update_prediction(task_id, 1.0, 'failed', f"分析失败: {result.get('error')}")
                 return

@@ -95,6 +95,32 @@ class CIOAgent(BaseAgent):
         lines.append(f"- 系统建议买入价: {state.get('suggested_buy_price', 'N/A')}")
         lines.append("")
 
+        # 用户持仓/资金信息
+        shares = state.get('shares', 0) or 0
+        total_assets = state.get('total_assets', 0) or 0
+        available_cash = state.get('available_cash', 0) or 0
+        has_portfolio = shares > 0 or total_assets > 0 or available_cash > 0
+        if has_portfolio:
+            lines.append("## 用户持仓与资金状况")
+            position_value = shares * price if shares > 0 and price > 0 else 0
+            position_pct = round(position_value / total_assets * 100, 1) if total_assets > 0 and position_value > 0 else 0
+            if shares > 0:
+                lines.append(f"- 持仓数量: {shares} 股  (市值约 {position_value:.0f} 元)")
+                if cost > 0:
+                    cost_total = shares * cost
+                    pnl_total = position_value - cost_total
+                    lines.append(f"- 持仓成本: {cost_total:.0f} 元  浮动盈亏: {pnl_total:+.0f} 元")
+            if total_assets > 0:
+                lines.append(f"- 总资产: {total_assets:.0f} 元")
+                if position_pct > 0:
+                    lines.append(f"- 该股仓位占比: {position_pct}%")
+            if available_cash > 0:
+                lines.append(f"- 可用资金: {available_cash:.0f} 元")
+                if total_assets > 0:
+                    cash_pct = round(available_cash / total_assets * 100, 1)
+                    lines.append(f"- 现金占比: {cash_pct}%")
+            lines.append("")
+
         # 员工报告
         lines.append("## 部门分析报告")
         lines.append("")

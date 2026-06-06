@@ -191,6 +191,9 @@
   <div class="search-box">
     <input id="symbolInput" type="text" placeholder="股票代码 (600519)" value="600519" />
     <input id="costInput" type="number" step="0.01" placeholder="成本价格 (选填)" />
+        <input id="sharesInput" type="number" step="1" placeholder="数量/股 (选填)" style="max-width:120px;" />
+        <input id="assetsInput" type="number" step="0.01" placeholder="总资产/元 (选填)" style="max-width:140px;" />
+        <input id="cashInput" type="number" step="0.01" placeholder="可用资金/元 (选填)" style="max-width:150px;" />
     <button id="analyzeBtn" onclick="analyze()">分析</button>
     <span style="font-size:11px;color:#6b8db5;margin-left:4px;">约5分钟</span>
     <label id="simLabel" style="display:flex;flex-direction:column;gap:2px;cursor:pointer;user-select:none;">
@@ -236,6 +239,9 @@ async function analyze() {
   const simEnabled = document.getElementById('simCheck').checked;
   const masterSelect = document.getElementById('masterSelect');
   const master = masterSelect ? masterSelect.value : '';
+  const shares = parseInt(document.getElementById('sharesInput').value) || 0;
+  const totalAssets = parseFloat(document.getElementById('assetsInput').value) || 0;
+  const availableCash = parseFloat(document.getElementById('cashInput').value) || 0;
 
   if (!symbol) { alert('请输入股票代码'); return; }
   btn.disabled = true;
@@ -250,6 +256,12 @@ async function analyze() {
       const body = { symbol, scenario: 'base' };
       if (costPrice > 0) body.cost_price = costPrice;
       if (master) body.master = master;
+      if (shares > 0) body.shares = shares;
+      if (totalAssets > 0) body.total_assets = totalAssets;
+      if (availableCash > 0) body.available_cash = availableCash;
+      if (shares > 0) body.shares = shares;
+      if (totalAssets > 0) body.total_assets = totalAssets;
+      if (availableCash > 0) body.available_cash = availableCash;
 
       const resp = await fetch(`${API}/api/predict`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

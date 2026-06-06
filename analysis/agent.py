@@ -36,9 +36,12 @@ class StockAnalysisAgent:
             model=os.environ.get('LLM_MODEL_NAME') or getattr(settings, 'LLM_MODEL_NAME', None),
         )
 
-    def analyze(self, symbol: str, cost_price: float = 0.0, master: str = "") -> Dict[str, Any]:
+    def analyze(self, symbol: str, cost_price: float = 0.0, master: str = "",
+                shares: int = 0, total_assets: float = 0.0, available_cash: float = 0.0) -> Dict[str, Any]:
         """执行一次完整分析，返回结构化结果。master 非空时启用大师决策模式。"""
-        state = AnalysisState(symbol=symbol, cost_price=cost_price, created_at=datetime.now().isoformat())
+        state = AnalysisState(symbol=symbol, cost_price=cost_price,
+                              shares=shares, total_assets=total_assets, available_cash=available_cash,
+                              created_at=datetime.now().isoformat())
 
         try:
             # Step 1: 采集市场数据

@@ -17,7 +17,10 @@ class AnalysisState:
     completed_at: Optional[str] = None
 
     # 用户输入
-    cost_price: float = 0.0  # 用户成本价格
+    cost_price: float = 0.0       # 用户成本价格
+    shares: int = 0               # 持仓数量（股）
+    total_assets: float = 0.0     # 总资产（元）
+    available_cash: float = 0.0   # 可用资金（元）
 
     # 各阶段输出
     quote: Optional[Dict] = None
