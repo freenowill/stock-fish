@@ -36,8 +36,8 @@ class StockAnalysisAgent:
             model=os.environ.get('LLM_MODEL_NAME') or getattr(settings, 'LLM_MODEL_NAME', None),
         )
 
-    def analyze(self, symbol: str, cost_price: float = 0.0) -> Dict[str, Any]:
-        """执行一次完整分析，返回结构化结果"""
+    def analyze(self, symbol: str, cost_price: float = 0.0, master: str = "") -> Dict[str, Any]:
+        """执行一次完整分析，返回结构化结果。master 非空时启用大师决策模式。"""
         state = AnalysisState(symbol=symbol, cost_price=cost_price, created_at=datetime.now().isoformat())
 
         try:
@@ -50,6 +50,8 @@ class StockAnalysisAgent:
             state.financial_summary = market.get('financial_summary')
             state.news = market.get('news', [])
             state.guba_posts = market.get('guba_posts', [])
+            state.macro_context = market.get('macro_context') or self._fetch_macro_context()
+            state.industry_context = market.get('industry_context') or self._fetch_industry_context(symbol)
             logger.info(f"[{symbol}] Step 1/4: 数据采集完成")
 
             # Step 2: 舆情情感分析
@@ -96,7 +98,17 @@ class StockAnalysisAgent:
             # Step 4: LLM 综合预测
             state.status = "predicting"
             state_dict = state.to_dict()
-            prediction = self.prediction_node.predict(state_dict)
+
+            if master:
+                # ── 大师决策模式 ──
+                logger.info(f"[{symbol}] Step 4/4: 启用大师决策模式 (master={master})")
+                prediction = self.prediction_node.predict_with_master(state_dict, master)
+                logger.info(f"[{symbol}] Step 4/4: 大师决策完成 → {prediction.outlook}")
+            else:
+                # ── Legacy 3+1 模式 ──
+                prediction = self.prediction_node.predict(state_dict)
+                logger.info(f"[{symbol}] Step 4/4: 多Agent辩论预测完成 → {prediction.outlook}")
+
             state.llm_analysis = prediction.analysis_text
             state.prediction_summary = {
                 'outlook': prediction.outlook,
@@ -114,6 +126,9 @@ class StockAnalysisAgent:
                 'mid_term': prediction.mid_term,
                 'long_term': prediction.long_term,
                 'suggested_action': prediction.suggested_action,
+                # 大师决策扩展
+                'cio_decision': getattr(prediction, 'cio_decision', None),
+                'employee_reports': getattr(prediction, 'employee_reports', []),
             }
             state.price_target = {
                 'current': prediction.price_target_current,
@@ -121,7 +136,6 @@ class StockAnalysisAgent:
                 'high': prediction.price_target_high,
             }
             state.risk_factors = [{'factor': f} for f in prediction.risk_factors]
-            logger.info(f"[{symbol}] Step 4/4: 多Agent辩论预测完成 → {prediction.outlook}")
 
             state.mark_complete()
 
@@ -262,3 +276,95 @@ class StockAnalysisAgent:
                 'sentiment_label': s.label,
             })
         return result
+
+    # ---- 宏观/行业数据获取 (轻量级, 失败不阻塞) ----
+
+    @staticmethod
+    def _fetch_macro_context() -> dict:
+        """获取宏观数据上下文。尝试 akshare，失败返回 placeholder。"""
+        try:
+            import akshare as ak
+            # 尝试获取 PMI
+            pmi = None
+            try:
+                pmi_df = ak.macro_china_pmi()
+                if pmi_df is not None and len(pmi_df) > 0:
+                    latest = pmi_df.iloc[-1]
+                    pmi = float(latest.get('制造业', latest.iloc[1])) if len(latest) > 1 else None
+            except Exception:
+                pass
+
+            # 尝试获取 SHIBOR
+            shibor = None
+            try:
+                shibor_df = ak.rate_interbank(market="上海银行间同业拆放利率", indicator="隔夜")
+                if shibor_df is not None and len(shibor_df) > 0:
+                    shibor = float(shibor_df.iloc[-1, 1]) if shibor_df.shape[1] > 1 else None
+            except Exception:
+                pass
+
+            # 尝试获取北向资金
+            northbound = None
+            try:
+                nb_df = ak.stock_hsgt_north_net_flow_in_em(symbol="北上")
+                if nb_df is not None and len(nb_df) > 0:
+                    northbound = float(nb_df.iloc[-1, 1]) if nb_df.shape[1] > 1 else None
+            except Exception:
+                pass
+
+            # 尝试获取 LPR
+            lpr_1y = None
+            try:
+                lpr_df = ak.macro_china_lpr()
+                if lpr_df is not None and len(lpr_df) > 0:
+                    lpr_1y = float(lpr_df.iloc[-1].get('1年期', lpr_df.iloc[-1, 1])) if len(lpr_df.iloc[-1]) > 1 else None
+            except Exception:
+                pass
+
+            return {
+                'shibor': shibor, 'lpr_1y': lpr_1y,
+                'pmi': pmi, 'northbound_flow': northbound,
+                'source': 'akshare',
+            }
+        except ImportError:
+            logger.debug("akshare 不可用，宏观数据使用 placeholder")
+        except Exception as e:
+            logger.debug(f"宏观数据获取失败: {e}")
+
+        return {'source': 'placeholder', '_note': '宏观数据源不可用，使用默认假设'}
+
+    @staticmethod
+    def _fetch_industry_context(symbol: str) -> dict:
+        """获取行业数据上下文。尝试 akshare，失败返回 placeholder。"""
+        try:
+            import akshare as ak
+            industry_name = None
+            industry_pe = None
+            try:
+                # 尝试获取行业板块数据
+                board_df = ak.stock_board_industry_name_em()
+                if board_df is not None and len(board_df) > 0:
+                    # 简单取前几个行业作为参考
+                    industry_name = "行业数据已获取"
+            except Exception:
+                pass
+
+            # 尝试获取行业 PE
+            try:
+                pe_df = ak.stock_board_industry_pe_em()
+                if pe_df is not None and len(pe_df) > 0:
+                    avg_pe = float(pe_df['平均市盈率'].mean()) if '平均市盈率' in pe_df.columns else None
+                    industry_pe = avg_pe
+            except Exception:
+                pass
+
+            return {
+                'industry_name': industry_name, 'industry_pe_percentile': industry_pe,
+                'source': 'akshare',
+            }
+        except ImportError:
+            logger.debug("akshare 不可用，行业数据使用 placeholder")
+        except Exception as e:
+            logger.debug(f"行业数据获取失败: {e}")
+
+        return {'source': 'placeholder', '_note': '行业数据源不可用，使用默认假设'}

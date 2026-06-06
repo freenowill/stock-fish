@@ -119,6 +119,85 @@ class SeedDocumentBuilder:
                 lines.append(f"操作建议：{action}，建议止损价 {stop_loss} 元，止盈价 {take_profit} 元。")
                 lines.append("")
 
+        # ---- 大师决策 (当用户选择了最终决策人时) ----
+        ps = analysis_result.get('prediction_summary', {}) or {}
+        cio = ps.get('cio_decision') or {}
+        master_name = cio.get('master_name', '')
+        if master_name:
+            lines.append("## 最终决策人分析")
+            lines.append(f"用户选择了 **{master_name}** 作为最终决策者。以下是 {master_name} 基于投资团队报告的最终裁决：")
+            lines.append("")
+            lines.append(f"### {master_name} 的核心结论")
+            lines.append(cio.get('decision_summary', 'N/A'))
+            lines.append("")
+
+            # 证据链
+            evidence = cio.get('evidence_chain', [])
+            if evidence:
+                lines.append("### 决策依据")
+                for e in evidence:
+                    lines.append(f"- {e}")
+                lines.append("")
+
+            # 三情景
+            base = cio.get('base_case') or {}
+            bull = cio.get('bull_case') or {}
+            bear = cio.get('bear_case') or {}
+            if base or bull or bear:
+                lines.append("### 情景分析")
+                for label, case in [('基准情景', base), ('乐观情景', bull), ('悲观情景', bear)]:
+                    if case:
+                        prob = case.get('probability', 0)
+                        prob_pct = round(prob * 100) if isinstance(prob, float) else prob
+                        lines.append(f"- **{label}** ({prob_pct}%): "
+                                   f"{case.get('direction', 'N/A')} → 目标价 {case.get('target', 'N/A')}元")
+                lines.append("")
+
+            # 操作指令
+            order = cio.get('order') or {}
+            if order:
+                action = order.get('action', 'N/A')
+                position = order.get('position_size_pct', 0)
+                entry = order.get('entry_conditions', '')
+                sl = order.get('stop_loss', {}) or {}
+                tp = order.get('take_profit', {}) or {}
+                lines.append("### 操作指令")
+                lines.append(f"- 操作: **{action}**  |  建议仓位: {position}%")
+                if entry:
+                    lines.append(f"- 入场条件: {entry}")
+                if sl:
+                    lines.append(f"- 止损: {sl.get('level', 'N/A')}元 ({sl.get('type', 'N/A')})")
+                if tp:
+                    tp1 = tp.get('level_1', tp) if isinstance(tp, dict) else tp
+                    tp2 = tp.get('level_2', '') if isinstance(tp, dict) else ''
+                    lines.append(f"- 止盈: {tp1}" + (f' / {tp2}' if tp2 else '') + '元')
+                lines.append("")
+
+            # 风险监控
+            monitor = cio.get('risk_monitoring', [])
+            if monitor:
+                lines.append("### 风险监控指标")
+                for rm in monitor:
+                    lines.append(f"- 若 {rm.get('trigger', '')} → {rm.get('action', '')}")
+                lines.append("")
+
+            dq = cio.get('decision_quality') or {}
+            if dq:
+                conf = dq.get('confidence', '-')
+                review = dq.get('next_review', '-')
+                lines.append(f"决策置信度: {conf}  |  下次回顾: {review}")
+                lines.append("")
+
+            # 员工报告摘要
+            emp_reports = ps.get('employee_reports', [])
+            if emp_reports:
+                lines.append("### 投资团队部门报告摘要")
+                for r in emp_reports:
+                    err = ' [⚠ 报告生成失败]' if r.get('error') else ''
+                    lines.append(f"- [{r.get('department', '?')}] {r.get('role', '?')}: "
+                               f"{r.get('outlook', '?')} (score={r.get('score', 0):+.1f}, conf={r.get('confidence', '?')}){err}")
+                lines.append("")
+
         # ---- 7 位专业 Agent 角色定义 ----
         lines.append("## 市场参与者")
 

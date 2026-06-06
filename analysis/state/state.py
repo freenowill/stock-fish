@@ -56,6 +56,10 @@ class AnalysisState:
     important_bullish_guba: List[Dict] = field(default_factory=list)
     important_bearish_guba: List[Dict] = field(default_factory=list)
 
+    # 宏观/行业上下文 (Phase 3 新增)
+    macro_context: Optional[Dict] = None
+    industry_context: Optional[Dict] = None
+
     def to_dict(self) -> dict:
         d = asdict(self)
         d['created_at'] = self.created_at or datetime.now().isoformat()

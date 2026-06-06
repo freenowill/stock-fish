@@ -49,11 +49,12 @@ def analyze():
     data = request.get_json(silent=True) or {}
     symbol = data.get('symbol', '').strip().upper()
     cost_price = data.get('cost_price', 0)
+    master = data.get('master', '').strip().lower()
     if not symbol:
         return jsonify({'error': '请提供股票代码'}), 400
 
-    logger.info(f"开始深度分析 [{symbol}] 成本价={cost_price}")
-    result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0)
+    logger.info(f"开始深度分析 [{symbol}] 成本价={cost_price} master={master or 'off'}")
+    result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0, master=master)
     logger.info(f"[{symbol}] 分析完成 (状态: {result.get('status')})")
     return jsonify(result)
 
@@ -69,6 +70,7 @@ def predict():
     symbol = data.get('symbol', '').strip().upper()
     scenario = data.get('scenario', 'base')
     cost_price = data.get('cost_price', 0)
+    master = data.get('master', '').strip().lower()
 
     if not symbol:
         return jsonify({'error': '请提供股票代码'}), 400
@@ -80,6 +82,7 @@ def predict():
         'symbol': symbol,
         'scenario': scenario,
         'cost_price': float(cost_price) if cost_price else 0.0,
+        'master': master,
         'status': 'pending',
         'progress': 0.0,
         'message': '',
@@ -101,7 +104,8 @@ def predict():
         try:
             # Step 1: 分析
             _update_prediction(task_id, 0.1, 'analyzing', '正在进行多因子分析...')
-            result = agent.analyze(symbol, cost_price=pred_data.get('cost_price', 0))
+            result = agent.analyze(symbol, cost_price=pred_data.get('cost_price', 0),
+                                   master=pred_data.get('master', ''))
             if result.get('status') == 'error':
                 _update_prediction(task_id, 1.0, 'failed', f"分析失败: {result.get('error')}")
                 return
@@ -238,6 +242,13 @@ def config():
         agent.provider._backend = None
         agent.provider._requested_backend = new_backend
     return jsonify({'status': 'ok'})
+
+
+@app.route('/api/masters', methods=['GET'])
+def list_masters():
+    """返回可用的大师决策者列表"""
+    from analysis.agents.cio_prompts import list_masters as get_masters
+    return jsonify({'masters': get_masters()})
 
 
 @app.route('/api/predictions', methods=['GET'])

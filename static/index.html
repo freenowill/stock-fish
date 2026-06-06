@@ -126,6 +126,55 @@
     .mirofish-report strong { color: #fff; }
     .mirofish-report em { color: #c0c8d0; }
 
+    
+    /* Master Decision Card */
+    .cio-card { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #ffa502; border-radius: 14px; padding: 22px; margin-bottom: 20px; }
+    .cio-card .cio-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .cio-card .cio-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #ffa502, #ff6348); display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; flex-shrink: 0; }
+    .cio-card .cio-name { font-size: 18px; font-weight: 700; color: #ffa502; }
+    .cio-card .cio-tagline { font-size: 12px; color: #6b8db5; font-style: italic; margin-top: 2px; }
+    .cio-card .cio-section { margin-bottom: 14px; }
+    .cio-card .cio-section-title { font-size: 13px; font-weight: 600; color: #8ab4f8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+    .cio-card .cio-summary { font-size: 15px; line-height: 1.7; color: #e0e6ed; padding: 12px; background: rgba(255,255,255,.03); border-radius: 8px; }
+    .cio-card .cio-evidence { display: flex; flex-direction: column; gap: 5px; }
+    .cio-card .cio-evidence-item { font-size: 12px; padding: 4px 10px; background: rgba(255,255,255,.04); border-radius: 6px; color: #c0c8d0; }
+    .cio-card .cio-scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .cio-card .cio-scenario { background: rgba(0,0,0,.2); border-radius: 10px; padding: 12px; text-align: center; }
+    .cio-card .cio-scenario .scenario-name { font-size: 11px; color: #6b8db5; margin-bottom: 4px; }
+    .cio-card .cio-scenario .scenario-dir { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+    .cio-card .cio-scenario .scenario-meta { font-size: 11px; color: #6b8db5; }
+    .cio-card .cio-order { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+    .cio-card .cio-order-item { background: rgba(0,0,0,.2); border-radius: 8px; padding: 10px; text-align: center; }
+    .cio-card .cio-monitor { font-size: 12px; color: #c0c8d0; display: flex; flex-direction: column; gap: 4px; }
+    .cio-card .cio-monitor-item { padding: 6px 10px; background: rgba(255,71,87,.06); border-left: 3px solid #ff4757; border-radius: 4px; }
+    .cio-card .cio-footer { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #6b8db5; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.06); }
+    .cio-veto { background: rgba(255,71,87,.1); border: 1px solid #ff4757; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; color: #ff6b7a; font-size: 13px; }
+
+    /* Master Selector Dropdown */
+    .master-select-wrap { display: flex; align-items: center; gap: 8px; }
+    .master-select-wrap select { padding: 8px 12px; border: 1px solid #1e3a5f; border-radius: 8px; background: #1a2d42; color: #ffa502; font-size: 13px; outline: none; cursor: pointer; }
+    .master-select-wrap select:focus { border-color: #ffa502; }
+    .master-select-wrap .master-hint { font-size: 11px; color: #6b8db5; }
+
+    /* Employee Reports Collapsible */
+    .emp-reports-wrap { margin-top: 14px; }
+    .emp-reports-toggle { font-size: 13px; color: #8ab4f8; cursor: pointer; padding: 8px 12px; background: rgba(138,180,248,.08); border-radius: 8px; display: inline-block; user-select: none; }
+    .emp-reports-toggle:hover { background: rgba(138,180,248,.15); }
+    .emp-reports-content { display: none; margin-top: 10px; }
+    .emp-reports-content.open { display: block; }
+    .emp-report-item { background: rgba(0,0,0,.15); border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; font-size: 12px; border-left: 3px solid #1e3a5f; }
+    .emp-report-item.dept-macro { border-left-color: #8ab4f8; }
+    .emp-report-item.dept-research { border-left-color: #ffa502; }
+    .emp-report-item.dept-trading { border-left-color: #00d4aa; }
+    .emp-report-item.dept-risk { border-left-color: #ff4757; }
+    .emp-report-item.dept-oversight { border-left-color: #ff6348; }
+    .emp-report-item .emp-header { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .emp-report-item .emp-role { font-weight: 600; }
+    .emp-report-item .emp-dept { font-size: 10px; color: #6b8db5; padding: 1px 6px; background: rgba(255,255,255,.05); border-radius: 3px; }
+    .emp-report-item .emp-outlook { font-size: 11px; padding: 1px 8px; border-radius: 3px; }
+    .emp-report-item .emp-points, .emp-report-item .emp-risks { line-height: 1.5; }
+    .emp-report-item .emp-error { color: #ff6b7a; font-style: italic; }
+
     @media (max-width: 768px) {
       .two-col { flex-direction: column; }
       .pred-timeline { grid-template-columns: 1fr; }
@@ -151,6 +200,22 @@
       </span>
       <span style="font-size:11px;color:#6b8db5;padding-left:22px;">勾选即启用群体智能推演，约15分钟</span>
     </label>
+    <div class="master-select-wrap" style="display:flex;flex-direction:column;gap:2px;">
+      <span style="display:flex;align-items:center;gap:6px;">
+        <select id="masterSelect" style="width:auto;">
+          <option value="">不启用</option>
+          <option value="graham">本杰明·格雷厄姆 (深度价值)</option>
+          <option value="buffett">沃伦·巴菲特 (价值+质量)</option>
+          <option value="fisher">菲利普·费雪 (成长投资)</option>
+          <option value="lynch">彼得·林奇 (GARP)</option>
+          <option value="templeton">约翰·邓普顿 (逆向全球)</option>
+          <option value="soros">乔治·索罗斯 (反身宏观)</option>
+          <option value="dalio">瑞·达利欧 (风险平价)</option>
+        </select>
+        <span style="font-size:13px;color:#ffa502;">大师决策</span>
+      </span>
+      <span style="font-size:11px;color:#6b8db5;padding-left:6px;">选一位投资大师审阅分析师报告并做最终决策</span>
+    </div>
   </div>
   <div id="reportLink" style="display:none;margin-bottom:16px;padding:10px 14px;background:#152436;border:1px solid #1e3a5f;border-radius:8px;"></div>
   <div id="simLog" style="display:none;margin-bottom:16px;background:#0a0f16;border:1px solid #1e3a5f;border-radius:8px;padding:12px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:12px;color:#8ab4f8;line-height:1.6;white-space:pre-wrap;"></div>
@@ -169,6 +234,8 @@ async function analyze() {
   const resultDiv = document.getElementById('result');
   const reportLinkDiv = document.getElementById('reportLink');
   const simEnabled = document.getElementById('simCheck').checked;
+  const masterSelect = document.getElementById('masterSelect');
+  const master = masterSelect ? masterSelect.value : '';
 
   if (!symbol) { alert('请输入股票代码'); return; }
   btn.disabled = true;
@@ -182,6 +249,7 @@ async function analyze() {
 
       const body = { symbol, scenario: 'base' };
       if (costPrice > 0) body.cost_price = costPrice;
+      if (master) body.master = master;
 
       const resp = await fetch(`${API}/api/predict`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -200,6 +268,7 @@ async function analyze() {
       // 普通分析
       const body = { symbol };
       if (costPrice > 0) body.cost_price = costPrice;
+      if (master) body.master = master;
 
       const resp = await fetch(`${API}/api/analyze`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -383,6 +452,144 @@ function confClass(conf) {
   if (conf === '高') return 'conf-high';
   if (conf === '中') return 'conf-mid';
   return 'conf-low';
+}
+
+
+function renderMasterDecision(pred) {
+  const cio = pred.cio_decision || {};
+  if (!cio.master_name) return '';
+
+  let html = '';
+  const empReports = pred.employee_reports || [];
+
+  // CIO Decision Card
+  html += '<div class="cio-card">';
+
+  // Header
+  html += '<div class="cio-header">';
+  html += '<div class="cio-avatar">' + (cio.master_name || '?')[0] + '</div>';
+  html += '<div>';
+  html += '<div class="cio-name">大师决策 · ' + (cio.master_name || '?') + '</div>';
+  html += '<div class="cio-tagline">' + (cio.order ? ('操作: ' + (cio.order.action || '持有')) : '') + '</div>';
+  html += '</div></div>';
+
+  // Veto response if any
+  if (cio.veto_response && cio.veto_response !== '无') {
+    html += '<div class="cio-veto">⚠️ 风险经理否决回应: ' + cio.veto_response + '</div>';
+  }
+
+  // Decision Summary
+  html += '<div class="cio-section"><div class="cio-section-title">最终策略</div>';
+  html += '<div class="cio-summary">' + (cio.decision_summary || '-') + '</div></div>';
+
+  // Evidence Chain
+  if (cio.evidence_chain && cio.evidence_chain.length > 0) {
+    html += '<div class="cio-section"><div class="cio-section-title">关键证据链</div>';
+    html += '<div class="cio-evidence">';
+    for (const e of cio.evidence_chain) {
+      html += '<div class="cio-evidence-item">📋 ' + e + '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  // Three Scenarios
+  const base = cio.base_case || {};
+  const bull = cio.bull_case || {};
+  const bear = cio.bear_case || {};
+  if (base.direction || bull.direction || bear.direction) {
+    html += '<div class="cio-section"><div class="cio-section-title">三情景分析</div>';
+    html += '<div class="cio-scenarios">';
+
+    const dirCls = d => d && d.includes('涨') ? 'positive' : d && d.includes('跌') ? 'negative' : 'neutral';
+    const renderScenario = (s, label) => {
+      const probPct = s.probability != null ? Math.round(s.probability * 100) : '?';
+      return '<div class="cio-scenario">' +
+        '<div class="scenario-name">' + label + ' (' + probPct + '%)</div>' +
+        '<div class="scenario-dir ' + dirCls(s.direction) + '">' + (s.direction || '-') + '</div>' +
+        '<div class="scenario-meta">目标: ¥' + (s.target != null ? s.target.toFixed(1) : '-') + '</div>' +
+        '</div>';
+    };
+
+    html += renderScenario(bear, '悲观');
+    html += renderScenario(base, '基准');
+    html += renderScenario(bull, '乐观');
+    html += '</div></div>';
+  }
+
+  // Order
+  const order = cio.order || {};
+  if (order.action) {
+    html += '<div class="cio-section"><div class="cio-section-title">操作指令</div>';
+    html += '<div class="cio-order">';
+    html += '<div class="cio-order-item"><div class="label">操作</div><div style="font-size:20px;font-weight:700;" class="' + (order.action.includes('买')||order.action.includes('加')?'positive':order.action.includes('卖')||order.action.includes('减')?'negative':'neutral') + '">' + order.action + '</div></div>';
+    html += '<div class="cio-order-item"><div class="label">仓位</div><div style="font-size:18px;font-weight:600;color:#ffa502;">' + (order.position_size_pct || 0) + '%</div></div>';
+    if (order.stop_loss && order.stop_loss.level) {
+      html += '<div class="cio-order-item"><div class="label">止损</div><div style="font-size:18px;font-weight:600;color:#00d4aa;">¥' + (typeof order.stop_loss === "object" ? order.stop_loss.level.toFixed(1) : order.stop_loss) + '</div></div>';
+    }
+    if (order.take_profit) {
+      const tpLevel = typeof order.take_profit === "object" ? (order.take_profit.level_1 || order.take_profit.level_2 || 0) : order.take_profit;
+      html += '<div class="cio-order-item"><div class="label">止盈</div><div style="font-size:18px;font-weight:600;color:#ff4757;">¥' + (tpLevel || 0).toFixed(1) + '</div></div>';
+    }
+    html += '</div>';
+    if (order.entry_conditions) {
+      html += '<div style="font-size:12px;color:#6b8db5;margin-top:6px;">入场条件: ' + order.entry_conditions + '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Risk Monitoring
+  if (cio.risk_monitoring && cio.risk_monitoring.length > 0) {
+    html += '<div class="cio-section"><div class="cio-section-title">风险监控</div>';
+    html += '<div class="cio-monitor">';
+    for (const rm of cio.risk_monitoring) {
+      html += '<div class="cio-monitor-item">⚡ ' + (rm.trigger || '') + ' → ' + (rm.action || '') + '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  // Decision Quality Footer
+  const dq = cio.decision_quality || {};
+  html += '<div class="cio-footer">';
+  html += '<span>置信度: ' + (dq.confidence || '中') + '</span>';
+  if (dq.key_uncertainties && dq.key_uncertainties.length > 0) {
+    html += '<span>⚠ ' + dq.key_uncertainties.join(' · ') + '</span>';
+  }
+  html += '<span>下次回顾: ' + (dq.next_review || '3个交易日后') + '</span>';
+  html += '</div>';
+
+  html += '</div>'; // end cio-card
+
+  // Employee Reports (collapsible)
+  if (empReports.length > 0) {
+    const deptMap = {macro: 'dept-macro', policy: 'dept-macro', valuation: 'dept-research', fundamental: 'dept-research', technical: 'dept-research', sentiment: 'dept-trading', risk: 'dept-risk', overseer: 'dept-oversight'};
+    html += '<div class="emp-reports-wrap">';
+    html += '<div class="emp-reports-toggle" onclick="var c=this.nextElementSibling;c.classList.toggle("open");this.textContent=c.classList.contains("open")?"📂 收起部门报告 ▴":"📂 查看全部' + empReports.length + '份部门报告 ▾"">📂 查看全部' + empReports.length + '份部门报告 ▾</div>';
+    html += '<div class="emp-reports-content">';
+    for (const r of empReports) {
+      const deptCls = deptMap[r.employee_id] || '';
+      const outCls = r.outlook === '看多' ? 'positive' : r.outlook === '看空' ? 'negative' : 'neutral';
+      html += '<div class="emp-report-item ' + deptCls + '">';
+      html += '<div class="emp-header"><span class="emp-role">' + (r.role || '?') + '</span>';
+      html += '<span class="emp-dept">' + (r.department || '') + '</span>';
+      if (r.error) {
+        html += '<span class="emp-error">⚠ ' + r.error + '</span>';
+      } else {
+        html += '<span class="emp-outlook ' + outCls + '" style="background:rgba(' + (r.outlook==='看多'?'255,71,87' : r.outlook==='看空'?'0,212,170' : '255,165,2') + ',.15);color:' + (r.outlook==='看多'?'#ff6b7a' : r.outlook==='看空'?'#00d4aa' : '#ffa502') + ';">' + (r.outlook || '-') + ' (' + (r.score != null ? (r.score>0?'+':'')+r.score : '-') + ')</span>';
+      }
+      html += '<span style="font-size:10px;color:#6b8db5;">置信度: ' + (r.confidence || '-') + '</span>';
+      html += '</div>';
+      if (r.key_points && r.key_points.length > 0) {
+        html += '<div class="emp-points" style="margin-bottom:4px;">' + r.key_points.map(p => '<div style="color:#c0c8d0;">+ ' + p + '</div>').join('') + '</div>';
+      }
+      if (r.risks && r.risks.length > 0) {
+        html += '<div class="emp-risks">' + r.risks.map(rk => '<div style="color:#ff6b7a;font-size:11px;">- ' + rk + '</div>').join('') + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  return html;
 }
 
 function renderAnalysis(data) {
@@ -605,6 +812,12 @@ function renderAnalysis(data) {
     html += '<div class="section-title">风险提示</div><div class="factor-tags">';
     for (const r of data.risk_factors) { html += '<span class="factor-tag negative">' + (r.factor || r) + '</span>'; }
     html += '</div>';
+  }
+
+  // ---- MASTER DECISION (大师决策) ----
+  const psMaster = data.prediction_summary || {};
+  if (psMaster.cio_decision && psMaster.cio_decision.master_name) {
+    html += renderMasterDecision(psMaster);
   }
 
   // ---- MULTI-AGENT DEBATE ----

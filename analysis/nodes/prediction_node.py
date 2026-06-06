@@ -59,6 +59,10 @@ class PredictionResult:
 
     raw_llm_output: str = ""
 
+    # 大师决策扩展字段
+    cio_decision: Optional[Dict] = None       # CIODecision.to_dict()
+    employee_reports: List[Dict] = field(default_factory=list)  # 员工报告列表
+
 
 class PredictionNode:
     """多 Agent 并行预测节点"""
@@ -134,6 +138,152 @@ class PredictionNode:
             confidence=final.get('confidence', '低'),
             raw_llm_output=final.get('raw', ''),
         )
+
+    # ── 大师决策模式 (8 员工 + CIO) ──
+
+    def predict_with_master(self, state: dict, master_key: str) -> PredictionResult:
+        """
+        大师决策模式: 6~8 名员工并行分析 → 大师 CIO 最终决策。
+
+        Args:
+            state: AnalysisState.to_dict() 输出
+            master_key: 大师标识 (buffett/graham/fisher/lynch/templeton/soros/dalio)
+
+        Returns:
+            PredictionResult (含员工报告 + CIO 决策)
+        """
+        from analysis.agents.valuation_agent import ValuationAgent
+        from analysis.agents.fundamental_agent import FundamentalAgent
+        from analysis.agents.technical_agent import TechnicalAgent
+        from analysis.agents.sentiment_agent import SentimentAgent
+        from analysis.agents.risk_manager import RiskManager
+        from analysis.agents.overseer import Overseer
+        from analysis.agents.macro_agent import MacroAgent
+        from analysis.agents.policy_agent import PolicyAgent
+        from analysis.agents.cio import CIOAgent
+
+        # 初始化 8 名员工
+        employees = [
+            MacroAgent(api_key=self.api_key, base_url=self.base_url, model=self.model),
+            PolicyAgent(api_key=self.api_key, base_url=self.base_url, model=self.model),
+            ValuationAgent(api_key=self.api_key, base_url=self.base_url, model=self.model),
+            FundamentalAgent(api_key=self.api_key, base_url=self.base_url, model=self.model),
+            TechnicalAgent(api_key=self.api_key, base_url=self.base_url, model=self.model),
+            SentimentAgent(api_key=self.api_key, base_url=self.base_url, model=self.model),
+            RiskManager(api_key=self.api_key, base_url=self.base_url, model=self.model),
+        ]
+        overseer = Overseer(api_key=self.api_key, base_url=self.base_url, model=self.model)
+
+        # 并行执行前 7 名员工 (overseer 依赖其他员工输出)
+        def _run_employee(emp, st):
+            try:
+                return emp.analyze(st)
+            except Exception as e:
+                logger.warning(f"员工 [{emp.role}] 失败: {e}")
+                from analysis.agents.base import EmployeeReport
+                return EmployeeReport(employee_id=emp.employee_id, role=emp.role,
+                                      department=emp.department,
+                                      outlook="中性", confidence="低",
+                                      key_points=[f"报告生成失败: {str(e)[:80]}"],
+                                      error=str(e)[:200])
+
+        reports = []
+        with ThreadPoolExecutor(max_workers=7) as executor:
+            futures = {executor.submit(_run_employee, emp, state): emp for emp in employees}
+            for future in as_completed(futures):
+                emp = futures[future]
+                try:
+                    r = future.result(timeout=45)
+                    reports.append(r)
+                    logger.info(f"员工 [{emp.role}] 完成: {r.outlook} (score={r.score})")
+                except Exception as e:
+                    logger.warning(f"员工 [{emp.role}] 超时/异常: {e}")
+                    from analysis.agents.base import EmployeeReport
+                    reports.append(EmployeeReport(
+                        employee_id=emp.employee_id, role=emp.role, department=emp.department,
+                        outlook="中性", confidence="低",
+                        key_points=[f"报告生成超时: {str(e)[:80]}"],
+                        error=str(e)[:200]))
+
+        # 独立监察员读取其他员工报告
+        overseer_report = _run_employee(overseer, state)
+        # Overseer needs other reports for context - re-run with reports
+        try:
+            overseer_report = overseer.analyze(state, other_reports=reports)
+        except Exception as e:
+            logger.warning(f"监察员失败: {e}")
+        reports.append(overseer_report)
+        logger.info(f"员工 [监察员] 完成")
+
+        # CIO 最终决策
+        cio = CIOAgent(api_key=self.api_key, base_url=self.base_url, model=self.model)
+        cio_decision = cio.decide(master_key, reports, state)
+        logger.info(f"CIO [{cio_decision.master_name}] 决策: {cio_decision.decision_summary[:60]}")
+
+        # 组装 PredictionResult
+        return self._build_master_result(state, cio_decision, reports)
+
+    def _build_master_result(self, state: dict, cio_decision,
+                              reports: list) -> PredictionResult:
+        """将 CIO 决策 + 员工报告合并为 PredictionResult"""
+        from analysis.agents.base import CIODecision
+        q = state.get('quote', {}) or {}
+        price = q.get('price', 0) if isinstance(q, dict) else 0
+
+        order = cio_decision.order or {}
+        action = order.get('action', '持有')
+
+        result = PredictionResult(
+            analysis_text=cio_decision.decision_summary,
+            outlook=cio_decision.short_term.get('direction', '中性') if cio_decision.short_term else '中性',
+            reason=cio_decision.decision_summary,
+            risk_factors=[r for report in reports if not report.error for r in (report.risks or [])[:2]],
+            positive_factors=[r for report in reports if not report.error for r in (report.key_points or [])[:2]],
+            # 多 Agent 观点 (前3个映射到 legacy 字段)
+            tech_view=self._emp_to_view_dict(reports, 'technical'),
+            fund_view=self._emp_to_view_dict(reports, 'fundamental'),
+            sent_view=self._emp_to_view_dict(reports, 'sentiment'),
+            # 多周期预测
+            short_term=cio_decision.short_term,
+            mid_term=cio_decision.mid_term,
+            long_term=cio_decision.long_term,
+            # 操作建议
+            suggested_action={
+                'action': action,
+                'reason': order.get('entry_conditions', ''),
+                'stop_loss': order.get('stop_loss', {}).get('level', 0) if isinstance(order.get('stop_loss'), dict) else 0,
+                'take_profit': order.get('take_profit', {}).get('level_1', 0) if isinstance(order.get('take_profit'), dict) else 0,
+            },
+            price_target_current=price,
+            price_target_low=cio_decision.bear_case.get('target', 0) if cio_decision.bear_case else 0,
+            price_target_high=cio_decision.bull_case.get('target', 0) if cio_decision.bull_case else 0,
+            confidence=cio_decision.decision_quality.get('confidence', '低') if cio_decision.decision_quality else '低',
+            raw_llm_output=cio_decision.raw_llm_output,
+        )
+
+        # 附加 CIO 决策和员工报告到 result (通过非标准字段)
+        result.cio_decision = cio_decision.to_dict() if isinstance(cio_decision, CIODecision) else {}
+        result.employee_reports = [
+            {
+                'employee_id': r.employee_id, 'role': r.role, 'department': r.department,
+                'outlook': r.outlook, 'confidence': r.confidence, 'score': r.score,
+                'key_points': r.key_points, 'risks': r.risks, 'error': r.error,
+            }
+            for r in reports
+        ]
+
+        return result
+
+    @staticmethod
+    def _emp_to_view_dict(reports: list, emp_id: str) -> Optional[dict]:
+        """从员工报告列表中查找指定 ID 的报告，转为 legacy view dict 格式"""
+        for r in reports:
+            if r.employee_id == emp_id and not r.error:
+                return {
+                    'role': r.role, 'outlook': r.outlook, 'confidence': r.confidence,
+                    'score': r.score, 'key_points': r.key_points, 'risks': r.risks,
+                }
+        return None
 
     # ── Agent 调用 ──
 
