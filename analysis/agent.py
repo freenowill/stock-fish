@@ -283,6 +283,20 @@ class StockAnalysisAgent:
     # ---- 宏观/行业数据获取 (逐个API独立try/except, 单一失败不阻塞) ----
 
     @staticmethod
+    def _safe_ak_call(fn, *args, **kwargs):
+        """带重试的 akshare 调用，处理网络波动。失败返回 None。"""
+        import time
+        for attempt in range(2):
+            try:
+                time.sleep(0.4)  # 避免触发东方财富反爬限流
+                return fn(*args, **kwargs)
+            except Exception as e:
+                if attempt == 0 and ('Connection' in str(e) or 'RemoteDisconnected' in str(e)):
+                    time.sleep(1.5)
+                    continue
+        return None
+
+    @staticmethod
     def _fetch_macro_context() -> dict:
         """获取宏观数据上下文。逐个调用 akshare API，任一失败不影响其他。"""
         ctx = {'source': 'akshare'}
@@ -294,7 +308,7 @@ class StockAnalysisAgent:
 
         # --- PMI ---
         try:
-            df = ak.macro_china_pmi()
+            df = StockAnalysisAgent._safe_ak_call(ak.macro_china_pmi)
             if df is not None and len(df) > 0:
                 latest = df.iloc[-1]
                 ctx['pmi'] = float(latest.get('制造业', latest.iloc[1])) if len(latest) > 1 else None
@@ -303,23 +317,23 @@ class StockAnalysisAgent:
 
         # --- CPI ---
         try:
-            df = ak.macro_china_cpi()
+            df = StockAnalysisAgent._safe_ak_call(ak.macro_china_cpi)
             if df is not None and len(df) > 0:
                 ctx['cpi_yoy'] = float(df.iloc[-1].get('全国-同比增长', df.iloc[-1, 2])) if df.shape[1] > 2 else None
         except Exception as e:
             logger.debug(f"CPI 获取失败: {e}")
 
-        # --- SHIBOR ---
+        # --- SHIBOR (rate_interbank 已废弃, 改用 macro_china_shibor_all) ---
         try:
-            df = ak.rate_interbank(market="上海银行间同业拆放利率", indicator="隔夜")
+            df = StockAnalysisAgent._safe_ak_call(ak.macro_china_shibor_all)
             if df is not None and len(df) > 0:
-                ctx['shibor'] = float(df.iloc[-1, 1]) if df.shape[1] > 1 else None
+                ctx['shibor'] = float(df.iloc[-1]['O/N-定价']) if 'O/N-定价' in df.columns else None
         except Exception as e:
             logger.debug(f"SHIBOR 获取失败: {e}")
 
         # --- LPR ---
         try:
-            df = ak.macro_china_lpr()
+            df = StockAnalysisAgent._safe_ak_call(ak.macro_china_lpr)
             if df is not None and len(df) > 0:
                 latest = df.iloc[-1]
                 if 'LPR1Y' in df.columns:
@@ -341,7 +355,7 @@ class StockAnalysisAgent:
 
         # --- M2 货币供应 ---
         try:
-            df = ak.macro_china_money_supply()
+            df = StockAnalysisAgent._safe_ak_call(ak.macro_china_money_supply)
             if df is not None and len(df) > 0:
                 latest = df.iloc[-1]
                 for col in df.columns:
@@ -353,7 +367,7 @@ class StockAnalysisAgent:
 
         # --- 社融 ---
         try:
-            df = ak.macro_china_shrzgm()
+            df = StockAnalysisAgent._safe_ak_call(ak.macro_china_shrzgm)
             if df is not None and len(df) > 0:
                 latest = df.iloc[-1]
                 for col in df.columns:
@@ -365,7 +379,7 @@ class StockAnalysisAgent:
 
         # --- 北向资金 (stock_hsgt_north_net_flow_in_em 已废弃, 改用 stock_hsgt_fund_flow_summary_em) ---
         try:
-            df = ak.stock_hsgt_fund_flow_summary_em()
+            df = StockAnalysisAgent._safe_ak_call(ak.stock_hsgt_fund_flow_summary_em)
             if df is not None and len(df) > 0:
                 nb = df[df['资金方向'] == '北向']
                 if len(nb) > 0:
@@ -376,17 +390,18 @@ class StockAnalysisAgent:
 
         # --- 美元/人民币汇率 ---
         try:
-            df = ak.fx_spot_quote()
+            df = StockAnalysisAgent._safe_ak_call(ak.fx_spot_quote)
             if df is not None and len(df) > 0:
-                usd_row = df[df['货币对'] == '美元/人民币'] if '货币对' in df.columns else None
+                usd_row = df[df['货币对'].str.contains('USD', na=False)] if '货币对' in df.columns else None
                 if usd_row is not None and len(usd_row) > 0:
-                    ctx['usd_cny'] = float(usd_row.iloc[0]['最新价']) if '最新价' in usd_row.columns else None
+                    quote = usd_row.iloc[0]
+                    ctx['usd_cny'] = float(quote.get('买报价') or quote.get('卖报价') or 0) if any(k in quote.index for k in ['买报价', '卖报价']) else None
         except Exception as e:
             logger.debug(f"汇率获取失败: {e}")
 
         # --- 大盘状态推断 ---
         try:
-            df = ak.stock_zh_index_daily_em(symbol="sh000001")
+            df = StockAnalysisAgent._safe_ak_call(ak.stock_zh_index_daily_em, symbol="sh000001")
             if df is not None and len(df) >= 20:
                 close = df['close'].astype(float)
                 ma20 = close.rolling(20).mean().iloc[-1]
@@ -414,7 +429,7 @@ class StockAnalysisAgent:
 
         # --- 行业板块概况 ---
         try:
-            df = ak.stock_board_industry_name_em()
+            df = StockAnalysisAgent._safe_ak_call(ak.stock_board_industry_name_em)
             if df is not None and len(df) > 0:
                 ctx['industry_count'] = len(df)
                 ctx['industry_names'] = ', '.join(df['板块名称'].head(10).tolist())
@@ -429,7 +444,7 @@ class StockAnalysisAgent:
 
         # --- 行业资金流 ---
         try:
-            df = ak.stock_sector_fund_flow_rank(indicator="5日", sector_type="行业资金流")
+            df = StockAnalysisAgent._safe_ak_call(ak.stock_sector_fund_flow_rank, indicator="5日", sector_type="行业资金流")
             if df is not None and len(df) > 0:
                 # 主力净流入总额
                 flow_col = None
@@ -450,8 +465,9 @@ class StockAnalysisAgent:
             # 尝试几个典型板块
             for board_name in ['白酒', '银行', '半导体']:
                 try:
-                    hist = ak.stock_board_industry_hist_em(symbol=board_name, period="日k",
-                                                           start_date="20240101", end_date="20260101")
+                    hist = StockAnalysisAgent._safe_ak_call(
+                        ak.stock_board_industry_hist_em, symbol=board_name, period="日k",
+                        start_date="20240101", end_date="20260101")
                     if hist is not None and len(hist) >= 20:
                         hist['收盘'] = hist['收盘'].astype(float)
                         pct_20d = (hist['收盘'].iloc[-1] / hist['收盘'].iloc[-20] - 1) * 100
@@ -465,7 +481,7 @@ class StockAnalysisAgent:
 
         # --- 政策新闻(宏观层面) ---
         try:
-            news_df = ak.stock_info_global_em()
+            news_df = StockAnalysisAgent._safe_ak_call(ak.stock_info_global_em)
             if news_df is not None and len(news_df) > 0:
                 policy_keywords = ['政策', '监管', '央行', '发改委', '证监会', '国常会', '国务院', '工信部', '降准', '降息', 'LPR']
                 policy_news = news_df[news_df['标题'].str.contains('|'.join(policy_keywords), na=False)]
