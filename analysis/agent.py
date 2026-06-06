@@ -277,94 +277,213 @@ class StockAnalysisAgent:
             })
         return result
 
-    # ---- 宏观/行业数据获取 (轻量级, 失败不阻塞) ----
+    # ---- 宏观/行业数据获取 (逐个API独立try/except, 单一失败不阻塞) ----
 
     @staticmethod
     def _fetch_macro_context() -> dict:
-        """获取宏观数据上下文。尝试 akshare，失败返回 placeholder。"""
+        """获取宏观数据上下文。逐个调用 akshare API，任一失败不影响其他。"""
+        ctx = {'source': 'akshare'}
         try:
             import akshare as ak
-            # 尝试获取 PMI
-            pmi = None
-            try:
-                pmi_df = ak.macro_china_pmi()
-                if pmi_df is not None and len(pmi_df) > 0:
-                    latest = pmi_df.iloc[-1]
-                    pmi = float(latest.get('制造业', latest.iloc[1])) if len(latest) > 1 else None
-            except Exception:
-                pass
-
-            # 尝试获取 SHIBOR
-            shibor = None
-            try:
-                shibor_df = ak.rate_interbank(market="上海银行间同业拆放利率", indicator="隔夜")
-                if shibor_df is not None and len(shibor_df) > 0:
-                    shibor = float(shibor_df.iloc[-1, 1]) if shibor_df.shape[1] > 1 else None
-            except Exception:
-                pass
-
-            # 尝试获取北向资金
-            northbound = None
-            try:
-                nb_df = ak.stock_hsgt_north_net_flow_in_em(symbol="北上")
-                if nb_df is not None and len(nb_df) > 0:
-                    northbound = float(nb_df.iloc[-1, 1]) if nb_df.shape[1] > 1 else None
-            except Exception:
-                pass
-
-            # 尝试获取 LPR
-            lpr_1y = None
-            try:
-                lpr_df = ak.macro_china_lpr()
-                if lpr_df is not None and len(lpr_df) > 0:
-                    lpr_1y = float(lpr_df.iloc[-1].get('1年期', lpr_df.iloc[-1, 1])) if len(lpr_df.iloc[-1]) > 1 else None
-            except Exception:
-                pass
-
-            return {
-                'shibor': shibor, 'lpr_1y': lpr_1y,
-                'pmi': pmi, 'northbound_flow': northbound,
-                'source': 'akshare',
-            }
         except ImportError:
             logger.debug("akshare 不可用，宏观数据使用 placeholder")
-        except Exception as e:
-            logger.debug(f"宏观数据获取失败: {e}")
+            return {'source': 'placeholder', '_note': 'akshare 未安装'}
 
-        return {'source': 'placeholder', '_note': '宏观数据源不可用，使用默认假设'}
+        # --- PMI ---
+        try:
+            df = ak.macro_china_pmi()
+            if df is not None and len(df) > 0:
+                latest = df.iloc[-1]
+                ctx['pmi'] = float(latest.get('制造业', latest.iloc[1])) if len(latest) > 1 else None
+        except Exception as e:
+            logger.debug(f"PMI 获取失败: {e}")
+
+        # --- CPI ---
+        try:
+            df = ak.macro_china_cpi()
+            if df is not None and len(df) > 0:
+                ctx['cpi_yoy'] = float(df.iloc[-1].get('全国-同比增长', df.iloc[-1, 2])) if df.shape[1] > 2 else None
+        except Exception as e:
+            logger.debug(f"CPI 获取失败: {e}")
+
+        # --- SHIBOR ---
+        try:
+            df = ak.rate_interbank(market="上海银行间同业拆放利率", indicator="隔夜")
+            if df is not None and len(df) > 0:
+                ctx['shibor'] = float(df.iloc[-1, 1]) if df.shape[1] > 1 else None
+        except Exception as e:
+            logger.debug(f"SHIBOR 获取失败: {e}")
+
+        # --- LPR ---
+        try:
+            df = ak.macro_china_lpr()
+            if df is not None and len(df) > 0:
+                latest = df.iloc[-1]
+                if 'LPR1Y' in df.columns:
+                    ctx['lpr_1y'] = float(latest['LPR1Y'])
+                if 'LPR5Y' in df.columns:
+                    ctx['lpr_5y'] = float(latest['LPR5Y'])
+                # 推断政策倾向: 比较最新 LPR1Y 与前值
+                if len(df) >= 2:
+                    prev = df.iloc[-2]
+                    if 'LPR1Y' in df.columns:
+                        if float(latest['LPR1Y']) < float(prev['LPR1Y']):
+                            ctx['policy_tilt'] = '宽松 (LPR下调)'
+                        elif float(latest['LPR1Y']) > float(prev['LPR1Y']):
+                            ctx['policy_tilt'] = '收紧 (LPR上调)'
+                        else:
+                            ctx['policy_tilt'] = '中性 (LPR不变)'
+        except Exception as e:
+            logger.debug(f"LPR 获取失败: {e}")
+
+        # --- M2 货币供应 ---
+        try:
+            df = ak.macro_china_money_supply()
+            if df is not None and len(df) > 0:
+                latest = df.iloc[-1]
+                for col in df.columns:
+                    if 'M2' in str(col) and '同比' in str(col):
+                        ctx['m2_yoy'] = float(latest[col])
+                        break
+        except Exception as e:
+            logger.debug(f"M2 获取失败: {e}")
+
+        # --- 社融 ---
+        try:
+            df = ak.macro_china_shrzgm()
+            if df is not None and len(df) > 0:
+                latest = df.iloc[-1]
+                for col in df.columns:
+                    if '增量' in str(col) or '规模' in str(col):
+                        ctx['social_financing'] = float(latest[col])
+                        break
+        except Exception as e:
+            logger.debug(f"社融获取失败: {e}")
+
+        # --- 北向资金 (stock_hsgt_north_net_flow_in_em 已废弃, 改用 stock_hsgt_fund_flow_summary_em) ---
+        try:
+            df = ak.stock_hsgt_fund_flow_summary_em()
+            if df is not None and len(df) > 0:
+                nb = df[df['资金方向'] == '北向']
+                if len(nb) > 0:
+                    ctx['northbound_flow'] = float(nb['成交净买额'].sum())
+                    ctx['northbound_5d_avg'] = round(float(nb['成交净买额'].sum()) / max(1, len(nb)), 1)
+        except Exception as e:
+            logger.debug(f"北向资金获取失败: {e}")
+
+        # --- 美元/人民币汇率 ---
+        try:
+            df = ak.fx_spot_quote()
+            if df is not None and len(df) > 0:
+                usd_row = df[df['货币对'] == '美元/人民币'] if '货币对' in df.columns else None
+                if usd_row is not None and len(usd_row) > 0:
+                    ctx['usd_cny'] = float(usd_row.iloc[0]['最新价']) if '最新价' in usd_row.columns else None
+        except Exception as e:
+            logger.debug(f"汇率获取失败: {e}")
+
+        # --- 大盘状态推断 ---
+        try:
+            df = ak.stock_zh_index_daily_em(symbol="sh000001")
+            if df is not None and len(df) >= 20:
+                close = df['close'].astype(float)
+                ma20 = close.rolling(20).mean().iloc[-1]
+                current = close.iloc[-1]
+                if current > ma20 * 1.03:
+                    ctx['market_regime'] = '上升趋势'
+                elif current < ma20 * 0.97:
+                    ctx['market_regime'] = '下降趋势'
+                else:
+                    ctx['market_regime'] = '震荡'
+        except Exception as e:
+            logger.debug(f"大盘状态获取失败: {e}")
+
+        logger.info(f"宏观数据采集完成: {len(ctx)} 个字段")
+        return ctx
 
     @staticmethod
     def _fetch_industry_context(symbol: str) -> dict:
-        """获取行业数据上下文。尝试 akshare，失败返回 placeholder。"""
+        """获取行业数据上下文。逐个调用 akshare API, 任一失败不影响其他。"""
+        ctx = {'source': 'akshare'}
         try:
             import akshare as ak
-            industry_name = None
-            industry_pe = None
-            try:
-                # 尝试获取行业板块数据
-                board_df = ak.stock_board_industry_name_em()
-                if board_df is not None and len(board_df) > 0:
-                    # 简单取前几个行业作为参考
-                    industry_name = "行业数据已获取"
-            except Exception:
-                pass
-
-            # 尝试获取行业 PE
-            try:
-                pe_df = ak.stock_board_industry_pe_em()
-                if pe_df is not None and len(pe_df) > 0:
-                    avg_pe = float(pe_df['平均市盈率'].mean()) if '平均市盈率' in pe_df.columns else None
-                    industry_pe = avg_pe
-            except Exception:
-                pass
-
-            return {
-                'industry_name': industry_name, 'industry_pe_percentile': industry_pe,
-                'source': 'akshare',
-            }
         except ImportError:
-            logger.debug("akshare 不可用，行业数据使用 placeholder")
-        except Exception as e:
-            logger.debug(f"行业数据获取失败: {e}")
+            return {'source': 'placeholder', '_note': 'akshare 未安装'}
 
-        return {'source': 'placeholder', '_note': '行业数据源不可用，使用默认假设'}
+        # --- 行业板块概况 ---
+        try:
+            df = ak.stock_board_industry_name_em()
+            if df is not None and len(df) > 0:
+                ctx['industry_count'] = len(df)
+                ctx['industry_names'] = ', '.join(df['板块名称'].head(10).tolist())
+                # 整体行业涨跌比
+                up_count = int((df['涨跌幅'] > 0).sum()) if '涨跌幅' in df.columns else 0
+                ctx['industry_up_ratio'] = round(up_count / len(df) * 100, 1)
+                # 平均涨跌幅
+                if '涨跌幅' in df.columns:
+                    ctx['industry_avg_change'] = round(float(df['涨跌幅'].mean()), 2)
+        except Exception as e:
+            logger.debug(f"行业板块概况获取失败: {e}")
+
+        # --- 行业资金流 ---
+        try:
+            df = ak.stock_sector_fund_flow_rank(indicator="5日", sector_type="行业资金流")
+            if df is not None and len(df) > 0:
+                # 主力净流入总额
+                flow_col = None
+                for col in df.columns:
+                    if '主力净流入' in str(col) and '净额' in str(col):
+                        flow_col = col
+                        break
+                if flow_col:
+                    total_flow = float(df[flow_col].sum())
+                    ctx['industry_fund_flow'] = round(total_flow, 1)
+                    ctx['industry_fund_flow_bullish'] = total_flow > 0
+        except Exception as e:
+            logger.debug(f"行业资金流获取失败: {e}")
+
+        # --- 行业动量 (选取代表性板块如白酒/银行对比) ---
+        try:
+            momentum_values = []
+            # 尝试几个典型板块
+            for board_name in ['白酒', '银行', '半导体']:
+                try:
+                    hist = ak.stock_board_industry_hist_em(symbol=board_name, period="日k",
+                                                           start_date="20240101", end_date="20260101")
+                    if hist is not None and len(hist) >= 20:
+                        hist['收盘'] = hist['收盘'].astype(float)
+                        pct_20d = (hist['收盘'].iloc[-1] / hist['收盘'].iloc[-20] - 1) * 100
+                        momentum_values.append(pct_20d)
+                except Exception:
+                    pass
+            if momentum_values:
+                ctx['industry_momentum'] = round(sum(momentum_values) / len(momentum_values), 2)
+        except Exception as e:
+            logger.debug(f"行业动量获取失败: {e}")
+
+        # --- 政策新闻(宏观层面) ---
+        try:
+            news_df = ak.stock_info_global_em()
+            if news_df is not None and len(news_df) > 0:
+                policy_keywords = ['政策', '监管', '央行', '发改委', '证监会', '国常会', '国务院', '工信部', '降准', '降息', 'LPR']
+                policy_news = news_df[news_df['标题'].str.contains('|'.join(policy_keywords), na=False)]
+                if len(policy_news) > 0:
+                    ctx['policy_events'] = policy_news['标题'].head(3).tolist()
+                    # 简单判断政策影响方向
+                    positive_words = ['利好', '支持', '鼓励', '放松', '降准', '降息', '减税', '补贴']
+                    negative_words = ['利空', '收紧', '监管', '处罚', '加税', '限制']
+                    pos_count = policy_news['标题'].str.contains('|'.join(positive_words), na=False).sum()
+                    neg_count = policy_news['标题'].str.contains('|'.join(negative_words), na=False).sum()
+                    if pos_count > neg_count * 1.5:
+                        ctx['policy_impact'] = '偏利好'
+                    elif neg_count > pos_count * 1.5:
+                        ctx['policy_impact'] = '偏利空'
+                    else:
+                        ctx['policy_impact'] = '中性'
+                else:
+                    ctx['policy_events'] = '近期无重大政策新闻'
+                    ctx['policy_impact'] = '中性'
+        except Exception as e:
+            logger.debug(f"政策新闻获取失败: {e}")
+
+        logger.info(f"行业数据采集完成: {len(ctx)} 个字段")
+        return ctx
