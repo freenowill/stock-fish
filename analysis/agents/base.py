@@ -133,6 +133,7 @@ class BaseAgent:
                 }
                 if use_json_mode:
                     kwargs["response_format"] = {"type": "json_object"}
+                    kwargs["max_tokens"] = 4096  # CIO 决策 JSON 较长，需要足够 token
 
                 resp = client.chat.completions.create(**kwargs)
                 raw = resp.choices[0].message.content or "{}"
@@ -150,16 +151,37 @@ class BaseAgent:
 
     @staticmethod
     def _parse_json(raw: str) -> dict:
-        """安全解析 LLM 返回的 JSON，处理 markdown code block 包裹"""
+        """安全解析 LLM 返回的 JSON — 处理截断、markdown包裹、末尾多余文本。"""
         try:
             raw = raw.strip()
+            # 1. 去掉 markdown code block
             if raw.startswith('```json'):
                 raw = raw.split('```json')[1].split('```')[0]
             elif raw.startswith('```'):
                 raw = raw.split('```')[1].split('```')[0]
+
+            # 2. 找到最外层的 { ... }
+            start = raw.find('{')
+            end = raw.rfind('}')
+            if start >= 0 and end > start:
+                raw = raw[start:end + 1]
+
             return json.loads(raw)
         except (json.JSONDecodeError, KeyError, IndexError):
-            logger.warning(f"JSON 解析失败: {raw[:150]}")
+            # 3. 最终尝试: 修复常见错误 (尾部多余逗号/未闭合字符串等)
+            try:
+                import re
+                start = raw.find('{')
+                end = raw.rfind('}')
+                if start >= 0 and end > start:
+                    candidate = raw[start:end + 1]
+                    # 移除尾部多余逗号
+                    candidate = re.sub(r',\s*}', '}', candidate)
+                    candidate = re.sub(r',\s*]', ']', candidate)
+                    return json.loads(candidate)
+            except Exception:
+                pass
+            logger.warning(f"JSON 解析失败 (已尝试修复): {raw[:200]}...")
             return {}
 
     # ── 数据提取工具 (从 state dict 中提取各维度数据) ──
