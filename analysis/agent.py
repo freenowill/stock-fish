@@ -283,6 +283,29 @@ class StockAnalysisAgent:
     # ---- 宏观/行业数据获取 (逐个API独立try/except, 单一失败不阻塞) ----
 
     @staticmethod
+    def _safe_float(val):
+        """将值转为 float，NaN/Infinity 返回 None，确保 JSON 可序列化。"""
+        import math
+        try:
+            v = float(val)
+            if math.isnan(v) or math.isinf(v):
+                return None
+            return v
+        except (ValueError, TypeError):
+            return None
+
+    @staticmethod
+    def _sanitize_context(ctx: dict) -> dict:
+        """递归清理 dict 中的 NaN/Infinity 值，确保 JSON 可序列化。"""
+        import math
+        for k, v in ctx.items():
+            if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                ctx[k] = None
+            elif isinstance(v, dict):
+                StockAnalysisAgent._sanitize_context(v)
+        return ctx
+
+    @staticmethod
     def _safe_ak_call(fn, *args, **kwargs):
         """带重试的 akshare 调用，处理网络波动。失败返回 None。"""
         import time
@@ -395,7 +418,10 @@ class StockAnalysisAgent:
                 usd_row = df[df['货币对'].str.contains('USD', na=False)] if '货币对' in df.columns else None
                 if usd_row is not None and len(usd_row) > 0:
                     quote = usd_row.iloc[0]
-                    ctx['usd_cny'] = float(quote.get('买报价') or quote.get('卖报价') or 0) if any(k in quote.index for k in ['买报价', '卖报价']) else None
+                    v = quote.get('买报价') if '买报价' in quote.index else None
+                    if v is None:
+                        v = quote.get('卖报价') if '卖报价' in quote.index else None
+                    ctx['usd_cny'] = StockAnalysisAgent._safe_float(v)
         except Exception as e:
             logger.debug(f"汇率获取失败: {e}")
 
@@ -416,7 +442,7 @@ class StockAnalysisAgent:
             logger.debug(f"大盘状态获取失败: {e}")
 
         logger.info(f"宏观数据采集完成: {len(ctx)} 个字段")
-        return ctx
+        return StockAnalysisAgent._sanitize_context(ctx)
 
     @staticmethod
     def _fetch_industry_context(symbol: str) -> dict:
@@ -505,4 +531,4 @@ class StockAnalysisAgent:
             logger.debug(f"政策新闻获取失败: {e}")
 
         logger.info(f"行业数据采集完成: {len(ctx)} 个字段")
-        return ctx
+        return StockAnalysisAgent._sanitize_context(ctx)
