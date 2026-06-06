@@ -368,6 +368,45 @@ StockFish/
 
 ---
 
+## 🗺 Roadmap
+
+```
+Phase 1   🧠 大师决策 ──→ 前端大师 UI + 多大师对比
+Phase 2   📊 批量分析 ──→ 批量对比矩阵 + 并发控制
+Phase 3   ⏪ 回测系统 ──→ 评分引擎回测 + IC/IR 评估
+Phase 4   💬 飞书集成 ──→ Bot 命令 + 卡片推送 + 自选股
+```
+
+### □ 大师决策架构（进行中）
+
+7 位大师（Buffett / Graham / Fisher / Lynch / Templeton / Soros / Dalio），8 名员工 → CIO 最终裁决
+
+- [x] 8 Agent + CIO 决策框架（`analysis/agents/`）
+- [ ] 前端大师选择器 + 多大师对比
+- [ ] 宏观/行业分析师接入
+
+### □ 批量股票分析
+
+- [ ] `POST /api/batch/analyze` 多 Symbol 并发
+- [ ] 对比矩阵 — 方向/置信度/PE/信号分并排
+- [ ] 前端批量进度 + 可展开详情
+
+### □ 回测系统
+
+基于评分引擎（跳过 LLM），评估历史信号有效性
+
+- [ ] 历史窗口遍历 + 无前瞻偏差
+- [ ] IC / IR / 胜率 / 累计收益
+- [ ] 自适应权重模块单独评估
+
+### □ 飞书集成
+
+- [ ] `/analyze` `/batch` `/backtest` `/watch` 命令
+- [ ] 消息卡片（普通/大师/批量/回测四种模板）
+- [ ] 自选股 + 开盘/收盘简报推送
+
+---
+
 ## 🔗 引用
 
 - [DeepSeek](https://platform.deepseek.com/usage) — LLM 推理
