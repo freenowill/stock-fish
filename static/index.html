@@ -455,6 +455,19 @@ function confClass(conf) {
 }
 
 
+
+function toggleEmpReports(el) {
+  var content = el.nextElementSibling;
+  var count = (el.getAttribute('data-count') || '');
+  if (content.classList.contains('open')) {
+    content.classList.remove('open');
+    el.textContent = '📂 查看全部' + count + '份部门报告 ▾';
+  } else {
+    content.classList.add('open');
+    el.textContent = '📂 收起部门报告 ▴';
+  }
+}
+
 function renderMasterDecision(pred) {
   const cio = pred.cio_decision || {};
   if (!cio.master_name) return '';
@@ -563,7 +576,7 @@ function renderMasterDecision(pred) {
   if (empReports.length > 0) {
     const deptMap = {macro: 'dept-macro', policy: 'dept-macro', valuation: 'dept-research', fundamental: 'dept-research', technical: 'dept-research', sentiment: 'dept-trading', risk: 'dept-risk', overseer: 'dept-oversight'};
     html += '<div class="emp-reports-wrap">';
-    html += '<div class="emp-reports-toggle" onclick="var c=this.nextElementSibling;c.classList.toggle("open");this.textContent=c.classList.contains("open")?"📂 收起部门报告 ▴":"📂 查看全部' + empReports.length + '份部门报告 ▾"">📂 查看全部' + empReports.length + '份部门报告 ▾</div>';
+    html += '<div class="emp-reports-toggle" onclick="toggleEmpReports(this)" data-count="' + empReports.length + '">📂 查看全部' + empReports.length + '份部门报告 ▾</div>';
     html += '<div class="emp-reports-content">';
     for (const r of empReports) {
       const deptCls = deptMap[r.employee_id] || '';
