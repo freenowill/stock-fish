@@ -120,6 +120,8 @@ class CIOAgent(BaseAgent):
                     cash_pct = round(available_cash / total_assets * 100, 1)
                     lines.append(f"- 现金占比: {cash_pct}%")
             lines.append("")
+            lines.append("**重要**: 以上持仓数据是你做决策的核心约束。你给出的 `position_size_pct`、`entry_conditions`、`stop_loss` 必须与用户的资金状况匹配——例如可用资金不足时应分批建仓，仓位过重时应优先控风险。")
+            lines.append("")
 
         # 员工报告
         lines.append("## 部门分析报告")

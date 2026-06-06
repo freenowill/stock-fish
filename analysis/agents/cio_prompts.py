@@ -14,8 +14,7 @@ from typing import Dict, Optional
 
 CIO_OUTPUT_SCHEMA = """输出 JSON 格式 (严格遵守):
 {
-  "decision_summary": "综合判断 (60字内)",
-  "evidence_chain": [
+  "decision_summary": "综合判断，若有持仓数据则必须引用: '您持有X股(市值Y元/占总资产Z%)，可用资金W元，建议...' (80字内)",
     "估值分析师: PE处于历史X%分位...",
     "基本面分析师: ROE=Y%，护城河评估...",
     "技术分析师: RSI=Z，MACD状态...",
@@ -29,6 +28,7 @@ CIO_OUTPUT_SCHEMA = """输出 JSON 格式 (严格遵守):
   "order": {
     "action": "买入/加仓/持有/减仓/卖出/观望",
     "position_size_pct": 20,
+    "position_note": "基于持仓数据解释仓位建议: 如'当前已持有40%，剩余可用资金可加仓10%' (40字)",
     "entry_conditions": "入场条件(40字)",
     "stop_loss": {"level": 0, "type": "固定止损/移动止损MA20/...", "trigger": "触发条件"},
     "take_profit": {"level_1": 0, "level_2": 0, "type": "分批止盈/一次性止盈"}

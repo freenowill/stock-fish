@@ -556,6 +556,9 @@ function renderMasterDecision(pred) {
       html += '<div class="cio-order-item"><div class="label">止盈</div><div style="font-size:18px;font-weight:600;color:#ff4757;">¥' + (tpLevel || 0).toFixed(1) + '</div></div>';
     }
     html += '</div>';
+    if (order.position_note) {
+      html += '<div style="font-size:13px;color:#ffa502;margin-top:6px;padding:6px 10px;background:rgba(255,165,2,.08);border-radius:6px;">📊 仓位分析: ' + order.position_note + '</div>';
+    }
     if (order.entry_conditions) {
       html += '<div style="font-size:12px;color:#6b8db5;margin-top:6px;">入场条件: ' + order.entry_conditions + '</div>';
     }
