@@ -845,8 +845,10 @@ function renderAnalysis(data) {
     html += renderMasterDecision(psMaster);
   }
 
-  // ---- MULTI-AGENT DEBATE ----
+  // ---- MULTI-AGENT DEBATE (仅在未启用大师决策时显示) ----
   const pred = data.prediction_summary || {};
+  const hasMasterDecision = pred.cio_decision && pred.cio_decision.master_name;
+  if (!hasMasterDecision) {
   const agents = [
     { key: 'tech_view', label: '技术面分析师', icon: '◆', data: pred.tech_view },
     { key: 'fund_view', label: '基本面分析师', icon: '■', data: pred.fund_view },
@@ -923,6 +925,7 @@ function renderAnalysis(data) {
       ` : ''}
     </div>`;
   }
+  } // end if (!hasMasterDecision)
 
   if (data.llm_analysis) {
     html += '<div class="section-title">AI 分析详情</div>';
