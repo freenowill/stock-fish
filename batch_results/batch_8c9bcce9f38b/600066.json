@@ -1,0 +1,1444 @@
+{
+  "symbol": "600066",
+  "stock_name": "宇通客车",
+  "status": "complete",
+  "error": null,
+  "created_at": "2026-06-07T04:01:11.702223",
+  "completed_at": "2026-06-07T04:05:36.807134",
+  "cost_price": 0.0,
+  "shares": 0,
+  "total_assets": 0.0,
+  "available_cash": 0.0,
+  "quote": {
+    "symbol": "600066",
+    "name": "宇通客车",
+    "price": 30.57,
+    "change": 0.58,
+    "change_pct": 1.93,
+    "volume": 28535900.0,
+    "amount": 869280022.0,
+    "high": 31.19,
+    "low": 29.54,
+    "open_": 30.01,
+    "prev_close": 29.99,
+    "turnover_rate": 1.29,
+    "pe": 12.4,
+    "pb": 5.74,
+    "market_cap": 676.8,
+    "dividend": 2.0,
+    "timestamp": "2026-06-07 04:01:16"
+  },
+  "technical_indicators": {
+    "symbol": "",
+    "price": 30.57,
+    "ma5": 31.88,
+    "ma10": 32.13,
+    "ma20": 32.79,
+    "ma60": 33.98,
+    "rsi_14": 43.15,
+    "macd_dif": -0.9053,
+    "macd_dea": -0.7596,
+    "macd_hist": -0.2914,
+    "kdj_k": 20.77,
+    "kdj_d": 20.77,
+    "kdj_j": 20.77,
+    "boll_upper": 36.01,
+    "boll_middle": 32.79,
+    "boll_lower": 29.56,
+    "volume_ratio": 1.02,
+    "amplitude": 5.4
+  },
+  "financial_summary": {
+    "symbol": "600066",
+    "name": "宇通客车",
+    "revenue": 53.43,
+    "revenue_yoy": 11.3081,
+    "net_profit": 55.57,
+    "net_profit_yoy": 34.9422,
+    "eps": 2.51,
+    "roe": 38.2728,
+    "gross_margin": 24.1411,
+    "debt_ratio": 51.9728,
+    "report_date": "20251231"
+  },
+  "news": [
+    {
+      "title": "宇通客车股份有限公司关于担保计划范围内担保进展的公告",
+      "url": "https://finance.sina.com.cn/roll/2026-06-06/doc-iniakweh8108524.shtml",
+      "publish_time": "2026-06-06 03:04",
+      "source": "新浪财经"
+    },
+    {
+      "title": "宇通护航世界杯 中通/比亚迪和TA斩超级大单 5月客车市场升温！",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-04/doc-iniafmms3742220.shtml",
+      "publish_time": "2026-06-04 14:36",
+      "source": "新浪财经"
+    },
+    {
+      "title": "雪球关注 158993人  |  最新价 ¥30.57",
+      "url": "",
+      "publish_time": "2026-06-07",
+      "source": "雪球"
+    }
+  ],
+  "guba_posts": [
+    {
+      "title": "周一先回落，后拉红4个点在回落",
+      "author": "豪迈奔放的直木3",
+      "publish_time": "06-07 12:18",
+      "read_count": 28,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "老板把利润全分了，不搞研发吗？",
+      "author": "会炒才会赢",
+      "publish_time": "06-06 09:32",
+      "read_count": 30,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "享受完上涨接下的调整你也得接受",
+      "author": "别问就是韭菜",
+      "publish_time": "06-06 05:06",
+      "read_count": 34,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "你就是一个信球，啥都不懂！",
+      "author": "永远未知",
+      "publish_time": "06-06 11:24",
+      "read_count": 50,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "网红上周带头来抄底了，主力又该如何应对？",
+      "author": "穿越时空的念",
+      "publish_time": "06-06 11:19",
+      "read_count": 37,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "宇通客车：融资净偿还781.44万元，融资余额1.77亿元",
+      "author": "宇通客车资讯",
+      "publish_time": "06-06 07:38",
+      "read_count": 52,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "宇通客车:关于担保计划范围内担保进展的公告",
+      "author": "宇通客车资讯",
+      "publish_time": "06-05 04:43",
+      "read_count": 460,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "主力持股成本33？？",
+      "author": "夜凝霜",
+      "publish_time": "06-05 02:40",
+      "read_count": 53,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "优质股资金就不会放弃低位建仓机会",
+      "author": "yudr88",
+      "publish_time": "06-05 01:52",
+      "read_count": 90,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "高股息加定投是超级利器。养股还能传给下一代，稳赢。",
+      "author": "基民cazBQz",
+      "publish_time": "06-05 01:08",
+      "read_count": 50,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "昨天宇通暴跌，把买盘吓傻了，信心崩塌！",
+      "author": "茜色天空",
+      "publish_time": "06-05 01:02",
+      "read_count": 126,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "同志们，每月定投100股，相当于每月涨两百多的工资，值得坚持到退休。",
+      "author": "基民cazBQz",
+      "publish_time": "06-05 01:02",
+      "read_count": 182,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "轮到科技板块了！",
+      "author": "钱股长笔记",
+      "publish_time": "06-05 12:30",
+      "read_count": 1656,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "短线防风险 59只个股短期均线现死叉",
+      "author": "艾可蓝资讯",
+      "publish_time": "06-05 12:04",
+      "read_count": 596,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "天天冲高回落，何意味",
+      "author": "疯狂的小猎豹",
+      "publish_time": "06-05 11:36",
+      "read_count": 45,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "真牛逼，这是什么脏东西？烂完了，真恶心。",
+      "author": "平和宁静的游芝菲",
+      "publish_time": "06-05 11:24",
+      "read_count": 46,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "别绿",
+      "author": "海桐球",
+      "publish_time": "06-05 11:22",
+      "read_count": 39,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "恶心的妈妈给恶心开门，恶心到家了",
+      "author": "好股猎手",
+      "publish_time": "06-05 11:21",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "今天还给31的机会吗",
+      "author": "国色天香的吕皓轩",
+      "publish_time": "06-05 10:56",
+      "read_count": 64,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "上车，上车",
+      "author": "牛B克拉斯巴达",
+      "publish_time": "06-05 10:41",
+      "read_count": 40,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "今天要绿",
+      "author": "股友u1859r3522",
+      "publish_time": "06-05 10:37",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "壹评级：客车出口未遭全面禁入，欧洲本地化倒逼合资",
+      "author": "宇通客车资讯",
+      "publish_time": "06-05 09:54",
+      "read_count": 819,
+      "comment_count": 5,
+      "content": null
+    },
+    {
+      "title": "留下的发财，跑路了",
+      "author": "厉害的凌君澈",
+      "publish_time": "06-05 09:32",
+      "read_count": 232,
+      "comment_count": 7,
+      "content": null
+    },
+    {
+      "title": "这坐起来舒适度有点高啊，今天拉升几个点呢",
+      "author": "冷门更安全",
+      "publish_time": "06-05 08:23",
+      "read_count": 306,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "宇通客车：融资净买入792.21万元，融资余额1.85亿元",
+      "author": "宇通客车资讯",
+      "publish_time": "06-05 07:42",
+      "read_count": 97,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "现在旅游小团化在全球兴起，宇通轻型商旅客车销量增长较快，毛利率更高。",
+      "author": "基民cazBQz",
+      "publish_time": "06-05 06:26",
+      "read_count": 65,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "这样一个优秀企业！为什么？！遭挨杀！民营企业太难了！",
+      "author": "婀娜多姿的公孙虔",
+      "publish_time": "06-05 04:59",
+      "read_count": 97,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "我认为接下来的几个交易日，有可能崩盘式大跌，跌到140以内，因为硬件科技板块抱团",
+      "author": "呀酱本酱",
+      "publish_time": "06-05 04:01",
+      "read_count": 215,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "明天大概率一字跌停，后面连续跌停也有可能，甚至ST退市（概率低）",
+      "author": "好股猎手",
+      "publish_time": "06-04 10:38",
+      "read_count": 241,
+      "comment_count": 5,
+      "content": null
+    },
+    {
+      "title": "[图片]",
+      "author": "五年炒股三年模拟",
+      "publish_time": "06-04 10:37",
+      "read_count": 326,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "$宇通客车(SH600066)$",
+      "author": "股友X912515p99",
+      "publish_time": "06-04 10:21",
+      "read_count": 40,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "太残忍了，还好只是观察",
+      "author": "爱达地球",
+      "publish_time": "06-04 09:43",
+      "read_count": 42,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "中长线资金纹丝未动只是今天释放恐慌情绪触发量化跟风砸盘短期有获利了结跟风的不知道",
+      "author": "流鼻涕的善啾",
+      "publish_time": "06-04 09:35",
+      "read_count": 138,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "全链资源汇聚，郑州商用车迎来产业升级窗口期",
+      "author": "宇通客车资讯",
+      "publish_time": "06-04 09:24",
+      "read_count": 327,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "机构真是冷血动物.放量下砸.做个好人吧.快去9你的泡沫.10月之前泡沫必破",
+      "author": "五味的高莘",
+      "publish_time": "06-04 08:58",
+      "read_count": 59,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "大宇通是不是要给散户下套了，要一路阴跌了。",
+      "author": "股友5809we3057",
+      "publish_time": "06-04 08:10",
+      "read_count": 80,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "这是主力出货完成了吧",
+      "author": "股友OinuIs",
+      "publish_time": "06-04 07:58",
+      "read_count": 145,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "客车国内市场很卷，只有量没有利润。大部分客车企业的利润和增长点都靠出口，欧洲市场",
+      "author": "叫我糕手",
+      "publish_time": "06-04 07:23",
+      "read_count": 838,
+      "comment_count": 7,
+      "content": null
+    },
+    {
+      "title": "明天继续捡便宜",
+      "author": "养鸡老农",
+      "publish_time": "06-04 06:04",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "欧盟销售额只占总销量的5%。可有可无。。",
+      "author": "养鸡老农",
+      "publish_time": "06-04 06:03",
+      "read_count": 270,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "明天还有一根大阴线",
+      "author": "向上的止盈王者",
+      "publish_time": "06-04 05:23",
+      "read_count": 82,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "宇通主要盈利来自外贸，而且主要是欧洲那边，这次贸易战对他影响很大",
+      "author": "n14260472725c8a0",
+      "publish_time": "06-04 04:55",
+      "read_count": 231,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "求高人指点今天为什么跌这么多",
+      "author": "八级大",
+      "publish_time": "06-04 04:29",
+      "read_count": 111,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "被暴击的一天",
+      "author": "股友591O7G9129",
+      "publish_time": "06-04 04:22",
+      "read_count": 51,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "几块起来的票，走到现在已经可以了",
+      "author": "不名刺客",
+      "publish_time": "06-04 03:43",
+      "read_count": 47,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "下跌刚刚开始，等待20元抢反弹了。",
+      "author": "老豆包材",
+      "publish_time": "06-04 03:33",
+      "read_count": 95,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "这是跌的原因？",
+      "author": "我无限子弹",
+      "publish_time": "06-04 03:25",
+      "read_count": 1014,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "今天亏麻了。",
+      "author": "平和宁静的游芝菲",
+      "publish_time": "06-04 03:22",
+      "read_count": 112,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "罕见的大绿柱今天？发生了什么呢？有大神指点",
+      "author": "股友TSwG5C",
+      "publish_time": "06-04 03:22",
+      "read_count": 329,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "雪球上有个网红叫省大啥的，又进这个票了，祝大家好运。。。",
+      "author": "山潮下落日",
+      "publish_time": "06-04 03:21",
+      "read_count": 56,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "这样不计成本，只能先判断有什么我们不知道的事情了。。。",
+      "author": "透明Alex",
+      "publish_time": "06-04 03:03",
+      "read_count": 55,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "今天你没收到30以上，明天再见",
+      "author": "这辈子不要抄底",
+      "publish_time": "06-04 03:02",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "跌停就差一分，一分，今天碰不到，明天应该能了",
+      "author": "国色天香的吕皓轩",
+      "publish_time": "06-04 02:57",
+      "read_count": 46,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "你敢砸，我就敢买！",
+      "author": "同心百合",
+      "publish_time": "06-04 02:54",
+      "read_count": 69,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "牛市结束了，4000多家都在破位下跌，唯有几百家泡沫在硬拉",
+      "author": "行稳至远a",
+      "publish_time": "06-04 02:52",
+      "read_count": 70,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "优质牛股抢筹大战！",
+      "author": "股友97Vy089833",
+      "publish_time": "06-04 02:43",
+      "read_count": 114,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "优质股还是有资金逢低抢筹的",
+      "author": "yudr88",
+      "publish_time": "06-04 02:42",
+      "read_count": 75,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "你这个浓眉大眼的家伙，也有今天啊。。。",
+      "author": "山潮下落日",
+      "publish_time": "06-04 02:42",
+      "read_count": 43,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "优质股还是有资金逢低抢筹的",
+      "author": "yudr88",
+      "publish_time": "06-04 02:41",
+      "read_count": 32,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "跌破支撑位了",
+      "author": "刻苦耐劳的扫地僧",
+      "publish_time": "06-04 02:33",
+      "read_count": 60,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "你们都被套多少点了",
+      "author": "股友139l8Y2758",
+      "publish_time": "06-04 02:28",
+      "read_count": 161,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "反正我又补仓了",
+      "author": "良行天下",
+      "publish_time": "06-04 02:26",
+      "read_count": 29,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "呵呵，跌停了，真TM牛逼，自己人先把自己人制裁了。",
+      "author": "平和宁静的游芝菲",
+      "publish_time": "06-04 02:26",
+      "read_count": 35,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "跌停",
+      "author": "刻苦耐劳的扫地僧",
+      "publish_time": "06-04 02:26",
+      "read_count": 42,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "欧盟要对宇通动手了",
+      "author": "冰蜀道行",
+      "publish_time": "06-04 02:21",
+      "read_count": 114,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "什么玩意不要",
+      "author": "尽职的魏莹冬",
+      "publish_time": "06-04 02:21",
+      "read_count": 53,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "跌停也就回到涨停那个价格附近",
+      "author": "股友503h20203Q",
+      "publish_time": "06-04 02:21",
+      "read_count": 32,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "补仓补仓，补到了半山腰，补了两次，31.67、31.20，我可真棒啊",
+      "author": "股友602fo11688",
+      "publish_time": "06-04 02:17",
+      "read_count": 74,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "还是等站上五日线再买入吧。比较稳",
+      "author": "股友9c321l0535",
+      "publish_time": "06-04 02:13",
+      "read_count": 37,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "不管了先梭为敬，放长线钓大鱼",
+      "author": "海桐球",
+      "publish_time": "06-04 02:12",
+      "read_count": 230,
+      "comment_count": 5,
+      "content": null
+    },
+    {
+      "title": "估计明天到28元了",
+      "author": "股友9c321l0535",
+      "publish_time": "06-04 02:06",
+      "read_count": 55,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "没人管的吗？",
+      "author": "平和宁静的游芝菲",
+      "publish_time": "06-04 02:04",
+      "read_count": 34,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "制裁的这几个都没啥事你那么大动静，暴力洗盘？",
+      "author": "五年炒股三年模拟",
+      "publish_time": "06-04 02:03",
+      "read_count": 1227,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "34直接干到29，什么样的实力、歹毒，才能在这个票上干到这种程度。",
+      "author": "平和宁静的游芝菲",
+      "publish_time": "06-04 02:02",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "都去热门赛道科技股去了，没有故事好说",
+      "author": "yudr88",
+      "publish_time": "06-04 01:59",
+      "read_count": 32,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "这个股票比江淮汽车好多了",
+      "author": "A股一帆风顺",
+      "publish_time": "06-04 01:59",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "跌停跑不了。",
+      "author": "招财亨通de段正淳",
+      "publish_time": "06-04 01:55",
+      "read_count": 27,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "别再跌了，再跌我就要买进去了。我买什么跌什么呀",
+      "author": "嵩山万年红",
+      "publish_time": "06-04 01:53",
+      "read_count": 139,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "见证了一次涨停也见证了一次爆跌，平时超过三个点都是大跌了，看来只能做长期股东了",
+      "author": "股友325h05E931",
+      "publish_time": "06-04 01:52",
+      "read_count": 74,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "隔壁金虫也是跌得要死你们这些造车的，厂子爆了？",
+      "author": "涨多多的了",
+      "publish_time": "06-04 01:51",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    }
+  ],
+  "sentiment_news": {
+    "avg_score": 0.0,
+    "positive_ratio": 0.0,
+    "negative_ratio": 0.0,
+    "total_count": 3,
+    "positive_count": 0,
+    "negative_count": 0
+  },
+  "sentiment_guba": {
+    "avg_score": -0.0312,
+    "positive_ratio": 0.125,
+    "negative_ratio": 0.1875,
+    "total_count": 80,
+    "positive_count": 10,
+    "negative_count": 15
+  },
+  "signals": {
+    "overall": "bearish",
+    "score": -1.0,
+    "label": "偏空",
+    "technical": -2.6,
+    "fundamental": 1.6,
+    "sentiment": -0.0,
+    "regime": "trending_down",
+    "confidence": "低",
+    "details": [
+      {
+        "factor": "RSI(14)=43",
+        "impact": "positive",
+        "weight": 0.16,
+        "contribution": 0.15749999999999995,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=-0.291",
+        "impact": "negative",
+        "weight": 0.05,
+        "contribution": -0.054213953488372095,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "weight": 1.5,
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.16)",
+        "impact": "positive",
+        "weight": 0.86,
+        "contribution": 0.8585271317829452,
+        "description": "触下轨反弹"
+      },
+      {
+        "factor": "量价关系(量比=1.0)",
+        "impact": "neutral",
+        "weight": 0,
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "weight": 1.02,
+        "contribution": -1.01555352241537,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "weight": 3.0,
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(38.3%)",
+        "impact": "positive",
+        "weight": 1.5,
+        "contribution": 1.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(+34.9%)",
+        "impact": "positive",
+        "weight": 0.81,
+        "contribution": 0.8130809999999999,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "weight": 0.3,
+        "contribution": 0.3,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=0.00)",
+        "impact": "neutral",
+        "weight": 0.0,
+        "contribution": 0.0,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.03)",
+        "impact": "negative",
+        "weight": 0.04,
+        "contribution": -0.03899999999999999,
+        "description": ""
+      }
+    ]
+  },
+  "llm_analysis": "宇通客车(600066)当前PE处于历史最低分位，ROE高达38.27%，净利润增速34.94%，符合成长股标准。但技术面全面看空，盈利可持续性存疑。建议现价买入，分批建仓至20%仓位，长期持有享受成长红利。",
+  "prediction_summary": {
+    "outlook": "震荡",
+    "confidence": "中",
+    "price_target_current": 30.57,
+    "price_target_low": 24.0,
+    "price_target_high": 45.0,
+    "reason": "宇通客车(600066)当前PE处于历史最低分位，ROE高达38.27%，净利润增速34.94%，符合成长股标准。但技术面全面看空，盈利可持续性存疑。建议现价买入，分批建仓至20%仓位，长期持有享受成长红利。",
+    "tech_view": {
+      "role": "技术分析师",
+      "outlook": "看空",
+      "confidence": "中",
+      "score": -4.0,
+      "key_points": [
+        "均线空头排列，MA5<MA10<MA20<MA60，趋势偏空",
+        "MACD死叉且柱状线为负，短期动能偏空",
+        "价格低于所有重要均线，上方压力明显",
+        "RSI=43.15，中性偏弱，无超卖信号"
+      ],
+      "risks": [
+        "若跌破布林下轨29.56可能加速下跌",
+        "KDJ的K值接近20，技术性反弹风险"
+      ]
+    },
+    "fund_view": {
+      "role": "基本面分析师",
+      "outlook": "看多",
+      "confidence": "高",
+      "score": 6.0,
+      "key_points": [
+        "ROE=38.27%远高于20%门槛，盈利能力极强",
+        "净利润同比增速34.94%，增长强劲",
+        "营收同比增长11.31%，稳健增长"
+      ],
+      "risks": [
+        "资产负债率51.97%，略高于40%警戒线，需关注偿债风险",
+        "毛利率24.14%处于中等水平，可能面临行业竞争压力"
+      ]
+    },
+    "sent_view": {
+      "role": "舆情分析师",
+      "outlook": "中性",
+      "confidence": "中",
+      "score": 0.0,
+      "key_points": [
+        "新闻情感中性，无显著影响",
+        "股吧平均情感接近零，正面与负面数量相当",
+        "市场情绪分化，无明显方向"
+      ],
+      "risks": [
+        "股吧负面评论提及暴跌和死叉，需关注短期风险",
+        "利好缺乏实质性内容，难以支撑上涨"
+      ]
+    },
+    "short_term": {
+      "direction": "震荡",
+      "change_pct": -2,
+      "confidence": "低",
+      "reason": "技术面空头压制，短期可能下探29元支撑，但基本面强劲限制跌幅。"
+    },
+    "mid_term": {
+      "direction": "上涨",
+      "change_pct": 10,
+      "confidence": "中",
+      "reason": "低估值吸引长线资金，一季报披露验证成长性，有望企稳回升。"
+    },
+    "long_term": {
+      "direction": "上涨",
+      "change_pct": 30,
+      "confidence": "高",
+      "reason": "高ROE持续驱动价值增长，新能源客车拓展新市场，6-12个月目标36元。"
+    },
+    "suggested_action": {
+      "action": "买入",
+      "reason": "现价买入，或回调至29元附近加仓。",
+      "stop_loss": 24.0,
+      "take_profit": 36.0
+    },
+    "cio_decision": {
+      "master_name": "菲利普·费雪",
+      "master_key": "fisher",
+      "decision_summary": "宇通客车(600066)当前PE处于历史最低分位，ROE高达38.27%，净利润增速34.94%，符合成长股标准。但技术面全面看空，盈利可持续性存疑。建议现价买入，分批建仓至20%仓位，长期持有享受成长红利。",
+      "rationale": "采纳基本面分析师看多观点（高ROE、高增长、低PE分位是核心论据），估值分析师看多（低PE+高质量提供双击机会）。否决风险经理看空（短期波动不影响长期价值）、技术分析师看空（技术面不适用成长股长期持有）。部分采纳监察员质疑（盈利可持续性需关注），但认为当前估值已反映部分风险，且公司行业地位稳固。宏观环境偏中性，政策不确定性但经济复苏确认。舆情中性，无重大负面。最终决策：现价买入，目标仓位20%，长期持有。",
+      "evidence_chain": [
+        "宏观分析师: PMI=53.0，经济复苏确认，支撑权益投资→采纳，宏观环境支持成长股。",
+        "行业政策分析师: 政策偏利空，数据缺失→否决，未提供具体数据，影响有限。",
+        "估值分析师: PE处于历史0%分位，极低估值→采纳，提供安全边际和安全垫。",
+        "基本面分析师: ROE=38.27%，净利增速34.94%，高质量增长→采纳，核心看多依据。",
+        "技术分析师: MACD死叉，均线空头排列，RSI=43→否决，不关注短期技术面。",
+        "舆情分析师: 新闻中性，股吧情绪分歧→否决，无方向性信息。",
+        "风险经理: 下行空间-8%，量比低→部分采纳，短期波动但长期价值未损。",
+        "监察员: 盈利可持续性存疑，存在价值陷阱风险→采纳但淡化，当前估值已足够安全。"
+      ],
+      "base_case": {
+        "direction": "上涨",
+        "target": 36.0,
+        "probability": 0.55,
+        "reason": "高ROE+低PE驱动估值修复，盈利持续增长，3-5年实现价值回归。"
+      },
+      "bull_case": {
+        "direction": "上涨",
+        "target": 45.0,
+        "probability": 0.25,
+        "reason": "第二增长曲线（新能源客车）超预期，盈利加速，市场重新定价。"
+      },
+      "bear_case": {
+        "direction": "下跌",
+        "target": 24.0,
+        "probability": 0.2,
+        "reason": "盈利增速大幅放缓，行业竞争加剧，毛利率下滑，PE扩张失败。"
+      },
+      "order": {
+        "action": "买入",
+        "order_rationale": "现价30.57元低于内在价值，PE历史最低分位提供安全边际，选中买入而非等待，因长期持有不需择时。",
+        "position_size_pct": 20,
+        "position_note": "当前无持仓，建议首次买入20%仓位，后续可根据基本面变化调整。",
+        "entry_conditions": "现价买入，或回调至29元附近加仓。",
+        "stop_loss": {
+          "level": 24.0,
+          "type": "固定止损",
+          "trigger": "跌破24元，盈利大幅恶化"
+        },
+        "take_profit": {
+          "level_1": 36.0,
+          "level_2": 45.0,
+          "type": "分批止盈"
+        }
+      },
+      "short_term": {
+        "direction": "震荡",
+        "change_pct": -2,
+        "confidence": "低",
+        "reason": "技术面空头压制，短期可能下探29元支撑，但基本面强劲限制跌幅。"
+      },
+      "mid_term": {
+        "direction": "上涨",
+        "change_pct": 10,
+        "confidence": "中",
+        "reason": "低估值吸引长线资金，一季报披露验证成长性，有望企稳回升。"
+      },
+      "long_term": {
+        "direction": "上涨",
+        "change_pct": 30,
+        "confidence": "高",
+        "reason": "高ROE持续驱动价值增长，新能源客车拓展新市场，6-12个月目标36元。"
+      },
+      "risk_monitoring": [
+        {
+          "trigger": "营收增速连续两季度低于10%",
+          "action": "减仓至10%"
+        },
+        {
+          "trigger": "毛利率跌破20%",
+          "action": "审视行业竞争格局，考虑减仓"
+        }
+      ],
+      "decision_quality": {
+        "confidence": "中",
+        "key_uncertainties": [
+          "盈利可持续性（非经常性损益占比）",
+          "行业竞争导致毛利率下滑"
+        ],
+        "next_review": "3个交易日后"
+      },
+      "veto_response": "无",
+      "raw_llm_output": "{\"decision_summary\": \"宇通客车(600066)当前PE处于历史最低分位，ROE高达38.27%，净利润增速34.94%，符合成长股标准。但技术面全面看空，盈利可持续性存疑。建议现价买入，分批建仓至20%仓位，长期持有享受成长红利。\", \"rationale\": \"采纳基本面分析师看多观点（高ROE、高增长、低PE分位是核心论据），估值分析师看多（低PE+高质量提供双击机会）。否决风险经理看空（短期波动不影响长期价值）、技术分析师看空（技术面不适用成长股长期持有）。部分采纳监察员质疑（盈利可持续性需关注），但认为当前估值已反映部分风险，且公司行业地位稳固。宏观环境偏中性，政策不确定性但经济复苏确认。舆情中性，无重大负面。最终决策：现价买入，目标仓位20%，长期持有。\", \"evidence_chain\": [\"宏观分析师: PMI=53.0，经济复苏确认，支撑权益投资→采纳，宏观环境支持成长股。\", \"行业政策分析师: 政策偏利空，数据缺失→否决，未提供具体数据，影响有限。\", \"估值分析师: PE处于历史0%分位，极低估值→采纳，提供安全边际和安全垫。\", \"基本面分析师: ROE=38.27%，净利增速34.94%，高质量增长→采纳，核心看多依据。\", \"技术分析师: MACD死叉，均线空头排列，RSI=43→否决，不关注短期技术面。\", \"舆情分析师: 新闻中性，股吧情绪分歧→否决，无方向性信息。\", \"风险经理: 下行空间-8%，量比低→部分采纳，短期波动但长期价值未损。\", \"监察员: 盈利可持续性存疑，存在价值陷阱风险→采纳但淡化，当前估值已足够安全。\"], \"base_case\": {\"direction\": \"上涨\", \"target\": 36.0, \"probability\": 0.55, \"reason\": \"高ROE+低PE驱动估值修复，盈利持续增长，3-5年实现价值回归。\"}, \"bull_case\": {\"direction\": \"上涨\", \"target\": 45.0, \"probability\": 0.25, \"reason\": \"第二增长曲线（新能源客车）超预期，盈利加速，市场重新定价。\"}, \"bear_case\": {\"direction\": \"下跌\", \"target\": 24.0, \"probability\": 0.2, \"reason\": \"盈利增速大幅放缓，行业竞争加剧，毛利率下滑，PE扩张失败。\"}, \"order\": {\"action\": \"买入\", \"order_rationale\": \"现价30.57元低于内在价值，PE历史最低分位提供安全边际，选中买入而非等待，因长期持有不需择时。\", \"position_size_pct\": 20, \"position_note\": \"当前无持仓，建议首次买入20%仓位，后续可根据基本面变化调整。\", \"entry_conditions\": \"现价买入，或回调至29元附近加仓。\", \"stop_loss\": {\"level\": 24.0, \"type\": \"固定止损\", \"trigger\": \"跌破24元，盈利大幅恶化\"}, \"take_profit\": {\"level_1\": 36.0, \"level_2\": 45.0, \"type\": \"分批止盈\"}}, \"short_term\": {\"direction\": \"震荡\", \"change_pct\": -2, \"confidence\": \"低\", \"reason\": \"技术面空头压制，短期可能下探29元支撑，但基本面强劲限制跌幅。\"}, \"mid_term\": {\"direction\": \"上涨\", \"change_pct\": 10, \"confidence\": \"中\", \"reason\": \"低估值吸引长线资金，一季报披露验证成长性，有望企稳回升。\"}, \"long_term\": {\"direction\": \"上涨\", \"change_pct\": 30, \"confidence\": \"高\", \"reason\": \"高ROE持续驱动价值增长，新能源客车拓展新市场，6-12个月目标36元。\"}, \"risk_monitoring\": [{\"trigger\": \"营收增速连续两季度低于10%\", \"action\": \"减仓至10%\"}, {\"trigger\": \"毛利率跌破20%\", \"action\": \"审视行业竞争格局，考虑减仓\"}], \"decision_quality\": {\"confidence\": \"中\", \"key_uncertainties\": [\"盈利可持续性（非经常性损益占比）\", \"行业竞争导致毛利率下滑\"], \"next_review\": \"3个交易日后\"}, \"veto_response\": \"无\"}",
+      "error": null
+    },
+    "employee_reports": [
+      {
+        "employee_id": "risk",
+        "role": "风险经理",
+        "department": "风控部",
+        "outlook": "看空",
+        "confidence": "低",
+        "score": 5.0,
+        "key_points": [
+          "股价上涨但振幅较大，量比偏低，市场整体偏空",
+          "综合评分-1.0，趋势向下"
+        ],
+        "risks": [
+          "短期波动风险",
+          "下行空间约-8%",
+          "流动性风险：量比仅1.02"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "policy",
+        "role": "行业政策分析师",
+        "department": "宏观部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": 0.0,
+        "key_points": [
+          "政策环境评估偏利空",
+          "行业景气度和估值数据缺失"
+        ],
+        "risks": [
+          "政策不确定性",
+          "行业数据不充分"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "macro",
+        "role": "宏观分析师",
+        "department": "宏观部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 2.0,
+        "key_points": [
+          "PMI 53.0，连续高于50，经济复苏确认",
+          "货币政策中性，LPR不变，无进一步宽松信号"
+        ],
+        "risks": [
+          "CPI同比7.08%，通胀压力可能制约政策空间",
+          "北向资金数据缺失，外部资金流向不明"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "fundamental",
+        "role": "基本面分析师",
+        "department": "研究部",
+        "outlook": "看多",
+        "confidence": "高",
+        "score": 6.0,
+        "key_points": [
+          "ROE=38.27%远高于20%门槛，盈利能力极强",
+          "净利润同比增速34.94%，增长强劲",
+          "营收同比增长11.31%，稳健增长"
+        ],
+        "risks": [
+          "资产负债率51.97%，略高于40%警戒线，需关注偿债风险",
+          "毛利率24.14%处于中等水平，可能面临行业竞争压力"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "valuation",
+        "role": "估值分析师",
+        "department": "研究部",
+        "outlook": "看多",
+        "confidence": "高",
+        "score": 5.0,
+        "key_points": [
+          "PE处于历史0%分位，极低估值水平",
+          "ROE高达38.27%，盈利质量优秀",
+          "低估值+高质量，存在双击机会"
+        ],
+        "risks": [
+          "低估值可能反映市场对未来的悲观预期，需关注基本面变化",
+          "PB较高，资产溢价明显"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "sentiment",
+        "role": "舆情分析师",
+        "department": "交易部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 0.0,
+        "key_points": [
+          "新闻情感中性，无显著影响",
+          "股吧平均情感接近零，正面与负面数量相当",
+          "市场情绪分化，无明显方向"
+        ],
+        "risks": [
+          "股吧负面评论提及暴跌和死叉，需关注短期风险",
+          "利好缺乏实质性内容，难以支撑上涨"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "technical",
+        "role": "技术分析师",
+        "department": "研究部",
+        "outlook": "看空",
+        "confidence": "中",
+        "score": -4.0,
+        "key_points": [
+          "均线空头排列，MA5<MA10<MA20<MA60，趋势偏空",
+          "MACD死叉且柱状线为负，短期动能偏空",
+          "价格低于所有重要均线，上方压力明显",
+          "RSI=43.15，中性偏弱，无超卖信号"
+        ],
+        "risks": [
+          "若跌破布林下轨29.56可能加速下跌",
+          "KDJ的K值接近20，技术性反弹风险"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "overseer",
+        "role": "独立监察员",
+        "department": "监察部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 0.0,
+        "key_points": [
+          "盲点1: 团队过度依赖低PE分位，但ROE极高可能来自非经常性损益或周期高峰，盈利可持续性存疑，存在价值陷阱风险",
+          "盲点2: 技术指标全面看空（均线空头排列、MACD死叉、价格低于所有均线），看多分析师可能低估了技术面持续压力",
+          "替代情景: 若盈利增速放缓（营收仅增11%而利润增35%不可持续），PE将从低分位修复失败，股价可能下跌20%+",
+          "替代情景: 宏观经济超预期下行或政策收紧，导致估值中枢下移，即使利润稳定，PE也可能扩张失败"
+        ],
+        "risks": [
+          "认知偏差: 基本面分析师可能陷入'近因偏误'，过度外推近期高增长；估值分析师'锚定效应'，认为历史低PE即安全",
+          "数据质量: 舆情数据样本小，股吧言论噪音大，未反映机构资金动向；估值分位基于历史，当前宏观环境差异可能使历史分位失效",
+          "遗漏因素: 团队未讨论大股东减持风险、行业竞争加剧导致毛利率下滑、以及资产负债率偏高（51.97%）的偿债压力"
+        ],
+        "error": null
+      }
+    ]
+  },
+  "risk_factors": [
+    {
+      "factor": "短期波动风险"
+    },
+    {
+      "factor": "下行空间约-8%"
+    },
+    {
+      "factor": "政策不确定性"
+    },
+    {
+      "factor": "行业数据不充分"
+    },
+    {
+      "factor": "CPI同比7.08%，通胀压力可能制约政策空间"
+    },
+    {
+      "factor": "北向资金数据缺失，外部资金流向不明"
+    },
+    {
+      "factor": "资产负债率51.97%，略高于40%警戒线，需关注偿债风险"
+    },
+    {
+      "factor": "毛利率24.14%处于中等水平，可能面临行业竞争压力"
+    },
+    {
+      "factor": "低估值可能反映市场对未来的悲观预期，需关注基本面变化"
+    },
+    {
+      "factor": "PB较高，资产溢价明显"
+    },
+    {
+      "factor": "股吧负面评论提及暴跌和死叉，需关注短期风险"
+    },
+    {
+      "factor": "利好缺乏实质性内容，难以支撑上涨"
+    },
+    {
+      "factor": "若跌破布林下轨29.56可能加速下跌"
+    },
+    {
+      "factor": "KDJ的K值接近20，技术性反弹风险"
+    },
+    {
+      "factor": "认知偏差: 基本面分析师可能陷入'近因偏误'，过度外推近期高增长；估值分析师'锚定效应'，认为历史低PE即安全"
+    },
+    {
+      "factor": "数据质量: 舆情数据样本小，股吧言论噪音大，未反映机构资金动向；估值分位基于历史，当前宏观环境差异可能使历史分位失效"
+    }
+  ],
+  "price_target": {
+    "current": 30.57,
+    "low": 24.0,
+    "high": 45.0
+  },
+  "short_term_pred": null,
+  "mid_term_pred": null,
+  "long_term_pred": null,
+  "suggested_action": null,
+  "score_breakdown": {
+    "final": -1.0,
+    "label": "偏空",
+    "technical": -2.6,
+    "fundamental": 1.6,
+    "sentiment": -0.0,
+    "regime": "trending_down",
+    "confidence": "低",
+    "weights": {
+      "technical": 0.55,
+      "fundamental": 0.25,
+      "sentiment": 0.2
+    },
+    "breakdown": [
+      {
+        "factor": "RSI(14)=43",
+        "impact": "positive",
+        "contribution": 0.15749999999999995,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=-0.291",
+        "impact": "negative",
+        "contribution": -0.054213953488372095,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.16)",
+        "impact": "positive",
+        "contribution": 0.8585271317829452,
+        "description": "触下轨反弹"
+      },
+      {
+        "factor": "量价关系(量比=1.0)",
+        "impact": "neutral",
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "contribution": -1.01555352241537,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(38.3%)",
+        "impact": "positive",
+        "contribution": 1.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(+34.9%)",
+        "impact": "positive",
+        "contribution": 0.8130809999999999,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "contribution": 0.3,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=0.00)",
+        "impact": "neutral",
+        "contribution": 0.0,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.03)",
+        "impact": "negative",
+        "contribution": -0.03899999999999999,
+        "description": ""
+      }
+    ]
+  },
+  "valuation_level": "正常",
+  "valuation_percentile": 0.0,
+  "suggested_buy_price": 29.04,
+  "historical_pe_avg": 0.0,
+  "important_bullish_news": [],
+  "important_bearish_news": [],
+  "important_bullish_guba": [
+    {
+      "title": "享受完上涨接下的调整你也得接受",
+      "source": "别问就是韭菜",
+      "publish_time": "06-06 05:06",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "同志们，每月定投100股，相当于每月涨两百多的工资，值得坚持到退休。",
+      "source": "基民cazBQz",
+      "publish_time": "06-05 01:02",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "这坐起来舒适度有点高啊，今天拉升几个点呢",
+      "source": "冷门更安全",
+      "publish_time": "06-05 08:23",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    }
+  ],
+  "important_bearish_guba": [
+    {
+      "title": "昨天宇通暴跌，把买盘吓傻了，信心崩塌！",
+      "source": "茜色天空",
+      "publish_time": "06-05 01:02",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "短线防风险 59只个股短期均线现死叉",
+      "source": "艾可蓝资讯",
+      "publish_time": "06-05 12:04",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "我认为接下来的几个交易日，有可能崩盘式大跌，跌到140以内，因为硬件科技板块抱团",
+      "source": "呀酱本酱",
+      "publish_time": "06-05 04:01",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    }
+  ],
+  "macro_context": {
+    "source": "akshare",
+    "pmi": 53.0,
+    "cpi_yoy": 7.0781,
+    "shibor": 1.324,
+    "lpr_1y": 3.0,
+    "lpr_5y": 3.5,
+    "policy_tilt": "中性 (LPR不变)",
+    "m2_yoy": 18.88,
+    "social_financing": 6245.0,
+    "northbound_flow": null,
+    "northbound_5d_avg": null,
+    "usd_cny": null,
+    "macro_events": [
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-投标倍数(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-中标利率(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-投标倍数(倍)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M1金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M2金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高收益率(%)",
+        "importance": 1
+      }
+    ],
+    "policy_headlines": [
+      "习近平在重庆考察时强调 进一步全面深化改革开放 不断谱写中国式现代化重庆篇章",
+      "【央视快评】奋力谱写西部大开发新篇章",
+      "习近平向首届“中国－拉美和加勒比国家航天合作论坛”致贺信",
+      "十四届全国人大常委会举行第二十四次委员长会议 听取有关草案和议案审议情况汇报 赵乐际主持"
+    ]
+  },
+  "industry_context": {
+    "source": "akshare",
+    "policy_events": [
+      "央行连续第19个月增持黄金",
+      "据央行数据，5月末外汇储备报34422.38亿美元",
+      "证监会主席吴清：公募基金从“重规模”到“重回报”"
+    ],
+    "policy_impact": "偏利空"
+  }
+}

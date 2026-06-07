@@ -24,16 +24,17 @@
 - [x] Multi-agent debate system with analysis output
 - [x] MiroFish intelligent simulation integration
 
-**🧠 Master Decision Architecture** (in progress)
+**🧠 Master Decision Architecture** (completed)
 7 investment masters to choose from, 8 employees analyze → CIO final verdict
 - [x] 8 Agent + CIO decision framework
 - [x] Front-end master selector + multi-master comparison
 - [x] Macro/industry analyst integration
 
-**📊 Batch Stock Analysis**
-- [ ] `POST /api/batch/analyze` concurrent multi-symbol analysis
-- [ ] Comparison matrix (direction / confidence / PE / signal score)
-- [ ] Front-end batch progress + expandable details
+**📊 Batch Stock Analysis** (completed)
+- [x] `POST /api/batch/analyze` sequential multi-symbol analysis
+- [x] Real-time SSE per-stock result + sequential front-end rendering
+- [x] Batch summary (ranking/common themes/divergences) + quality pick
+- [x] Per-stock result cached in batch_results/
 
 **⏪ Backtesting System** (scoring-engine based, no LLM)
 - [ ] Historical window traversal + look-ahead bias free

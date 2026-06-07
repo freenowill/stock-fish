@@ -1,0 +1,1728 @@
+{
+  "symbol": "600519",
+  "stock_name": "贵州茅台",
+  "status": "complete",
+  "error": null,
+  "created_at": "2026-06-07T03:39:11.987752",
+  "completed_at": "2026-06-07T03:44:10.367026",
+  "cost_price": 150.0,
+  "shares": 100,
+  "total_assets": 500000.0,
+  "available_cash": 100000.0,
+  "quote": {
+    "symbol": "600519",
+    "name": "贵州茅台",
+    "price": 1272.86,
+    "change": 4.86,
+    "change_pct": 0.38,
+    "volume": 3130400.0,
+    "amount": 3984001862.0,
+    "high": 1283.0,
+    "low": 1267.74,
+    "open_": 1278.0,
+    "prev_close": 1268.0,
+    "turnover_rate": 0.25,
+    "pe": 19.24,
+    "pb": 5.94,
+    "market_cap": 15911.79,
+    "dividend": 28.024,
+    "timestamp": "2026-06-07 03:39:22"
+  },
+  "technical_indicators": {
+    "symbol": "",
+    "price": 1272.86,
+    "ma5": 1287.92,
+    "ma10": 1290.38,
+    "ma20": 1310.12,
+    "ma60": 1388.07,
+    "rsi_14": 38.69,
+    "macd_dif": -28.6631,
+    "macd_dea": -29.0316,
+    "macd_hist": 0.737,
+    "kdj_k": 28.85,
+    "kdj_d": 28.85,
+    "kdj_j": 28.85,
+    "boll_upper": 1365.73,
+    "boll_middle": 1310.12,
+    "boll_lower": 1254.52,
+    "volume_ratio": 0.79,
+    "amplitude": 1.2
+  },
+  "financial_summary": {
+    "symbol": "600519",
+    "name": "贵州茅台",
+    "revenue": 1147.01,
+    "revenue_yoy": -1.206,
+    "net_profit": 820.8,
+    "net_profit_yoy": -4.5323,
+    "eps": 65.66,
+    "roe": 34.462,
+    "gross_margin": 91.1796,
+    "debt_ratio": 16.4154,
+    "report_date": "20251231"
+  },
+  "news": [
+    {
+      "title": "2026年中消费市场复盘：结构性分化下的核心投资主线解析",
+      "url": "https://finance.sina.com.cn/wm/2026-06-07/doc-iniaqaqu6571168.shtml",
+      "publish_time": "2026-06-07 09:28",
+      "source": "新浪财经"
+    },
+    {
+      "title": "美股大跌来袭！下周一A股6条操作思路请收好",
+      "url": "https://k.sina.cn/article_7879996580_1d5af34a402001rnvo.html",
+      "publish_time": "2026-06-06 22:02",
+      "source": "新浪财经"
+    },
+    {
+      "title": "拐点来了！四大消费黄金赛道，配置性价比凸显",
+      "url": "https://finance.sina.com.cn/roll/2026-06-06/doc-iniamxrt0827022.shtml",
+      "publish_time": "2026-06-06 12:55",
+      "source": "新浪财经"
+    },
+    {
+      "title": "茅台人事变动/西凤创新消费模式/富邑“瘦身”・・・・・・",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-06/doc-iniamxru7601316.shtml",
+      "publish_time": "2026-06-06 12:45",
+      "source": "新浪财经"
+    },
+    {
+      "title": "为什么高端白酒是全世界最好的生意，没有之一？",
+      "url": "https://cj.sina.cn/articles/view/5557080256/14b3a50c002001j5ii",
+      "publish_time": "2026-06-05 22:31",
+      "source": "新浪财经"
+    },
+    {
+      "title": "险资长线资金扩容至2220亿，鸿鹄系调仓呈现“哑铃策略”",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-05/doc-iniakmqm1536298.shtml",
+      "publish_time": "2026-06-05 22:23",
+      "source": "新浪财经"
+    },
+    {
+      "title": "向C而行  共赴万千气象  贵州茅台2026年四川茅友嘉年华在成都举行",
+      "url": "https://finance.sina.com.cn/roll/2026-06-05/doc-iniakmqn8315122.shtml",
+      "publish_time": "2026-06-05 22:16",
+      "source": "新浪财经"
+    },
+    {
+      "title": "贵州茅台大宗交易成交0.30万股 成交额381.86万元",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-05/doc-iniakmqm1519003.shtml",
+      "publish_time": "2026-06-05 21:19",
+      "source": "新浪财经"
+    },
+    {
+      "title": "茅台重大人事变动：单衍忠已任茅台集团党委副书记",
+      "url": "https://finance.sina.com.cn/roll/2026-06-05/doc-iniakmqh2649413.shtml",
+      "publish_time": "2026-06-05 20:44",
+      "source": "新浪财经"
+    },
+    {
+      "title": "重磅人事：单衍忠已任茅台集团党委副书记",
+      "url": "https://cj.sina.cn/articles/view/6141084077/16e0981ad019039lvm",
+      "publish_time": "2026-06-05 20:27",
+      "source": "新浪财经"
+    },
+    {
+      "title": "A股市场会否形成新的高价“锚”？",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-05/doc-iniaiyyp9608641.shtml",
+      "publish_time": "2026-06-05 17:47",
+      "source": "新浪财经"
+    },
+    {
+      "title": "贵州茅台6月5日现1笔大宗交易 总成交金额381.86万元 溢价率为0.00%",
+      "url": "https://finance.sina.com.cn/stock/ggzz/2026-06-05/doc-iniaiyyr1690064.shtml",
+      "publish_time": "2026-06-05 17:41",
+      "source": "新浪财经"
+    },
+    {
+      "title": "6月5日贵州茅台现381.86万元大宗交易",
+      "url": "https://cj.sina.cn/articles/view/1850649324/6e4eaaec02002b9eq",
+      "publish_time": "2026-06-05 17:41",
+      "source": "新浪财经"
+    },
+    {
+      "title": "贵州茅台今日大宗交易平价成交3000股，成交额381.86万元",
+      "url": "https://cj.sina.cn/articles/view/5182171545/134e1a99902002fl20",
+      "publish_time": "2026-06-05 17:25",
+      "source": "新浪财经"
+    },
+    {
+      "title": "中信建投：零售变革方兴未艾 白酒一路向C供给革新",
+      "url": "https://cj.sina.cn/articles/view/5835524730/15bd30a7a0200269b0",
+      "publish_time": "2026-06-05 16:50",
+      "source": "新浪财经"
+    },
+    {
+      "title": "单日成交超583亿！中际旭创，A股历史第四",
+      "url": "https://finance.sina.com.cn/wm/2026-06-05/doc-iniaiyyr1663900.shtml",
+      "publish_time": "2026-06-05 16:42",
+      "source": "新浪财经"
+    },
+    {
+      "title": "583亿天量成交 中际旭创今日成交额跻身A股历史第四",
+      "url": "https://finance.sina.com.cn/7x24/2026-06-05/doc-iniaiusr9652761.shtml",
+      "publish_time": "2026-06-05 15:14",
+      "source": "新浪财经"
+    },
+    {
+      "title": "“波塞冬中国之夜”在雅典举行 中希海事合作交流注入中国品牌文化元素",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-05/doc-iniaiqks2959722.shtml",
+      "publish_time": "2026-06-05 13:29",
+      "source": "新浪财经"
+    },
+    {
+      "title": "飞天茅台原箱、散瓶批价大幅上涨！华创证券：茅台涨价叙事已经展开",
+      "url": "https://cj.sina.cn/articles/view/1850649324/6e4eaaec02002b8fe",
+      "publish_time": "2026-06-05 11:13",
+      "source": "新浪财经"
+    },
+    {
+      "title": "科技的卖点：第一个顶部还未到来",
+      "url": "https://finance.sina.com.cn/roll/2026-06-05/doc-iniaikax1876722.shtml",
+      "publish_time": "2026-06-05 09:51",
+      "source": "新浪财经"
+    },
+    {
+      "title": "白酒盘初上扬，酒鬼酒涨超5%，中信证券建议关注白酒长期机会",
+      "url": "https://cj.sina.cn/articles/view/1850649324/6e4eaaec02002b89u",
+      "publish_time": "2026-06-05 09:50",
+      "source": "新浪财经"
+    },
+    {
+      "title": "【券商聚焦】中信证券：白酒行业处于逐步恢复阶段 龙头已逐步展现出见底状态",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-05/doc-iniaikay8655289.shtml",
+      "publish_time": "2026-06-05 09:22",
+      "source": "新浪财经"
+    },
+    {
+      "title": "从“中国白酒一号工程”到“贵州最大民营酒企”，珍酒五十年辉煌之路",
+      "url": "https://cj.sina.cn/articles/view/6872798649/199a695b902001eng6",
+      "publish_time": "2026-06-05 09:06",
+      "source": "新浪财经"
+    },
+    {
+      "title": "贵州茅台的未来在哪里？全球化！而且这才刚刚开始，必须关注了",
+      "url": "https://cj.sina.cn/articles/view/5557080256/14b3a50c000101j4ik",
+      "publish_time": "2026-06-05 08:00",
+      "source": "新浪财经"
+    },
+    {
+      "title": "白酒板块迎“冰火两重天”",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-05/doc-iniahnxk9028748.shtml",
+      "publish_time": "2026-06-05 00:30",
+      "source": "新浪财经"
+    },
+    {
+      "title": "AI“量产”千元股",
+      "url": "https://cj.sina.cn/articles/view/1702925432/658094780190197t2",
+      "publish_time": "2026-06-04 22:01",
+      "source": "新浪财经"
+    },
+    {
+      "title": "“茅台系”华贵人寿总经理离职，超25亿元增资计划待推进",
+      "url": "https://finance.sina.com.cn/roll/2026-06-04/doc-iniahaip2465685.shtml",
+      "publish_time": "2026-06-04 20:57",
+      "source": "新浪财经"
+    },
+    {
+      "title": "股价震荡下行、“6・18”消费回暖 白酒板块迎“冰火两重天”",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-04/doc-iniahaip2452536.shtml",
+      "publish_time": "2026-06-04 20:12",
+      "source": "新浪财经"
+    },
+    {
+      "title": "100ml×6茅台礼盒调价",
+      "url": "https://cj.sina.cn/articles/view/6153346498/16ec49dc2019019dno",
+      "publish_time": "2026-06-04 19:01",
+      "source": "新浪财经"
+    },
+    {
+      "title": "A股千元股版图重构：科技“新贵”批量登顶，茅台退居第五",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-04/doc-iniafvzn3585061.shtml",
+      "publish_time": "2026-06-04 17:50",
+      "source": "新浪财经"
+    },
+    {
+      "title": "98名员工人均身家3.5个亿！A股最年轻“股王”凭什么？",
+      "url": "https://cj.sina.cn/articles/view/6399193384/17d6bf12800101kuxk",
+      "publish_time": "2026-06-04 17:15",
+      "source": "新浪财经"
+    },
+    {
+      "title": "19只白酒股下跌 贵州茅台1268.00元/股收盘",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-04/doc-iniafrtt2620731.shtml",
+      "publish_time": "2026-06-04 15:53",
+      "source": "新浪财经"
+    },
+    {
+      "title": "100ml茅台礼盒上涨20元，第三轮涨价开启？",
+      "url": "https://finance.sina.com.cn/wm/2026-06-04/doc-iniaffcy9579587.shtml",
+      "publish_time": "2026-06-04 12:11",
+      "source": "新浪财经"
+    },
+    {
+      "title": "贵州茅台股价年内跌超6%，细分食品指数跌破“9・24”水平、创近七年新低",
+      "url": "https://cj.sina.cn/articles/view/1850649324/6e4eaaec02002b5h8",
+      "publish_time": "2026-06-04 11:15",
+      "source": "新浪财经"
+    },
+    {
+      "title": "冲击三连涨，消费电子ETF易方达(562950)上涨1.21%，AI眼镜市场迎来密集新品发布期",
+      "url": "https://cj.sina.cn/articles/view/6192937794/17120bb4202002qf5y",
+      "publish_time": "2026-06-04 11:10",
+      "source": "新浪财经"
+    },
+    {
+      "title": "AI服务器之王登顶：工业富联市值超越贵州茅台的背后逻辑",
+      "url": "https://cj.sina.cn/articles/view/8011184054/1dd80f7b600101g4mw",
+      "publish_time": "2026-06-04 10:23",
+      "source": "新浪财经"
+    },
+    {
+      "title": "茅台退居第五，A股从酱香走向硅光",
+      "url": "https://finance.sina.com.cn/roll/2026-06-04/doc-iniafrtu9400384.shtml",
+      "publish_time": "2026-06-04 09:34",
+      "source": "新浪财经"
+    },
+    {
+      "title": "苏州联讯仪器股价突破2000元！",
+      "url": "https://finance.sina.com.cn/wm/2026-06-04/doc-iniaeyvw3780072.shtml",
+      "publish_time": "2026-06-04 09:16",
+      "source": "新浪财经"
+    },
+    {
+      "title": "AI财报--十分智能的财报",
+      "url": "https://finance.sina.com.cn/wm/2026-06-04/doc-iniaeuqc2985258.shtml",
+      "publish_time": "2026-06-04 07:00",
+      "source": "新浪财经"
+    },
+    {
+      "title": "贵州茅台",
+      "url": "https://xueqiu.com/s/SH600519",
+      "publish_time": "2026-06-07",
+      "source": "NewsNow-xueqiu"
+    },
+    {
+      "title": "China AI Supplier Takes Top CSI 300 Spot With 5.3% Weight",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/china-ai-supplier-takes-top-171930982.html?.tsrc=rss",
+      "publish_time": "2026-06-04 17:19",
+      "source": "Yahoo Finance"
+    },
+    {
+      "title": "雪球关注 3645293人  |  最新价 ¥1272.86",
+      "url": "",
+      "publish_time": "2026-06-07",
+      "source": "雪球"
+    }
+  ],
+  "guba_posts": [
+    {
+      "title": "拐点来了！四大消费黄金赛道，配置性价比凸显",
+      "author": "贵州茅台资讯",
+      "publish_time": "06-06 01:32",
+      "read_count": 11884,
+      "comment_count": 22,
+      "content": null
+    },
+    {
+      "title": "除非是想把收益留给子孙后代，不让他们快速花光你的积蓄，否则想靠吃分红赚钱不理想。",
+      "author": "刘青Redbuy150",
+      "publish_time": "06-07 11:19",
+      "read_count": 15,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "不相信有完不成的任务，不相信有克服不了的困难，不相信有战胜不了的敌人。还能把价值",
+      "author": "程小侠",
+      "publish_time": "06-07 11:08",
+      "read_count": 18,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "科技股没有壁垒，扩产太快，业绩需求太高。现在抗的就是赚最后的铜板～这波科技会尤为",
+      "author": "时曜崇星杨",
+      "publish_time": "06-07 11:07",
+      "read_count": 46,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "10派239.5元，等于股价是127.28元的10派23.95元，等于股价是12",
+      "author": "刘青Redbuy150",
+      "publish_time": "06-07 10:51",
+      "read_count": 81,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "老登运幕，必等数年消费转强才有戏",
+      "author": "风口捉妖",
+      "publish_time": "06-07 10:48",
+      "read_count": 24,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "人最重要的能力，是让自己长时间处在一种极度糟糕、极度混乱、极度没有结果的状态里，",
+      "author": "自强不息de斯特拉",
+      "publish_time": "06-07 09:45",
+      "read_count": 45,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "非物质文化遗产传承不能用价值衡量，时间越久越值钱，懂得自然懂。",
+      "author": "基民G3y0KD",
+      "publish_time": "06-07 09:18",
+      "read_count": 37,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "股票不分红就是个符号，这方面，贵州茅台非常好。",
+      "author": "股友GC8iD1",
+      "publish_time": "06-07 08:59",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "酒精这东西对人伤害太大，无论怎么吹嘘在生命面前所有人都回避",
+      "author": "成为铁人",
+      "publish_time": "06-07 08:52",
+      "read_count": 48,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "老乡，别走，很多人都在苦口婆心劝你们别走",
+      "author": "见自已",
+      "publish_time": "06-07 08:43",
+      "read_count": 26,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "当茅台降到100元一瓶的时候，茅台的股价值多少钱？",
+      "author": "红色之岸001",
+      "publish_time": "06-07 08:40",
+      "read_count": 43,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "能进仓吗？",
+      "author": "股友g3336o3915",
+      "publish_time": "06-07 08:39",
+      "read_count": 32,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "全是废话不看空也不看多，看什么",
+      "author": "小贸易0326",
+      "publish_time": "06-07 08:32",
+      "read_count": 28,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "$贵州茅台(SH600519)$",
+      "author": "一夜成股东",
+      "publish_time": "06-07 08:27",
+      "read_count": 151,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "等你跌到能买得起时再买一手过过瘾。请加走跌吧",
+      "author": "日进斗金不嫌少",
+      "publish_time": "06-07 07:45",
+      "read_count": 30,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "机会来了",
+      "author": "股友13252Bg073",
+      "publish_time": "06-07 06:48",
+      "read_count": 31,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "i茅台买了两瓶小毛，竟然是2024年的，整的我差点投诉他们",
+      "author": "股友3X96hq",
+      "publish_time": "06-07 06:40",
+      "read_count": 105,
+      "comment_count": 5,
+      "content": null
+    },
+    {
+      "title": "X:太空计算-构筑国家天基AI新引擎10:55-11:10太空算力组长发言(总经理颜志宇300053航宇微)副组长烽火通信6待命",
+      "author": "股友I1g9682890",
+      "publish_time": "06-07 05:39",
+      "read_count": 634,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "不恶意看空茅台，也不看多茅台，全看茅台业绩能否优化提升，回不到过去的10-20提",
+      "author": "短线并价投",
+      "publish_time": "06-07 04:58",
+      "read_count": 938,
+      "comment_count": 12,
+      "content": null
+    },
+    {
+      "title": "你才是真正的绿的斜坡",
+      "author": "股友00W257321v",
+      "publish_time": "06-07 03:28",
+      "read_count": 41,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "执着地挂晚上隔夜单卖出，优雅地等，体面地走。",
+      "author": "一个上海人来了",
+      "publish_time": "06-07 01:55",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周一科技概念大跌，周末重仓科技必来这里打卡",
+      "author": "环境不好C端不搞",
+      "publish_time": "06-07 01:46",
+      "read_count": 40,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "买啥都被收割，节奏跳动完美错过",
+      "author": "拨云见日888888",
+      "publish_time": "06-07 01:27",
+      "read_count": 1173,
+      "comment_count": 9,
+      "content": null
+    },
+    {
+      "title": "戒酒了",
+      "author": "古灵精怪的赵怡萱",
+      "publish_time": "06-07 01:14",
+      "read_count": 241,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "不出意外茅台要奔400以下去了",
+      "author": "客观理智",
+      "publish_time": "06-07 12:17",
+      "read_count": 52,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "牛鸡棚为什么这么狠白酒？",
+      "author": "xiaolulu123",
+      "publish_time": "06-06 11:55",
+      "read_count": 301,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "酱香科技",
+      "author": "炒股上学G",
+      "publish_time": "06-06 11:52",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "2020年底的帖子。但现在我又回来了。",
+      "author": "心灵之主",
+      "publish_time": "06-06 11:32",
+      "read_count": 480,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "茅台不行，年轻人不喝，都别抢飞天啊，不是库存冒烟了吗，不科学啊",
+      "author": "环境不好C端不搞",
+      "publish_time": "06-06 11:15",
+      "read_count": 81,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "1100买一手",
+      "author": "诡股纵横",
+      "publish_time": "06-06 11:11",
+      "read_count": 45,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "能下来1000吗",
+      "author": "放着别动等风来",
+      "publish_time": "06-06 10:36",
+      "read_count": 85,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "请教各位大佬，现在买合适吗？欢迎留言！谢谢",
+      "author": "放着别动等风来",
+      "publish_time": "06-06 10:34",
+      "read_count": 46,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "这帮科技，现在想起找妈妈",
+      "author": "阿韭931",
+      "publish_time": "06-06 10:32",
+      "read_count": 129,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "买茅台亏麻的，被价值投资忽悠的一横一横的！我发现还在里面做梦呢！这帮人！",
+      "author": "诚恳的潘羽君",
+      "publish_time": "06-06 10:29",
+      "read_count": 53,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "最近2-3年，茅台的估值是否会进一步压缩，取决于外部环境，而非茅台的销售情况",
+      "author": "想要明白真相的小白",
+      "publish_time": "06-06 10:13",
+      "read_count": 448,
+      "comment_count": 7,
+      "content": null
+    },
+    {
+      "title": "这没得玩了，赶紧去光里，芯里",
+      "author": "股友7R97039W12",
+      "publish_time": "06-06 10:05",
+      "read_count": 59,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "消耗酒两种说法，一种叫喝酒，一种叫用酒，年轻人一直是不喝白酒的，但是年轻人用酒，",
+      "author": "Babycci",
+      "publish_time": "06-06 09:36",
+      "read_count": 63,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "星期一如果茅台低开三个点，我就满仓干茅台",
+      "author": "卖了五粮买红板",
+      "publish_time": "06-06 09:32",
+      "read_count": 310,
+      "comment_count": 5,
+      "content": null
+    },
+    {
+      "title": "茅台酒价慢慢起来式一个很强的信号",
+      "author": "金色火箭金牛入怀",
+      "publish_time": "06-06 09:31",
+      "read_count": 864,
+      "comment_count": 7,
+      "content": null
+    },
+    {
+      "title": "茅台要涨价？",
+      "author": "卖了五粮买红板",
+      "publish_time": "06-06 09:22",
+      "read_count": 237,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "茅台中免都是这种试盘形态了，看起来黎明就在眼前了，1月板块涨停那次就是失败的高低",
+      "author": "资深小散分析",
+      "publish_time": "06-06 09:21",
+      "read_count": 77,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "现在要轮到老登们看炒科技AI泡沫的群体怀疑人生了",
+      "author": "嘉华睿投",
+      "publish_time": "06-06 09:17",
+      "read_count": 68,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "下周一靠你了，茅子兄弟。",
+      "author": "股海里的小石头",
+      "publish_time": "06-06 09:08",
+      "read_count": 49,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "那些炒科泡沫啥I的这要怀疑人生了,当潮水退去它们就呵呵呵呵",
+      "author": "嘉华睿投",
+      "publish_time": "06-06 09:04",
+      "read_count": 45,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "昨日美股大跌，科技股跌幅居前，但医药和消费股涨，可口可乐涨3个点。受美股影响，我",
+      "author": "冷眼观天",
+      "publish_time": "06-06 08:49",
+      "read_count": 270,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "哈哈，买老登股也有好处，咱们甚至几个月几年都不用看它，不用跟买了高位科技股一样，",
+      "author": "股友89232D889p",
+      "publish_time": "06-06 08:39",
+      "read_count": 165,
+      "comment_count": 6,
+      "content": null
+    },
+    {
+      "title": "【周末思辨】为什么老登股们的雄起这么难？!本轮行情（始于2024年2月8日）以来",
+      "author": "丰州牛郎",
+      "publish_time": "06-06 08:32",
+      "read_count": 581,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "茅台去年停发福利洒了，我永远看好茅台，酒厂前几年给员工发放的裸瓶酒去年停发了，几",
+      "author": "雷厉风行的忠魂8",
+      "publish_time": "06-06 08:19",
+      "read_count": 95,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周一高开两个点，尾盘翻绿",
+      "author": "豪爽泼辣的孙芸菲",
+      "publish_time": "06-06 08:00",
+      "read_count": 58,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "巴菲特退休纪念文章第一篇：放弃烟蒂股的开山之作，喜诗糖果揭开了巴菲特的投资秘密",
+      "author": "ericwarn丁宁",
+      "publish_time": "06-06 08:00",
+      "read_count": 322,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "茅台也要演布袋戏了",
+      "author": "日进四海得秦歌",
+      "publish_time": "06-06 07:30",
+      "read_count": 187,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周一全靠茅哥稳场子，把话撂这",
+      "author": "上上签45678",
+      "publish_time": "06-06 07:16",
+      "read_count": 176,
+      "comment_count": 5,
+      "content": null
+    },
+    {
+      "title": "基于自然视觉色数护眼型的电子视屏课本系统~伏晓鹏",
+      "author": "伏晓鹏",
+      "publish_time": "06-06 07:12",
+      "read_count": 204,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "周一茅台要稳大盘",
+      "author": "金银大展的达摩",
+      "publish_time": "06-06 06:45",
+      "read_count": 47,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周一要起飞",
+      "author": "温言在口大棒在手",
+      "publish_time": "06-06 06:39",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "端午节看老丈人买一对",
+      "author": "善良的潘涛",
+      "publish_time": "06-06 06:16",
+      "read_count": 48,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "炒股炒预期，就是因为现在各种利空在才有机会让你捡便宜筹码，等利好都出来了就在高位",
+      "author": "活捉黑嘴李大小",
+      "publish_time": "06-06 06:08",
+      "read_count": 48,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "海南华铁背靠海南国资实控，是稀缺的传统租赁+AI算力双主线标的。传统高空设备租赁",
+      "author": "股友7898rr5987",
+      "publish_time": "06-06 06:04",
+      "read_count": 104,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "买茅台还不如买泡泡玛特",
+      "author": "基民3u3f788363",
+      "publish_time": "06-06 05:48",
+      "read_count": 49,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "抛开表象，认清投资本质",
+      "author": "财商大佬说",
+      "publish_time": "06-06 05:34",
+      "read_count": 3093,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "周一买一箱茅台",
+      "author": "边牧波波",
+      "publish_time": "06-06 05:32",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "进前10名，周一你的任务很重",
+      "author": "刻苦耐劳之豌豆",
+      "publish_time": "06-06 05:26",
+      "read_count": 90,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "那么多融资盘去买这种老蹬，根本不够利息，也不知道咋想的，难道想分红吗",
+      "author": "盆满万贯刘大亨",
+      "publish_time": "06-06 05:20",
+      "read_count": 46,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "那么多融资盘去吗这种老蹬，根本不够利息，也不知道咋想的",
+      "author": "盆满万贯刘大亨",
+      "publish_time": "06-06 05:19",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "一切的科技发展，最终目的都是大家吃好喝好繁衍后代都是造机器",
+      "author": "Babycci",
+      "publish_time": "06-06 05:16",
+      "read_count": 41,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "科技大跌就想到我茅哥了？",
+      "author": "股友39N360861u",
+      "publish_time": "06-06 05:12",
+      "read_count": 48,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "在座的各位，说实话多多少少这个周末是痛快的但其实本质上就是，渴望他人也像自己",
+      "author": "股友Z712R35998",
+      "publish_time": "06-06 05:11",
+      "read_count": 12,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "人气飙升，酱香科技要归位了",
+      "author": "三思投资",
+      "publish_time": "06-06 04:58",
+      "read_count": 57,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "$贵州茅台(SH600519)$",
+      "author": "一夜成股东",
+      "publish_time": "06-06 04:52",
+      "read_count": 279,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "$贵州茅台(SH600519)$",
+      "author": "大唐发电翻6倍",
+      "publish_time": "06-06 04:44",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "人气为啥上来了",
+      "author": "卖了五粮买红板",
+      "publish_time": "06-06 04:41",
+      "read_count": 69,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "$贵州茅台(SH600519)$",
+      "author": "股友FHQhcs9511",
+      "publish_time": "06-06 04:40",
+      "read_count": 314,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "终于到了全球的泡沫股友们都瑟瑟发抖了",
+      "author": "嘉华睿投",
+      "publish_time": "06-06 04:39",
+      "read_count": 135,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "$贵州茅台(SH600519)$",
+      "author": "大唐发电翻6倍",
+      "publish_time": "06-06 04:38",
+      "read_count": 35,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "茅台的底难道在500？",
+      "author": "衡山路",
+      "publish_time": "06-06 04:22",
+      "read_count": 63,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "茅台如果都能拉涨停，那就真的牛逼了，反正我不信。",
+      "author": "世界未来的股神",
+      "publish_time": "06-06 04:18",
+      "read_count": 55,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "茅子A股礼拜一全靠你了。",
+      "author": "金水一体",
+      "publish_time": "06-06 03:53",
+      "read_count": 66,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "别让执行力配不上你的判断力，从晚上隔夜挂单卖出练起。",
+      "author": "一个上海人来了",
+      "publish_time": "06-06 03:42",
+      "read_count": 50,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "茅台900比较合理。",
+      "author": "谁说干古就干股",
+      "publish_time": "06-06 03:25",
+      "read_count": 75,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "收市前拉起,很假",
+      "author": "亮蟀哥",
+      "publish_time": "06-06 03:22",
+      "read_count": 115,
+      "comment_count": 3,
+      "content": null
+    }
+  ],
+  "sentiment_news": {
+    "avg_score": 0.0357,
+    "positive_ratio": 0.1429,
+    "negative_ratio": 0.0714,
+    "total_count": 42,
+    "positive_count": 6,
+    "negative_count": 3
+  },
+  "sentiment_guba": {
+    "avg_score": -0.0062,
+    "positive_ratio": 0.0494,
+    "negative_ratio": 0.0617,
+    "total_count": 81,
+    "positive_count": 4,
+    "negative_count": 5
+  },
+  "signals": {
+    "overall": "bearish",
+    "score": -0.8,
+    "label": "偏空",
+    "technical": -2.0,
+    "fundamental": 1.4,
+    "sentiment": 0.0,
+    "regime": "trending_down",
+    "confidence": "低",
+    "details": [
+      {
+        "factor": "RSI(14)=39",
+        "impact": "negative",
+        "weight": 0.07,
+        "contribution": -0.06550000000000011,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=0.737",
+        "impact": "positive",
+        "weight": 0.01,
+        "contribution": 0.007952522255192876,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "weight": 1.5,
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.16)",
+        "impact": "positive",
+        "weight": 0.84,
+        "contribution": 0.8377169319305838,
+        "description": "触下轨反弹"
+      },
+      {
+        "factor": "量价关系(量比=0.8)",
+        "impact": "neutral",
+        "weight": 0,
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "weight": 0.43,
+        "contribution": -0.4266021433151161,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "weight": 3.0,
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(34.5%)",
+        "impact": "positive",
+        "weight": 1.5,
+        "contribution": 1.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(-4.5%)",
+        "impact": "negative",
+        "weight": 0.13,
+        "contribution": -0.1253675,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "weight": 0.5,
+        "contribution": 0.5,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=0.04)",
+        "impact": "positive",
+        "weight": 0.05,
+        "contribution": 0.05454166666666667,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.01)",
+        "impact": "negative",
+        "weight": 0.01,
+        "contribution": -0.00775,
+        "description": ""
+      }
+    ]
+  },
+  "llm_analysis": "用户现持有茅台100股（成本150元），仓位25.5%。茅台护城河极强，PE历史0%分位，ROE超34%，但营收净利双降需警惕。综合考虑，建议持有现有仓位，不增不减，等待业绩拐点或更佳买点。",
+  "prediction_summary": {
+    "outlook": "下跌",
+    "confidence": "中",
+    "price_target_current": 1272.86,
+    "price_target_low": 1000,
+    "price_target_high": 1500,
+    "reason": "用户现持有茅台100股（成本150元），仓位25.5%。茅台护城河极强，PE历史0%分位，ROE超34%，但营收净利双降需警惕。综合考虑，建议持有现有仓位，不增不减，等待业绩拐点或更佳买点。",
+    "tech_view": {
+      "role": "技术分析师",
+      "outlook": "看空",
+      "confidence": "中",
+      "score": -2.5,
+      "key_points": [
+        "均线空头排列，价格低于所有均线，趋势偏空",
+        "MACD柱为正，短期有反弹可能但力度不足",
+        "量比0.79缩量，市场参与度低"
+      ],
+      "risks": [
+        "若跌破布林下轨1254.52，可能加速下跌",
+        "RSI中性，未超卖，反弹空间有限"
+      ]
+    },
+    "fund_view": {
+      "role": "基本面分析师",
+      "outlook": "中性",
+      "confidence": "中",
+      "score": 0.0,
+      "key_points": [
+        "ROE高达34.46%，远超20%门槛，盈利能力极强",
+        "毛利率91.18%，处于极高水平",
+        "负债率仅16.42%，财务结构稳健"
+      ],
+      "risks": [
+        "营收同比-1.21%，出现负增长",
+        "净利同比-4.53%，利润下滑",
+        "营收和净利双降，需关注成长性风险"
+      ]
+    },
+    "sent_view": {
+      "role": "舆情分析师",
+      "outlook": "中性",
+      "confidence": "低",
+      "score": 1.0,
+      "key_points": [
+        "新闻平均情感中性，股吧平均情感中性",
+        "有实质性利好消息，如飞天茅台批价上涨、机构看好"
+      ],
+      "risks": [
+        "美股大跌可能拖累A股",
+        "贵州茅台股价年内跌超6%，技术面偏弱"
+      ]
+    },
+    "short_term": {
+      "direction": "下跌",
+      "change_pct": -3,
+      "confidence": "低",
+      "reason": "技术面空头排列，量能萎缩，但估值支撑下跌幅有限。催化剂：大盘弱势。"
+    },
+    "mid_term": {
+      "direction": "震荡",
+      "change_pct": 5,
+      "confidence": "中",
+      "reason": "春节旺季可能带来反弹，但业绩数据压制。基本面+估值形成区间。行业趋势：高端白酒需求平稳。"
+    },
+    "long_term": {
+      "direction": "上涨",
+      "change_pct": 20,
+      "confidence": "高",
+      "reason": "茅台品牌护城河深厚，长期价值确定性高。估值回归合理中枢。竞争优势稳固。"
+    },
+    "suggested_action": {
+      "action": "持有",
+      "reason": "不操作。若考虑加仓，条件：PE低于15倍且营收净利增速转正，或股价跌破1200元且基本面无恶化。",
+      "stop_loss": 0,
+      "take_profit": 0
+    },
+    "cio_decision": {
+      "master_name": "沃伦·巴菲特",
+      "master_key": "buffett",
+      "decision_summary": "用户现持有茅台100股（成本150元），仓位25.5%。茅台护城河极强，PE历史0%分位，ROE超34%，但营收净利双降需警惕。综合考虑，建议持有现有仓位，不增不减，等待业绩拐点或更佳买点。",
+      "rationale": "采纳了估值分析师的极度低估观点（PE历史0%分位）和基本面分析师的高ROE、低负债率，确认茅台竞争优势稳固。否决了技术分析师的看空结论，因为短期技术形态不改变长期价值。风险经理的低置信度看空也被否决，因流动性风险暂时可控。监察员的价值陷阱提醒被采纳，故暂不加仓以规避业绩继续下滑风险。最终决策是持有，因为当前估值已反映悲观预期，但业绩尚未企稳，宜观望。",
+      "evidence_chain": [
+        "宏观分析师: PMI 53.0显示经济景气，采纳宏观环境中性偏正面",
+        "行业政策分析师: 行业需求疲软，政策中性，采纳但认为茅台个体优势可抵御",
+        "估值分析师: PE处于历史0%分位，ROE 34.46%，采纳极低估值和高盈利质量，但警惕价值陷阱",
+        "基本面分析师: ROE 34.46%，毛利率91.18%，负债率16.42%，认可护城河；但营收、净利负增长，采取中性判断",
+        "技术分析师: 均线空头、MACD柱正但量能不足，否决短期交易信号",
+        "舆情分析师: 中性情感，有飞天茅台批价上涨利好，采纳中性偏正面",
+        "风险经理: 量比0.79流动性风险，下行趋势，否决（低置信度）",
+        "监察员: 消费降级和盈利下修风险，采纳并作为不加仓理由"
+      ],
+      "base_case": {
+        "direction": "震荡",
+        "target": 1300,
+        "probability": 0.55,
+        "reason": "估值低但业绩承压，多空均衡。核心假设：茅台批价稳定，营收净利降幅收窄。驱动因素：春节旺季需求。"
+      },
+      "bull_case": {
+        "direction": "上涨",
+        "target": 1500,
+        "probability": 0.25,
+        "reason": "经济复苏超预期，消费升级重启，茅台提价或放量，戴维斯双击。条件：营收、净利重回正增长。"
+      },
+      "bear_case": {
+        "direction": "下跌",
+        "target": 1000,
+        "probability": 0.2,
+        "reason": "消费降级深化，批价下行，盈利持续下修，类似2012-2014。风险：营收净利降幅扩大。"
+      },
+      "order": {
+        "action": "持有",
+        "order_rationale": "现有仓位25.5%已较重，且持仓成本极低，盈利丰厚。加仓则面临短期不确定性，减仓则错失长期价值。持有是最优策略，等待更清晰的信号。",
+        "position_size_pct": 25.5,
+        "position_note": "当前已持有25.5%，建议维持此仓位，不增不减。现金20%用于其他机会或应对风险。",
+        "entry_conditions": "不操作。若考虑加仓，条件：PE低于15倍且营收净利增速转正，或股价跌破1200元且基本面无恶化。",
+        "stop_loss": {
+          "level": 0,
+          "type": "无",
+          "trigger": "无，长期持有不设止损"
+        }
+      },
+      "short_term": {
+        "direction": "下跌",
+        "change_pct": -3,
+        "confidence": "低",
+        "reason": "技术面空头排列，量能萎缩，但估值支撑下跌幅有限。催化剂：大盘弱势。"
+      },
+      "mid_term": {
+        "direction": "震荡",
+        "change_pct": 5,
+        "confidence": "中",
+        "reason": "春节旺季可能带来反弹，但业绩数据压制。基本面+估值形成区间。行业趋势：高端白酒需求平稳。"
+      },
+      "long_term": {
+        "direction": "上涨",
+        "change_pct": 20,
+        "confidence": "高",
+        "reason": "茅台品牌护城河深厚，长期价值确定性高。估值回归合理中枢。竞争优势稳固。"
+      },
+      "risk_monitoring": [
+        {
+          "trigger": "营收连续两季度同比降幅超过5%",
+          "action": "重新评估护城河，考虑减仓至15%"
+        },
+        {
+          "trigger": "飞天茅台批发价跌破2000元",
+          "action": "立即审查基本面，触发减仓至20%"
+        }
+      ],
+      "decision_quality": {
+        "confidence": "中",
+        "key_uncertainties": [
+          "消费降级对高端白酒的实际影响",
+          "营收净利能否在1-2个季度内企稳"
+        ],
+        "next_review": "3个交易日后（关注春节备货数据）"
+      },
+      "veto_response": "无",
+      "raw_llm_output": "{\"decision_summary\": \"用户现持有茅台100股（成本150元），仓位25.5%。茅台护城河极强，PE历史0%分位，ROE超34%，但营收净利双降需警惕。综合考虑，建议持有现有仓位，不增不减，等待业绩拐点或更佳买点。\", \"rationale\": \"采纳了估值分析师的极度低估观点（PE历史0%分位）和基本面分析师的高ROE、低负债率，确认茅台竞争优势稳固。否决了技术分析师的看空结论，因为短期技术形态不改变长期价值。风险经理的低置信度看空也被否决，因流动性风险暂时可控。监察员的价值陷阱提醒被采纳，故暂不加仓以规避业绩继续下滑风险。最终决策是持有，因为当前估值已反映悲观预期，但业绩尚未企稳，宜观望。\", \"evidence_chain\": [\"宏观分析师: PMI 53.0显示经济景气，采纳宏观环境中性偏正面\", \"行业政策分析师: 行业需求疲软，政策中性，采纳但认为茅台个体优势可抵御\", \"估值分析师: PE处于历史0%分位，ROE 34.46%，采纳极低估值和高盈利质量，但警惕价值陷阱\", \"基本面分析师: ROE 34.46%，毛利率91.18%，负债率16.42%，认可护城河；但营收、净利负增长，采取中性判断\", \"技术分析师: 均线空头、MACD柱正但量能不足，否决短期交易信号\", \"舆情分析师: 中性情感，有飞天茅台批价上涨利好，采纳中性偏正面\", \"风险经理: 量比0.79流动性风险，下行趋势，否决（低置信度）\", \"监察员: 消费降级和盈利下修风险，采纳并作为不加仓理由\"], \"base_case\": {\"direction\": \"震荡\", \"target\": 1300, \"probability\": 0.55, \"reason\": \"估值低但业绩承压，多空均衡。核心假设：茅台批价稳定，营收净利降幅收窄。驱动因素：春节旺季需求。\"}, \"bull_case\": {\"direction\": \"上涨\", \"target\": 1500, \"probability\": 0.25, \"reason\": \"经济复苏超预期，消费升级重启，茅台提价或放量，戴维斯双击。条件：营收、净利重回正增长。\"}, \"bear_case\": {\"direction\": \"下跌\", \"target\": 1000, \"probability\": 0.2, \"reason\": \"消费降级深化，批价下行，盈利持续下修，类似2012-2014。风险：营收净利降幅扩大。\"}, \"order\": {\"action\": \"持有\", \"order_rationale\": \"现有仓位25.5%已较重，且持仓成本极低，盈利丰厚。加仓则面临短期不确定性，减仓则错失长期价值。持有是最优策略，等待更清晰的信号。\", \"position_size_pct\": 25.5, \"position_note\": \"当前已持有25.5%，建议维持此仓位，不增不减。现金20%用于其他机会或应对风险。\", \"entry_conditions\": \"不操作。若考虑加仓，条件：PE低于15倍且营收净利增速转正，或股价跌破1200元且基本面无恶化。\", \"stop_loss\": {\"level\": 0, \"type\": \"无\", \"trigger\": \"无，长期持有不设止损\"}}, \"short_term\": {\"direction\": \"下跌\", \"change_pct\": -3, \"confidence\": \"低\", \"reason\": \"技术面空头排列，量能萎缩，但估值支撑下跌幅有限。催化剂：大盘弱势。\"}, \"mid_term\": {\"direction\": \"震荡\", \"change_pct\": 5, \"confidence\": \"中\", \"reason\": \"春节旺季可能带来反弹，但业绩数据压制。基本面+估值形成区间。行业趋势：高端白酒需求平稳。\"}, \"long_term\": {\"direction\": \"上涨\", \"change_pct\": 20, \"confidence\": \"高\", \"reason\": \"茅台品牌护城河深厚，长期价值确定性高。估值回归合理中枢。竞争优势稳固。\"}, \"risk_monitoring\": [{\"trigger\": \"营收连续两季度同比降幅超过5%\", \"action\": \"重新评估护城河，考虑减仓至15%\"}, {\"trigger\": \"飞天茅台批发价跌破2000元\", \"action\": \"立即审查基本面，触发减仓至20%\"}], \"decision_quality\": {\"confidence\": \"中\", \"key_uncertainties\": [\"消费降级对高端白酒的实际影响\", \"营收净利能否在1-2个季度内企稳\"], \"next_review\": \"3个交易日后（关注春节备货数据）\"}, \"veto_response\": \"无\"}",
+      "error": null
+    },
+    "employee_reports": [
+      {
+        "employee_id": "risk",
+        "role": "风险经理",
+        "department": "风控部",
+        "outlook": "看空",
+        "confidence": "低",
+        "score": 3.0,
+        "key_points": [
+          "市场状态为trending_down",
+          "综合评分偏空但置信度低",
+          "量比偏低显示流动性风险"
+        ],
+        "risks": [
+          "流动性风险: 量比0.79偏低",
+          "下行趋势延续风险"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "valuation",
+        "role": "估值分析师",
+        "department": "研究部",
+        "outlook": "看多",
+        "confidence": "高",
+        "score": 5.0,
+        "key_points": [
+          "PE处于历史0%分位，远低于均值，估值极低",
+          "ROE高达34.46%，显示公司盈利能力强劲",
+          "低估值高ROE，存在双击机会"
+        ],
+        "risks": [
+          "低估值可能反映基本面恶化或市场预期悲观，需警惕价值陷阱",
+          "股息率为0，说明公司可能不派息或分红极少，影响股东回报"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "fundamental",
+        "role": "基本面分析师",
+        "department": "研究部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 0.0,
+        "key_points": [
+          "ROE高达34.46%，远超20%门槛，盈利能力极强",
+          "毛利率91.18%，处于极高水平",
+          "负债率仅16.42%，财务结构稳健"
+        ],
+        "risks": [
+          "营收同比-1.21%，出现负增长",
+          "净利同比-4.53%，利润下滑",
+          "营收和净利双降，需关注成长性风险"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "sentiment",
+        "role": "舆情分析师",
+        "department": "交易部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": 1.0,
+        "key_points": [
+          "新闻平均情感中性，股吧平均情感中性",
+          "有实质性利好消息，如飞天茅台批价上涨、机构看好"
+        ],
+        "risks": [
+          "美股大跌可能拖累A股",
+          "贵州茅台股价年内跌超6%，技术面偏弱"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "policy",
+        "role": "行业政策分析师",
+        "department": "宏观部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": -1.0,
+        "key_points": [
+          "行业整体需求疲软，营收同比负增长",
+          "政策环境偏利空但缺乏直接关联",
+          "茅台自身ROE高且估值合理"
+        ],
+        "risks": [
+          "经济增长放缓影响高端消费",
+          "监管政策可能加码",
+          "行业竞争加剧"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "macro",
+        "role": "宏观分析师",
+        "department": "宏观部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": 1.0,
+        "key_points": [
+          "PMI 53.0高于荣枯线，经济景气",
+          "LPR保持不变，货币政策中性"
+        ],
+        "risks": [
+          "CPI同比7.08%较高，可能制约政策宽松",
+          "北向资金数据缺失，外资动向不明",
+          "人民币汇率数据缺失"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "technical",
+        "role": "技术分析师",
+        "department": "研究部",
+        "outlook": "看空",
+        "confidence": "中",
+        "score": -2.5,
+        "key_points": [
+          "均线空头排列，价格低于所有均线，趋势偏空",
+          "MACD柱为正，短期有反弹可能但力度不足",
+          "量比0.79缩量，市场参与度低"
+        ],
+        "risks": [
+          "若跌破布林下轨1254.52，可能加速下跌",
+          "RSI中性，未超卖，反弹空间有限"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "overseer",
+        "role": "独立监察员",
+        "department": "监察部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 0.0,
+        "key_points": [
+          "盲点1: 团队过度关注PE历史分位低位，但营收和净利双降可能预示盈利持续下修，低估值可能反映价值陷阱而非机会",
+          "盲点2: 所有分析师都假设茅台品牌护城河不可撼动，但忽略了消费降级趋势下高端白酒需求的结构性萎缩风险",
+          "替代情景: 若消费降级加速且茅台批价下行，即使PE处于低位，股价可能继续下跌30%以上，类似2012-2014年调整",
+          "替代情景: 若经济复苏超预期且消费升级重启，茅台可能迎来戴维斯双击，但当前数据尚未支持这一路径",
+          "证据质疑: 舆情分析师使用的股吧情感数据样本可能存在幸存者偏差，活跃用户多为乐观情绪，不能代表整体市场预期"
+        ],
+        "risks": [
+          "认知偏差: 团队可能存在确认偏误，过分强调低PE和高ROE的利好，而对营收净利双降的利空关注不足",
+          "认知偏差: 近因偏误：近期股价下跌可能使部分分析师过度悲观（如技术分析师），而忽略长期价值",
+          "数据质量: 北向资金数据缺失，可能导致对外资态度的误判",
+          "遗漏因素: 团队未讨论大股东减持风险、茅台提价能力受限、以及税收政策可能变化"
+        ],
+        "error": null
+      }
+    ]
+  },
+  "risk_factors": [
+    {
+      "factor": "流动性风险: 量比0.79偏低"
+    },
+    {
+      "factor": "下行趋势延续风险"
+    },
+    {
+      "factor": "低估值可能反映基本面恶化或市场预期悲观，需警惕价值陷阱"
+    },
+    {
+      "factor": "股息率为0，说明公司可能不派息或分红极少，影响股东回报"
+    },
+    {
+      "factor": "营收同比-1.21%，出现负增长"
+    },
+    {
+      "factor": "净利同比-4.53%，利润下滑"
+    },
+    {
+      "factor": "美股大跌可能拖累A股"
+    },
+    {
+      "factor": "贵州茅台股价年内跌超6%，技术面偏弱"
+    },
+    {
+      "factor": "经济增长放缓影响高端消费"
+    },
+    {
+      "factor": "监管政策可能加码"
+    },
+    {
+      "factor": "CPI同比7.08%较高，可能制约政策宽松"
+    },
+    {
+      "factor": "北向资金数据缺失，外资动向不明"
+    },
+    {
+      "factor": "若跌破布林下轨1254.52，可能加速下跌"
+    },
+    {
+      "factor": "RSI中性，未超卖，反弹空间有限"
+    },
+    {
+      "factor": "认知偏差: 团队可能存在确认偏误，过分强调低PE和高ROE的利好，而对营收净利双降的利空关注不足"
+    },
+    {
+      "factor": "认知偏差: 近因偏误：近期股价下跌可能使部分分析师过度悲观（如技术分析师），而忽略长期价值"
+    }
+  ],
+  "price_target": {
+    "current": 1272.86,
+    "low": 1000,
+    "high": 1500
+  },
+  "short_term_pred": null,
+  "mid_term_pred": null,
+  "long_term_pred": null,
+  "suggested_action": null,
+  "score_breakdown": {
+    "final": -0.8,
+    "label": "偏空",
+    "technical": -2.0,
+    "fundamental": 1.4,
+    "sentiment": 0.0,
+    "regime": "trending_down",
+    "confidence": "低",
+    "weights": {
+      "technical": 0.55,
+      "fundamental": 0.25,
+      "sentiment": 0.2
+    },
+    "breakdown": [
+      {
+        "factor": "RSI(14)=39",
+        "impact": "negative",
+        "contribution": -0.06550000000000011,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=0.737",
+        "impact": "positive",
+        "contribution": 0.007952522255192876,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.16)",
+        "impact": "positive",
+        "contribution": 0.8377169319305838,
+        "description": "触下轨反弹"
+      },
+      {
+        "factor": "量价关系(量比=0.8)",
+        "impact": "neutral",
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "contribution": -0.4266021433151161,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(34.5%)",
+        "impact": "positive",
+        "contribution": 1.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(-4.5%)",
+        "impact": "negative",
+        "contribution": -0.1253675,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "contribution": 0.5,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=0.04)",
+        "impact": "positive",
+        "contribution": 0.05454166666666667,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.01)",
+        "impact": "negative",
+        "contribution": -0.00775,
+        "description": ""
+      }
+    ]
+  },
+  "valuation_level": "正常",
+  "valuation_percentile": 0.0,
+  "suggested_buy_price": 1209.22,
+  "historical_pe_avg": 0.0,
+  "important_bullish_news": [
+    {
+      "title": "飞天茅台原箱、散瓶批价大幅上涨！华创证券：茅台涨价叙事已经展开",
+      "source": "新浪财经",
+      "publish_time": "2026-06-05 11:13",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "白酒盘初上扬，酒鬼酒涨超5%，中信证券建议关注白酒长期机会",
+      "source": "新浪财经",
+      "publish_time": "2026-06-05 09:50",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "100ml茅台礼盒上涨20元，第三轮涨价开启？",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 12:11",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    }
+  ],
+  "important_bearish_news": [
+    {
+      "title": "美股大跌来袭！下周一A股6条操作思路请收好",
+      "source": "新浪财经",
+      "publish_time": "2026-06-06 22:02",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "19只白酒股下跌 贵州茅台1268.00元/股收盘",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 15:53",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "贵州茅台股价年内跌超6%，细分食品指数跌破“9・24”水平、创近七年新低",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 11:15",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    }
+  ],
+  "important_bullish_guba": [
+    {
+      "title": "茅台要涨价？",
+      "source": "卖了五粮买红板",
+      "publish_time": "06-06 09:22",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "茅台中免都是这种试盘形态了，看起来黎明就在眼前了，1月板块涨停那次就是失败的高低",
+      "source": "资深小散分析",
+      "publish_time": "06-06 09:21",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "茅台去年停发福利洒了，我永远看好茅台，酒厂前几年给员工发放的裸瓶酒去年停发了，几",
+      "source": "雷厉风行的忠魂8",
+      "publish_time": "06-06 08:19",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    }
+  ],
+  "important_bearish_guba": [
+    {
+      "title": "等你跌到能买得起时再买一手过过瘾。请加走跌吧",
+      "source": "日进斗金不嫌少",
+      "publish_time": "06-07 07:45",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "执着地挂晚上隔夜单卖出，优雅地等，体面地走。",
+      "source": "一个上海人来了",
+      "publish_time": "06-07 01:55",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "周一科技概念大跌，周末重仓科技必来这里打卡",
+      "source": "环境不好C端不搞",
+      "publish_time": "06-07 01:46",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    }
+  ],
+  "macro_context": {
+    "source": "akshare",
+    "pmi": 53.0,
+    "cpi_yoy": 7.0781,
+    "shibor": 1.324,
+    "lpr_1y": 3.0,
+    "lpr_5y": 3.5,
+    "policy_tilt": "中性 (LPR不变)",
+    "m2_yoy": 18.88,
+    "social_financing": 6245.0,
+    "northbound_flow": null,
+    "northbound_5d_avg": null,
+    "usd_cny": null,
+    "macro_events": [
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-投标倍数(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-中标利率(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-投标倍数(倍)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M1金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M2金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高收益率(%)",
+        "importance": 1
+      }
+    ],
+    "policy_headlines": [
+      "习近平在重庆考察时强调 进一步全面深化改革开放 不断谱写中国式现代化重庆篇章",
+      "【央视快评】奋力谱写西部大开发新篇章",
+      "习近平向首届“中国－拉美和加勒比国家航天合作论坛”致贺信",
+      "十四届全国人大常委会举行第二十四次委员长会议 听取有关草案和议案审议情况汇报 赵乐际主持"
+    ]
+  },
+  "industry_context": {
+    "source": "akshare",
+    "policy_events": [
+      "央行连续第19个月增持黄金",
+      "据央行数据，5月末外汇储备报34422.38亿美元",
+      "证监会主席吴清：公募基金从“重规模”到“重回报”"
+    ],
+    "policy_impact": "偏利空"
+  }
+}

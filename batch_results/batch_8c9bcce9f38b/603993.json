@@ -1,0 +1,1564 @@
+{
+  "symbol": "603993",
+  "stock_name": "洛阳钼业",
+  "status": "complete",
+  "error": null,
+  "created_at": "2026-06-07T03:52:34.941382",
+  "completed_at": "2026-06-07T03:56:41.259123",
+  "cost_price": 0.0,
+  "shares": 0,
+  "total_assets": 0.0,
+  "available_cash": 0.0,
+  "quote": {
+    "symbol": "603993",
+    "name": "洛阳钼业",
+    "price": 18.19,
+    "change": -0.55,
+    "change_pct": -2.93,
+    "volume": 219791400.0,
+    "amount": 4067590874.0,
+    "high": 19.13,
+    "low": 18.07,
+    "open_": 18.6,
+    "prev_close": 18.74,
+    "turnover_rate": 1.26,
+    "pe": 16.11,
+    "pb": 4.7,
+    "market_cap": 3891.63,
+    "dividend": 0.286,
+    "timestamp": "2026-06-07 03:52:40"
+  },
+  "technical_indicators": {
+    "symbol": "",
+    "price": 18.19,
+    "ma5": 19.0,
+    "ma10": 19.13,
+    "ma20": 19.12,
+    "ma60": 19.04,
+    "rsi_14": 49.3,
+    "macd_dif": -0.1328,
+    "macd_dea": -0.107,
+    "macd_hist": -0.0517,
+    "kdj_k": 5.02,
+    "kdj_d": 5.02,
+    "kdj_j": 5.02,
+    "boll_upper": 20.99,
+    "boll_middle": 19.12,
+    "boll_lower": 17.26,
+    "volume_ratio": 0.86,
+    "amplitude": 5.83
+  },
+  "financial_summary": {
+    "symbol": "603993",
+    "name": "洛阳钼业",
+    "revenue": 421.92,
+    "revenue_yoy": -2.9785,
+    "net_profit": 203.25,
+    "net_profit_yoy": 50.3008,
+    "eps": 0.95,
+    "roe": 26.5072,
+    "gross_margin": 23.9275,
+    "debt_ratio": 50.3382,
+    "report_date": "20251231"
+  },
+  "news": [
+    {
+      "title": "洛阳钼业大宗交易成交1204.18万元",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-05/doc-iniakmqn8293874.shtml",
+      "publish_time": "2026-06-05 21:19",
+      "source": "新浪财经"
+    },
+    {
+      "title": "洛阳钼业6月5日现1笔大宗交易 总成交金额1204.18万元 溢价率为0.00%",
+      "url": "https://finance.sina.com.cn/stock/ggzz/2026-06-05/doc-iniaiyyp9601810.shtml",
+      "publish_time": "2026-06-05 17:41",
+      "source": "新浪财经"
+    },
+    {
+      "title": "6月5日洛阳钼业现1204.18万元大宗交易",
+      "url": "https://cj.sina.cn/articles/view/1850649324/6e4eaaec02002b9ew",
+      "publish_time": "2026-06-05 17:41",
+      "source": "新浪财经"
+    },
+    {
+      "title": "洛阳钼业今日大宗交易平价成交66.2万股，成交额1204.18万元",
+      "url": "https://cj.sina.cn/articles/view/5182171545/134e1a99902002fl2k",
+      "publish_time": "2026-06-05 17:26",
+      "source": "新浪财经"
+    },
+    {
+      "title": "矿企出海：真正难的不是拿矿，是守矿",
+      "url": "https://finance.sina.com.cn/roll/2026-06-05/doc-iniaiyyr1684050.shtml",
+      "publish_time": "2026-06-05 17:02",
+      "source": "新浪财经"
+    },
+    {
+      "title": "AI基建背后的隐藏赢家，算力金属迎来红利窗口，8家受益企业梳理",
+      "url": "https://k.sina.cn/article_7879996580_1d5af34a402001rlmq.html",
+      "publish_time": "2026-06-05 03:01",
+      "source": "新浪财经"
+    },
+    {
+      "title": "港股收评：恒指跌1.48% 科指跌1.61% 科网股低迷 锂电池股下挫",
+      "url": "https://finance.sina.com.cn/stock/hkstock/marketalerts/2026-06-04/doc-iniafrts0443196.shtml",
+      "publish_time": "2026-06-04 16:08",
+      "source": "新浪财经"
+    },
+    {
+      "title": "40天拿下4座金矿！隐形矿王年赚200亿，股价一年暴涨超三倍！",
+      "url": "https://k.sina.cn/article_7879996653_1d5af34ed02001h7cs.html",
+      "publish_time": "2026-06-04 16:05",
+      "source": "新浪财经"
+    },
+    {
+      "title": "稀有金属ETF华富(561800)标的指数估值低位性价比凸显，小金属中钨价筑底反弹，锂供需偏紧格局延续",
+      "url": "https://cj.sina.cn/articles/view/5570287027/14c03d5b302001n1i4",
+      "publish_time": "2026-06-04 13:00",
+      "source": "新浪财经"
+    },
+    {
+      "title": "单日获资金流入超亿元，全市场最大工业有色ETF万家(560860)近1月日均成交居跟踪同指数产品首位",
+      "url": "https://cj.sina.cn/articles/view/5570287027/14c03d5b302001n1hy",
+      "publish_time": "2026-06-04 12:38",
+      "source": "新浪财经"
+    },
+    {
+      "title": "洛阳钼业均线粘合，18倍PE有色龙头，短期或将迎来变盘？",
+      "url": "https://k.sina.cn/article_7879996919_1d5af35f702001ziry.html",
+      "publish_time": "2026-06-04 12:22",
+      "source": "新浪财经"
+    },
+    {
+      "title": "港股午评：恒指跌1.4% 科指跌1.43% 科网股、锂电池股普跌 有色金属板块走弱 半导体板块逆势上涨",
+      "url": "https://finance.sina.com.cn/stock/hkstock/marketalerts/2026-06-04/doc-iniaffcx2796521.shtml",
+      "publish_time": "2026-06-04 12:00",
+      "source": "新浪财经"
+    },
+    {
+      "title": "40天拿下巴西4座金矿：洛阳钼业，冲上云霄",
+      "url": "https://cj.sina.cn/articles/view/3302243581/c4d43cfd00101a96i",
+      "publish_time": "2026-06-04 11:58",
+      "source": "新浪财经"
+    },
+    {
+      "title": "市场加息预期进一步升温，有色金属普跌，有色金属ETF华夏(516650)下跌3.41%",
+      "url": "https://cj.sina.cn/articles/view/6192937794/17120bb4202002qf34",
+      "publish_time": "2026-06-04 10:15",
+      "source": "新浪财经"
+    },
+    {
+      "title": "A股有色金属股集体下挫，中国铝业跌超6%，洛阳钼业跌超4%",
+      "url": "https://cj.sina.cn/articles/view/5115326071/130e5ae7702002w6wc",
+      "publish_time": "2026-06-04 09:42",
+      "source": "新浪财经"
+    },
+    {
+      "title": "雪球关注 315256人  |  最新价 ¥18.19",
+      "url": "",
+      "publish_time": "2026-06-07",
+      "source": "雪球"
+    }
+  ],
+  "guba_posts": [
+    {
+      "title": "下周趋势做反t",
+      "author": "股友073716dC92",
+      "publish_time": "06-07 11:40",
+      "read_count": 16,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "短线会跌，但长线一点不慌",
+      "author": "多艺的柳岸",
+      "publish_time": "06-07 10:47",
+      "read_count": 28,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "下周一和周二另何一天开盘没有五个点以上，去年在12元的时候也是这样走法，当时涨停",
+      "author": "股友13915AQ117",
+      "publish_time": "06-07 09:39",
+      "read_count": 156,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "刚刚看到金钼股份里面说钼涨价25%。那洛阳钼业是不是不生产钼？是不是只有金木部分",
+      "author": "股友53n9291x97",
+      "publish_time": "06-07 08:16",
+      "read_count": 191,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "在低就分批次加仓",
+      "author": "有色操盘手",
+      "publish_time": "06-07 08:12",
+      "read_count": 26,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "有钱不怕利息少，不进股市找烦恼。没钱我就努力赚，不偷不抢不欺骗！",
+      "author": "股友8a71h69578",
+      "publish_time": "06-07 07:41",
+      "read_count": 50,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "周一低开直接跑，高开也跑，",
+      "author": "股友3222W830h0",
+      "publish_time": "06-07 03:12",
+      "read_count": 45,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "都在说周一跌停，跌停的话到底是16.37还是16.38啊",
+      "author": "股友rnyLMP",
+      "publish_time": "06-07 01:32",
+      "read_count": 57,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "科技股的没吃到。科技股的暴跌一定要跟上，泥沙俱下。周一跌停，不服来辩！",
+      "author": "豹子头666",
+      "publish_time": "06-07 12:54",
+      "read_count": 197,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "非农利空，导致金铜期货大跌，散户现在很恐慌，但其实主力资金从周四周五已经跑了一部",
+      "author": "一定记得落袋为安",
+      "publish_time": "06-06 11:51",
+      "read_count": 907,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "高买低卖，看来脑壳还是有问题妈咪？",
+      "author": "小丑鱼919",
+      "publish_time": "06-06 11:11",
+      "read_count": 38,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "你真的让我感觉很慌",
+      "author": "股喵招财",
+      "publish_time": "06-06 10:57",
+      "read_count": 37,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "$洛阳钼业(SH603993)$",
+      "author": "xxxxkkkk",
+      "publish_time": "06-06 10:43",
+      "read_count": 50,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "美国是泡沫，我们是真的有需求。",
+      "author": "月见八千代",
+      "publish_time": "06-06 09:57",
+      "read_count": 25,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "我们必须跟美股吗？上一周一天都没跟，",
+      "author": "股友3222W830h0",
+      "publish_time": "06-06 09:45",
+      "read_count": 46,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "美国南方铜业最高225美元1447亿美元，按人民9700亿市值，1400每股，洛",
+      "author": "永远1秒执行",
+      "publish_time": "06-06 09:21",
+      "read_count": 97,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "都看空定涨",
+      "author": "笑逐颜开的董睿博",
+      "publish_time": "06-06 08:47",
+      "read_count": 37,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "老美的股市能源大跌，估计周一这只股也要一泻千里了。哎已经在你上面亏几千了，真是韭",
+      "author": "聪颖的董伟涛",
+      "publish_time": "06-06 08:24",
+      "read_count": 82,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "这个主要是铜，周一放心。",
+      "author": "努力de哈密瓜",
+      "publish_time": "06-06 07:53",
+      "read_count": 54,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "偷偷买入",
+      "author": "月见八千代",
+      "publish_time": "06-06 07:20",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "继续装死",
+      "author": "月见八千代",
+      "publish_time": "06-06 07:19",
+      "read_count": 25,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "跌回三月份的17再加仓",
+      "author": "慷慨的尹珂宙",
+      "publish_time": "06-06 07:14",
+      "read_count": 27,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "科技股是一轮换一轮，一茬换一茬，资源股是占坑，用一g少一g，科技股不管那个都要用",
+      "author": "nijohn",
+      "publish_time": "06-06 06:41",
+      "read_count": 40,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "老美加息，稀有金属后半年直接放弃了。",
+      "author": "Dghhhjj",
+      "publish_time": "06-06 06:25",
+      "read_count": 252,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "不该关注的时候",
+      "author": "晓光325077",
+      "publish_time": "06-06 06:19",
+      "read_count": 52,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "实打实的业绩摆那呢，跌是不可能的…",
+      "author": "利落的夏贺莲",
+      "publish_time": "06-06 06:12",
+      "read_count": 47,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "——————【黄金赛道】AI引领科技牛！眉飞色舞牛是历史！洛阳钼业———————",
+      "author": "价值成长99",
+      "publish_time": "06-06 05:59",
+      "read_count": 181,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "来聊聊下周计划吧。我打算开盘割一半，不知道给不给这个机会。然后第二天找合适机会再",
+      "author": "股友073716dC92",
+      "publish_time": "06-06 05:47",
+      "read_count": 294,
+      "comment_count": 6,
+      "content": null
+    },
+    {
+      "title": "他家主营业务收入黄金占比高吗？",
+      "author": "见日之光",
+      "publish_time": "06-06 05:20",
+      "read_count": 66,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "主力一个没跑都不要跑稳住二季度增速强合力拉升",
+      "author": "股友7x76u33752",
+      "publish_time": "06-06 04:31",
+      "read_count": 45,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周一装死。眼不见心不烦。亏损乃是常态。快乐过周末。",
+      "author": "静等花开呢",
+      "publish_time": "06-06 04:19",
+      "read_count": 98,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "受大势影响，跌会下来一点，但是2025年年底的时候金价持平吧。股价比现在还高点。",
+      "author": "股友67Yi083658",
+      "publish_time": "06-06 03:58",
+      "read_count": 50,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "回到2025年4月的股价。",
+      "author": "机灵的秦芸东",
+      "publish_time": "06-06 03:56",
+      "read_count": 415,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "既然周一跌，那么为什么要跑呢？等反弹再走不好吗？你们是怎么想的？",
+      "author": "努力de哈密瓜",
+      "publish_time": "06-06 03:42",
+      "read_count": 76,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "周一会跌停开吗",
+      "author": "股友5N295D5887",
+      "publish_time": "06-06 03:18",
+      "read_count": 56,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "洛钼在黄金较高价完成收购，二季度若财报并表或许不太好看",
+      "author": "A股笨人",
+      "publish_time": "06-06 03:14",
+      "read_count": 70,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "兄弟们，大家还好吗？不管怎样，还是要开心一点",
+      "author": "山城人在重庆",
+      "publish_time": "06-06 01:06",
+      "read_count": 56,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "低开是肯定的，无非几个点，那些拼命唱空跌停的，真的希望你们的持股天天跌停。",
+      "author": "zhdxwl",
+      "publish_time": "06-06 12:57",
+      "read_count": 249,
+      "comment_count": 6,
+      "content": null
+    },
+    {
+      "title": "周一就看钼涨了",
+      "author": "股友356565Wq96",
+      "publish_time": "06-06 12:49",
+      "read_count": 52,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "钼是未来主角",
+      "author": "股友3B1121152M",
+      "publish_time": "06-06 12:46",
+      "read_count": 1060,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "跌？也许是机会？不跌，不暴跌，那有反弹或反转的机会呢？紫金／螺母这么多股东人数，",
+      "author": "山城人在重庆",
+      "publish_time": "06-06 12:09",
+      "read_count": 146,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "你们眼里的恐慌，对我来说就是加仓的好时机，我是做长线的，短线的大哥你们爱咋样咋样",
+      "author": "保守型选手",
+      "publish_time": "06-06 11:43",
+      "read_count": 71,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "$洛阳钼业(SH603993)$",
+      "author": "我是凉兮嘤嘤嘤",
+      "publish_time": "06-06 11:43",
+      "read_count": 389,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "活在当下",
+      "author": "晓光325077",
+      "publish_time": "06-06 11:34",
+      "read_count": 104,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "铜涨的时候也是趴着铜跌了你就要暴跌了",
+      "author": "股友680Yz70193",
+      "publish_time": "06-06 11:26",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "铜铝糖的大逻辑是六月底以后开始的厄尔尼诺现象，南涝北旱，极端天气会导致很多老旧矿",
+      "author": "老土豆50w确定性",
+      "publish_time": "06-06 11:13",
+      "read_count": 68,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "看涨的人越少，越可能涨，因为主力是反向抄着",
+      "author": "股友ljQ7hX",
+      "publish_time": "06-06 10:55",
+      "read_count": 103,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "暗盘白银不是涨了吗",
+      "author": "股友26h59r8030",
+      "publish_time": "06-06 10:45",
+      "read_count": 38,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "有色外盘大跌，周一可能是抄底绝佳机会，我抄早了。准备在搞点资金周一低开继续买，继",
+      "author": "老土豆50w确定性",
+      "publish_time": "06-06 10:21",
+      "read_count": 113,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "已经提前跌了",
+      "author": "努力de哈密瓜",
+      "publish_time": "06-06 09:58",
+      "read_count": 44,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "周一会不会很惨？水下五个点起步啊。炒个股，太难了。",
+      "author": "静等花开呢",
+      "publish_time": "06-06 09:51",
+      "read_count": 60,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "不要割，长期持有吧，公司基本面没改变",
+      "author": "画意的瞿茜",
+      "publish_time": "06-06 09:02",
+      "read_count": 44,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "赔了10点想跑路",
+      "author": "股友073716dC92",
+      "publish_time": "06-06 08:51",
+      "read_count": 67,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "周一基本无了",
+      "author": "持股丰登",
+      "publish_time": "06-06 08:47",
+      "read_count": 39,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "又又又被套牢了",
+      "author": "股友617p517F21",
+      "publish_time": "06-06 08:44",
+      "read_count": 37,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "美股跌了4%下周大盘开盘就破4000",
+      "author": "持股丰登",
+      "publish_time": "06-06 08:42",
+      "read_count": 45,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "金银跌的猛。铜跌的不太多。再说有几次期货涨他涨了的",
+      "author": "温和友善的秦衍慕",
+      "publish_time": "06-06 08:19",
+      "read_count": 45,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "$洛阳钼业(SH603993)$",
+      "author": "不忘初心牢记",
+      "publish_time": "06-06 08:01",
+      "read_count": 289,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "洛阳钼业：融资净偿还1051.74万元，融资余额44.17亿元",
+      "author": "洛阳钼业资讯",
+      "publish_time": "06-06 07:55",
+      "read_count": 78,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周一跌停开？",
+      "author": "股友91g7627x59",
+      "publish_time": "06-06 07:52",
+      "read_count": 128,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "没救了，周一开盘挂16.37",
+      "author": "今晚吃海参",
+      "publish_time": "06-06 07:04",
+      "read_count": 283,
+      "comment_count": 10,
+      "content": null
+    },
+    {
+      "title": "昨天跌是在消化利空吗？",
+      "author": "发财给媳妇换手机",
+      "publish_time": "06-06 06:57",
+      "read_count": 47,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "周一拉高一波带我一起出货谢谢喵",
+      "author": "西圆贫穷",
+      "publish_time": "06-06 06:02",
+      "read_count": 44,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "主力掌握一切，让散户亏分分秒秒",
+      "author": "精致的欧钊燕",
+      "publish_time": "06-06 04:40",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "大家珍惜生命远离股市，散户永远都亏",
+      "author": "精致的欧钊燕",
+      "publish_time": "06-06 04:38",
+      "read_count": 44,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "不到周6周天，谁也不知道啥情况，今天不代表明天后天",
+      "author": "股友3222W830h0",
+      "publish_time": "06-06 02:18",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周二卖了，周五尾盘又接回来了，我这周一是不是要完蛋了",
+      "author": "股友75Y2995o02",
+      "publish_time": "06-06 12:47",
+      "read_count": 542,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "紫金破位了，老美非农数据超预期利空有色金属，周一抢跑，这波是大浪下跌",
+      "author": "冰糖山楂炒A股",
+      "publish_time": "06-06 12:42",
+      "read_count": 96,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "周一应该是一根放量阳线",
+      "author": "普朗克606",
+      "publish_time": "06-06 12:37",
+      "read_count": 72,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "你们都知道到18左右接到20左右卖，掌握规律了，对吧？但这次不一样哦今天抄底的可",
+      "author": "喜气洋洋的王茁",
+      "publish_time": "06-06 12:21",
+      "read_count": 473,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "这次真的要比3月23还低咯下周估计要到15开头了",
+      "author": "喜气洋洋的王茁",
+      "publish_time": "06-06 12:15",
+      "read_count": 46,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "周一16.37见",
+      "author": "喜气洋洋的王茁",
+      "publish_time": "06-06 12:09",
+      "read_count": 35,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "今天又回来了，18.20元/30手建仓，下跌17.20元再加仓40手，期待半年报",
+      "author": "佳雨_70",
+      "publish_time": "06-06 12:06",
+      "read_count": 104,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "恭喜在座的各位有色大韭菜，周一喜提大面五碗。",
+      "author": "灵轩羽韵",
+      "publish_time": "06-05 11:43",
+      "read_count": 288,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "下周收突破性缺口",
+      "author": "晓光325077",
+      "publish_time": "06-05 11:28",
+      "read_count": 93,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "铜价大跌了，各位，咋办",
+      "author": "股友962M5g5157",
+      "publish_time": "06-05 11:21",
+      "read_count": 81,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "毁灭吧，唉",
+      "author": "老魔君",
+      "publish_time": "06-05 11:13",
+      "read_count": 38,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "现货黄金4344已探底成功，伦铜13500探底成功，道指纳指也企稳反弹了，金铜暴",
+      "author": "史Small",
+      "publish_time": "06-05 10:58",
+      "read_count": 1420,
+      "comment_count": 26,
+      "content": null
+    },
+    {
+      "title": "昨天满上今天没走，唉！！！",
+      "author": "施皓润",
+      "publish_time": "06-05 10:47",
+      "read_count": 41,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周一跌停",
+      "author": "知行合一切勿幻想",
+      "publish_time": "06-05 10:30",
+      "read_count": 38,
+      "comment_count": 0,
+      "content": null
+    }
+  ],
+  "sentiment_news": {
+    "avg_score": -0.0312,
+    "positive_ratio": 0.125,
+    "negative_ratio": 0.1875,
+    "total_count": 16,
+    "positive_count": 2,
+    "negative_count": 3
+  },
+  "sentiment_guba": {
+    "avg_score": -0.0688,
+    "positive_ratio": 0.1375,
+    "negative_ratio": 0.275,
+    "total_count": 80,
+    "positive_count": 11,
+    "negative_count": 22
+  },
+  "signals": {
+    "overall": "neutral",
+    "score": 0.2,
+    "label": "中性",
+    "technical": -0.7,
+    "fundamental": 1.6,
+    "sentiment": -0.1,
+    "regime": "ranging",
+    "confidence": "低",
+    "details": [
+      {
+        "factor": "RSI(14)=49",
+        "impact": "positive",
+        "weight": 0.07,
+        "contribution": 0.07000000000000028,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=-0.052",
+        "impact": "negative",
+        "weight": 0.02,
+        "contribution": -0.016632707774798944,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "weight": 1.5,
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.25)",
+        "impact": "positive",
+        "weight": 0.63,
+        "contribution": 0.6266756032171578,
+        "description": "中轨附近"
+      },
+      {
+        "factor": "量价关系(量比=0.9)",
+        "impact": "neutral",
+        "weight": 0,
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "weight": 0.73,
+        "contribution": -0.7296025104602507,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "weight": 3.0,
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(26.5%)",
+        "impact": "positive",
+        "weight": 1.5,
+        "contribution": 1.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(+50.3%)",
+        "impact": "positive",
+        "weight": 0.67,
+        "contribution": 0.670215,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "weight": 0.3,
+        "contribution": 0.3,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=-0.03)",
+        "impact": "negative",
+        "weight": 0.05,
+        "contribution": -0.04766666666666666,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.07)",
+        "impact": "negative",
+        "weight": 0.09,
+        "contribution": -0.086,
+        "description": ""
+      }
+    ]
+  },
+  "llm_analysis": "用户未提供持仓。洛阳钼业ROE高达26.5%、PE处于历史0%分位，但营收同比下降2.98%，净利润大增可能来自非经常性损益。建议观望，待验证利润质量及收入拐点后，再考虑长期介入。",
+  "prediction_summary": {
+    "outlook": "震荡",
+    "confidence": "中",
+    "price_target_current": 18.19,
+    "price_target_low": 14.0,
+    "price_target_high": 25.0,
+    "reason": "用户未提供持仓。洛阳钼业ROE高达26.5%、PE处于历史0%分位，但营收同比下降2.98%，净利润大增可能来自非经常性损益。建议观望，待验证利润质量及收入拐点后，再考虑长期介入。",
+    "tech_view": {
+      "role": "技术分析师",
+      "outlook": "看空",
+      "confidence": "中",
+      "score": -2.5,
+      "key_points": [
+        "MACD死叉，柱状线为负，短期动能偏空",
+        "均线交织，MA5下穿MA10，价格跌破MA20",
+        "量比0.86，缩量下跌，市场参与度低",
+        "KDJ指标中K、D、J均处于5.02，极低但未形成超卖信号"
+      ],
+      "risks": [
+        "价格远离MA20，可能引发技术性反弹",
+        "若持续缩量，下跌动能可能减弱"
+      ]
+    },
+    "fund_view": {
+      "role": "基本面分析师",
+      "outlook": "看多",
+      "confidence": "高",
+      "score": 3.0,
+      "key_points": [
+        "ROE高达26.51%，远超20%门槛，盈利能力卓越",
+        "净利润同比大增50.3%，增长强劲"
+      ],
+      "risks": [
+        "营收同比下降2.98%，需关注成长性",
+        "负债率50.34%，处于中等偏高水平"
+      ]
+    },
+    "sent_view": {
+      "role": "舆情分析师",
+      "outlook": "中性",
+      "confidence": "低",
+      "score": 0.0,
+      "key_points": [
+        "新闻和股吧情感均接近中性，无明显偏向",
+        "股吧看空比例高于看多，但未达极端水平",
+        "存在钼涨价等潜在利好，但整体市场情绪偏弱"
+      ],
+      "risks": [
+        "股吧看空情绪较高，需警惕短期抛压",
+        "有色金属板块整体下挫，行业性风险存在",
+        "新闻利好缺乏实质性支撑，可能无法兑现"
+      ]
+    },
+    "short_term": {
+      "direction": "震荡",
+      "change_pct": -2,
+      "confidence": "低",
+      "reason": "技术面偏空，量价背离，但估值极低限制下行空间，预计震荡整理"
+    },
+    "mid_term": {
+      "direction": "上涨",
+      "change_pct": 10,
+      "confidence": "中",
+      "reason": "若利润质量验证，低PE吸引长期资金，基本面向好驱动修复"
+    },
+    "long_term": {
+      "direction": "上涨",
+      "change_pct": 30,
+      "confidence": "中",
+      "reason": "ROE高且稳定，若收入恢复，成长股特质显现，估值回归合理中枢"
+    },
+    "suggested_action": {
+      "action": "观望",
+      "reason": "营收同比转正或扣非净利润增速>20%，且股价回调至17元附近，成交量放大确认支撑。",
+      "stop_loss": 15.5,
+      "take_profit": 22.0
+    },
+    "cio_decision": {
+      "master_name": "菲利普·费雪",
+      "master_key": "fisher",
+      "decision_summary": "用户未提供持仓。洛阳钼业ROE高达26.5%、PE处于历史0%分位，但营收同比下降2.98%，净利润大增可能来自非经常性损益。建议观望，待验证利润质量及收入拐点后，再考虑长期介入。",
+      "rationale": "采纳基本面分析师的高ROE和净利润增长，但否决其忽视营收下滑的倾向，结合监察员关于非经常性损益的质疑。估值分析师的低PE分位是重要支撑，但需警惕低估值陷阱。技术分析师看空短期动能，但长期成长股不需过度关注。宏观分析师PMI向好但CPI高企，行业政策中性。舆情中性，无强烈信号。风险经理提示流动性不足但未构成否决。最终决策以基本面长期视角为主，但暂不行动，等待收入端改善或利润质量证实。",
+      "evidence_chain": [
+        "宏观分析师: PMI>50扩张区间→采纳，宏观环境支持权益投资，但CPI高企关注通胀风险",
+        "行业政策分析师: 政策中性但营收下滑→否决部分，行业数据缺失，需关注金属价格波动",
+        "估值分析师: PE历史0%分位，极低→采纳，但需警惕低估值陷阱，结合基本面验证",
+        "基本面分析师: ROE=26.51%，净利润同比+50.3%→采纳，但营收同比-2.98%需警惕，否决过度乐观",
+        "技术分析师: MACD死叉，价格跌破MA20→否决，短期波动不影响长期成长逻辑",
+        "舆情分析师: 情感中性，股吧看空略高→采纳，但无极端信号，暂不参考",
+        "风险经理: 流动性不足，短期下跌趋势未扭转→部分采纳，但长期持股可忽略短期波动",
+        "监察员: 非经常性损益、营收下滑、确认偏误→高度采纳，需深挖利润构成和收入趋势"
+      ],
+      "base_case": {
+        "direction": "上涨",
+        "target": 20.0,
+        "probability": 0.55,
+        "reason": "假设盈利可持续，收入企稳，低PE回归均值，成长潜力推动估值修复"
+      },
+      "bull_case": {
+        "direction": "上涨",
+        "target": 25.0,
+        "probability": 0.25,
+        "reason": "钼价持续上涨，新项目投产，营收转正，利润高质量增长，市场重新定价"
+      },
+      "bear_case": {
+        "direction": "下跌",
+        "target": 14.0,
+        "probability": 0.2,
+        "reason": "利润不可持续，营收继续萎缩，负债率风险暴露，低估值陷阱，股价下行"
+      },
+      "order": {
+        "action": "观望",
+        "order_rationale": "当前信息不足以确认成长可持续性，需等待更多证据（如季度收入拐点、扣非利润增速），避免陷入低估值陷阱。",
+        "position_size_pct": 0,
+        "position_note": "当前未持有，建议观望，待基本面明朗后再考虑建立仓位。",
+        "entry_conditions": "营收同比转正或扣非净利润增速>20%，且股价回调至17元附近，成交量放大确认支撑。",
+        "stop_loss": {
+          "level": 15.5,
+          "type": "固定止损",
+          "trigger": "跌破15.50元，或营收继续恶化"
+        },
+        "take_profit": {
+          "level_1": 22.0,
+          "level_2": 28.0,
+          "type": "分批止盈"
+        }
+      },
+      "short_term": {
+        "direction": "震荡",
+        "change_pct": -2,
+        "confidence": "低",
+        "reason": "技术面偏空，量价背离，但估值极低限制下行空间，预计震荡整理"
+      },
+      "mid_term": {
+        "direction": "上涨",
+        "change_pct": 10,
+        "confidence": "中",
+        "reason": "若利润质量验证，低PE吸引长期资金，基本面向好驱动修复"
+      },
+      "long_term": {
+        "direction": "上涨",
+        "change_pct": 30,
+        "confidence": "中",
+        "reason": "ROE高且稳定，若收入恢复，成长股特质显现，估值回归合理中枢"
+      },
+      "risk_monitoring": [
+        {
+          "trigger": "营收连续两季下滑超5%",
+          "action": "取消关注，转向其他标的"
+        },
+        {
+          "trigger": "扣非净利润增速转负",
+          "action": "清仓或止损"
+        },
+        {
+          "trigger": "大股东减持公告",
+          "action": "减持观察，评估管理层信心"
+        }
+      ],
+      "decision_quality": {
+        "confidence": "中",
+        "key_uncertainties": [
+          "非经常性损益占比",
+          "金属价格走势",
+          "宏观经济需求"
+        ],
+        "next_review": "下一个季报发布后"
+      },
+      "veto_response": "无",
+      "raw_llm_output": "{\"decision_summary\": \"用户未提供持仓。洛阳钼业ROE高达26.5%、PE处于历史0%分位，但营收同比下降2.98%，净利润大增可能来自非经常性损益。建议观望，待验证利润质量及收入拐点后，再考虑长期介入。\", \"rationale\": \"采纳基本面分析师的高ROE和净利润增长，但否决其忽视营收下滑的倾向，结合监察员关于非经常性损益的质疑。估值分析师的低PE分位是重要支撑，但需警惕低估值陷阱。技术分析师看空短期动能，但长期成长股不需过度关注。宏观分析师PMI向好但CPI高企，行业政策中性。舆情中性，无强烈信号。风险经理提示流动性不足但未构成否决。最终决策以基本面长期视角为主，但暂不行动，等待收入端改善或利润质量证实。\", \"evidence_chain\": [\"宏观分析师: PMI>50扩张区间→采纳，宏观环境支持权益投资，但CPI高企关注通胀风险\", \"行业政策分析师: 政策中性但营收下滑→否决部分，行业数据缺失，需关注金属价格波动\", \"估值分析师: PE历史0%分位，极低→采纳，但需警惕低估值陷阱，结合基本面验证\", \"基本面分析师: ROE=26.51%，净利润同比+50.3%→采纳，但营收同比-2.98%需警惕，否决过度乐观\", \"技术分析师: MACD死叉，价格跌破MA20→否决，短期波动不影响长期成长逻辑\", \"舆情分析师: 情感中性，股吧看空略高→采纳，但无极端信号，暂不参考\", \"风险经理: 流动性不足，短期下跌趋势未扭转→部分采纳，但长期持股可忽略短期波动\", \"监察员: 非经常性损益、营收下滑、确认偏误→高度采纳，需深挖利润构成和收入趋势\"], \"base_case\": {\"direction\": \"上涨\", \"target\": 20.0, \"probability\": 0.55, \"reason\": \"假设盈利可持续，收入企稳，低PE回归均值，成长潜力推动估值修复\"}, \"bull_case\": {\"direction\": \"上涨\", \"target\": 25.0, \"probability\": 0.25, \"reason\": \"钼价持续上涨，新项目投产，营收转正，利润高质量增长，市场重新定价\"}, \"bear_case\": {\"direction\": \"下跌\", \"target\": 14.0, \"probability\": 0.2, \"reason\": \"利润不可持续，营收继续萎缩，负债率风险暴露，低估值陷阱，股价下行\"}, \"order\": {\"action\": \"观望\", \"order_rationale\": \"当前信息不足以确认成长可持续性，需等待更多证据（如季度收入拐点、扣非利润增速），避免陷入低估值陷阱。\", \"position_size_pct\": 0, \"position_note\": \"当前未持有，建议观望，待基本面明朗后再考虑建立仓位。\", \"entry_conditions\": \"营收同比转正或扣非净利润增速>20%，且股价回调至17元附近，成交量放大确认支撑。\", \"stop_loss\": {\"level\": 15.5, \"type\": \"固定止损\", \"trigger\": \"跌破15.50元，或营收继续恶化\"}, \"take_profit\": {\"level_1\": 22.0, \"level_2\": 28.0, \"type\": \"分批止盈\"}}, \"short_term\": {\"direction\": \"震荡\", \"change_pct\": -2, \"confidence\": \"低\", \"reason\": \"技术面偏空，量价背离，但估值极低限制下行空间，预计震荡整理\"}, \"mid_term\": {\"direction\": \"上涨\", \"change_pct\": 10, \"confidence\": \"中\", \"reason\": \"若利润质量验证，低PE吸引长期资金，基本面向好驱动修复\"}, \"long_term\": {\"direction\": \"上涨\", \"change_pct\": 30, \"confidence\": \"中\", \"reason\": \"ROE高且稳定，若收入恢复，成长股特质显现，估值回归合理中枢\"}, \"risk_monitoring\": [{\"trigger\": \"营收连续两季下滑超5%\", \"action\": \"取消关注，转向其他标的\"}, {\"trigger\": \"扣非净利润增速转负\", \"action\": \"清仓或止损\"}, {\"trigger\": \"大股东减持公告\", \"action\": \"减持观察，评估管理层信心\"}], \"decision_quality\": {\"confidence\": \"中\", \"key_uncertainties\": [\"非经常性损益占比\", \"金属价格走势\", \"宏观经济需求\"], \"next_review\": \"下一个季报发布后\"}, \"veto_response\": \"无\"}",
+      "error": null
+    },
+    "employee_reports": [
+      {
+        "employee_id": "risk",
+        "role": "风险经理",
+        "department": "风控部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": 4.0,
+        "key_points": [
+          "股价下跌但未破关键支撑",
+          "量比偏低显示交易活跃度不高",
+          "振幅较大但市场状态为震荡"
+        ],
+        "risks": [
+          "流动性不足可能加剧波动",
+          "短期下跌趋势未扭转"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "fundamental",
+        "role": "基本面分析师",
+        "department": "研究部",
+        "outlook": "看多",
+        "confidence": "高",
+        "score": 3.0,
+        "key_points": [
+          "ROE高达26.51%，远超20%门槛，盈利能力卓越",
+          "净利润同比大增50.3%，增长强劲"
+        ],
+        "risks": [
+          "营收同比下降2.98%，需关注成长性",
+          "负债率50.34%，处于中等偏高水平"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "policy",
+        "role": "行业政策分析师",
+        "department": "宏观部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": 0.0,
+        "key_points": [
+          "政策环境偏利空，但影响有限",
+          "公司营收同比小幅下滑",
+          "行业数据缺失，难以准确判断"
+        ],
+        "risks": [
+          "宏观经济需求疲软",
+          "国际金属价格波动风险"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "valuation",
+        "role": "估值分析师",
+        "department": "研究部",
+        "outlook": "看多",
+        "confidence": "高",
+        "score": 3.0,
+        "key_points": [
+          "PE处于历史0%分位，远低于均值，估值极低",
+          "ROE高达26.5%，盈利能力强劲"
+        ],
+        "risks": [
+          "低估值可能反映市场过度悲观，需关注基本面变化",
+          "PB为4.7相对较高，存在资产溢价风险"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "macro",
+        "role": "宏观分析师",
+        "department": "宏观部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 2.0,
+        "key_points": [
+          "PMI持续高于50，经济复苏确认",
+          "LPR保持不变，货币政策中性"
+        ],
+        "risks": [
+          "CPI同比达7.08%，可能制约宽松空间",
+          "北向资金数据缺失，需关注外资动向"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "sentiment",
+        "role": "舆情分析师",
+        "department": "交易部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": 0.0,
+        "key_points": [
+          "新闻和股吧情感均接近中性，无明显偏向",
+          "股吧看空比例高于看多，但未达极端水平",
+          "存在钼涨价等潜在利好，但整体市场情绪偏弱"
+        ],
+        "risks": [
+          "股吧看空情绪较高，需警惕短期抛压",
+          "有色金属板块整体下挫，行业性风险存在",
+          "新闻利好缺乏实质性支撑，可能无法兑现"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "technical",
+        "role": "技术分析师",
+        "department": "研究部",
+        "outlook": "看空",
+        "confidence": "中",
+        "score": -2.5,
+        "key_points": [
+          "MACD死叉，柱状线为负，短期动能偏空",
+          "均线交织，MA5下穿MA10，价格跌破MA20",
+          "量比0.86，缩量下跌，市场参与度低",
+          "KDJ指标中K、D、J均处于5.02，极低但未形成超卖信号"
+        ],
+        "risks": [
+          "价格远离MA20，可能引发技术性反弹",
+          "若持续缩量，下跌动能可能减弱"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "overseer",
+        "role": "独立监察员",
+        "department": "监察部",
+        "outlook": "中性",
+        "confidence": "高",
+        "score": 0.0,
+        "key_points": [
+          "盲点1: 净利润同比大增50.3%可能来自非经常性损益，而非核心盈利增长，团队未深挖利润构成",
+          "盲点2: 营收同比下降2.98%与净利润高增长背离，团队过度聚焦利润而忽略收入萎缩趋势",
+          "替代情景1: 若盈利增长不可持续，明年EPS回落，当前PE低估值陷阱将暴露，股价有下行风险",
+          "替代情景2: 若宏观经济持续疲软，行业需求进一步下滑，营收降幅扩大，即使PE再低也难以支撑估值"
+        ],
+        "risks": [
+          "认知偏差: 团队受'确认偏误'影响，只看到ROE和PE分位的利好，选择性忽视营收下滑和负债率风险",
+          "数据质量: ROE计算可能基于调整后净利润，需核实是否为扣非ROE；PE分位0%是否为近5年数据？样本区间可能过短",
+          "遗漏因素: 未考虑大股东减持、存货减值、应收账款坏账等潜在风险"
+        ],
+        "error": null
+      }
+    ]
+  },
+  "risk_factors": [
+    {
+      "factor": "流动性不足可能加剧波动"
+    },
+    {
+      "factor": "短期下跌趋势未扭转"
+    },
+    {
+      "factor": "营收同比下降2.98%，需关注成长性"
+    },
+    {
+      "factor": "负债率50.34%，处于中等偏高水平"
+    },
+    {
+      "factor": "宏观经济需求疲软"
+    },
+    {
+      "factor": "国际金属价格波动风险"
+    },
+    {
+      "factor": "低估值可能反映市场过度悲观，需关注基本面变化"
+    },
+    {
+      "factor": "PB为4.7相对较高，存在资产溢价风险"
+    },
+    {
+      "factor": "CPI同比达7.08%，可能制约宽松空间"
+    },
+    {
+      "factor": "北向资金数据缺失，需关注外资动向"
+    },
+    {
+      "factor": "股吧看空情绪较高，需警惕短期抛压"
+    },
+    {
+      "factor": "有色金属板块整体下挫，行业性风险存在"
+    },
+    {
+      "factor": "价格远离MA20，可能引发技术性反弹"
+    },
+    {
+      "factor": "若持续缩量，下跌动能可能减弱"
+    },
+    {
+      "factor": "认知偏差: 团队受'确认偏误'影响，只看到ROE和PE分位的利好，选择性忽视营收下滑和负债率风险"
+    },
+    {
+      "factor": "数据质量: ROE计算可能基于调整后净利润，需核实是否为扣非ROE；PE分位0%是否为近5年数据？样本区间可能过短"
+    }
+  ],
+  "price_target": {
+    "current": 18.19,
+    "low": 14.0,
+    "high": 25.0
+  },
+  "short_term_pred": null,
+  "mid_term_pred": null,
+  "long_term_pred": null,
+  "suggested_action": null,
+  "score_breakdown": {
+    "final": 0.2,
+    "label": "中性",
+    "technical": -0.7,
+    "fundamental": 1.6,
+    "sentiment": -0.1,
+    "regime": "ranging",
+    "confidence": "低",
+    "weights": {
+      "technical": 0.45,
+      "fundamental": 0.35,
+      "sentiment": 0.2
+    },
+    "breakdown": [
+      {
+        "factor": "RSI(14)=49",
+        "impact": "positive",
+        "contribution": 0.07000000000000028,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=-0.052",
+        "impact": "negative",
+        "contribution": -0.016632707774798944,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.25)",
+        "impact": "positive",
+        "contribution": 0.6266756032171578,
+        "description": "中轨附近"
+      },
+      {
+        "factor": "量价关系(量比=0.9)",
+        "impact": "neutral",
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "contribution": -0.7296025104602507,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(26.5%)",
+        "impact": "positive",
+        "contribution": 1.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(+50.3%)",
+        "impact": "positive",
+        "contribution": 0.670215,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "contribution": 0.3,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=-0.03)",
+        "impact": "negative",
+        "contribution": -0.04766666666666666,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.07)",
+        "impact": "negative",
+        "contribution": -0.086,
+        "description": ""
+      }
+    ]
+  },
+  "valuation_level": "正常",
+  "valuation_percentile": 0.0,
+  "suggested_buy_price": 17.28,
+  "historical_pe_avg": 0.0,
+  "important_bullish_news": [
+    {
+      "title": "40天拿下4座金矿！隐形矿王年赚200亿，股价一年暴涨超三倍！",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 16:05",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "稀有金属ETF华富(561800)标的指数估值低位性价比凸显，小金属中钨价筑底反弹，锂供需偏紧格局延续",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 13:00",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    }
+  ],
+  "important_bearish_news": [
+    {
+      "title": "港股收评：恒指跌1.48% 科指跌1.61% 科网股低迷 锂电池股下挫",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 16:08",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "市场加息预期进一步升温，有色金属普跌，有色金属ETF华夏(516650)下跌3.41%",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 10:15",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "A股有色金属股集体下挫，中国铝业跌超6%，洛阳钼业跌超4%",
+      "source": "新浪财经",
+      "publish_time": "2026-06-04 09:42",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    }
+  ],
+  "important_bullish_guba": [
+    {
+      "title": "下周一和周二另何一天开盘没有五个点以上，去年在12元的时候也是这样走法，当时涨停",
+      "source": "股友13915AQ117",
+      "publish_time": "06-07 09:39",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "刚刚看到金钼股份里面说钼涨价25%。那洛阳钼业是不是不生产钼？是不是只有金木部分",
+      "source": "股友53n9291x97",
+      "publish_time": "06-07 08:16",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "都看空定涨",
+      "source": "笑逐颜开的董睿博",
+      "publish_time": "06-06 08:47",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    }
+  ],
+  "important_bearish_guba": [
+    {
+      "title": "短线会跌，但长线一点不慌",
+      "source": "多艺的柳岸",
+      "publish_time": "06-07 10:47",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "都在说周一跌停，跌停的话到底是16.37还是16.38啊",
+      "source": "股友rnyLMP",
+      "publish_time": "06-07 01:32",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "科技股的没吃到。科技股的暴跌一定要跟上，泥沙俱下。周一跌停，不服来辩！",
+      "source": "豹子头666",
+      "publish_time": "06-07 12:54",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    }
+  ],
+  "macro_context": {
+    "source": "akshare",
+    "pmi": 53.0,
+    "cpi_yoy": 7.0781,
+    "shibor": 1.324,
+    "lpr_1y": 3.0,
+    "lpr_5y": 3.5,
+    "policy_tilt": "中性 (LPR不变)",
+    "m2_yoy": 18.88,
+    "social_financing": 6245.0,
+    "northbound_flow": null,
+    "northbound_5d_avg": null,
+    "usd_cny": null,
+    "macro_events": [
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-投标倍数(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-中标利率(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-投标倍数(倍)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M1金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M2金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高收益率(%)",
+        "importance": 1
+      }
+    ],
+    "policy_headlines": [
+      "习近平在重庆考察时强调 进一步全面深化改革开放 不断谱写中国式现代化重庆篇章",
+      "【央视快评】奋力谱写西部大开发新篇章",
+      "习近平向首届“中国－拉美和加勒比国家航天合作论坛”致贺信",
+      "十四届全国人大常委会举行第二十四次委员长会议 听取有关草案和议案审议情况汇报 赵乐际主持"
+    ]
+  },
+  "industry_context": {
+    "source": "akshare",
+    "policy_events": [
+      "央行连续第19个月增持黄金",
+      "据央行数据，5月末外汇储备报34422.38亿美元",
+      "证监会主席吴清：公募基金从“重规模”到“重回报”"
+    ],
+    "policy_impact": "偏利空"
+  }
+}

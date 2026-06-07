@@ -1,0 +1,1513 @@
+{
+  "symbol": "600309",
+  "stock_name": "万华化学",
+  "status": "complete",
+  "error": null,
+  "created_at": "2026-06-07T03:56:41.277113",
+  "completed_at": "2026-06-07T04:01:11.685805",
+  "cost_price": 0.0,
+  "shares": 0,
+  "total_assets": 0.0,
+  "available_cash": 0.0,
+  "quote": {
+    "symbol": "600309",
+    "name": "万华化学",
+    "price": 72.46,
+    "change": 0.29,
+    "change_pct": 0.4,
+    "volume": 37062900.0,
+    "amount": 2714362441.0,
+    "high": 74.68,
+    "low": 71.51,
+    "open_": 72.18,
+    "prev_close": 72.17,
+    "turnover_rate": 1.18,
+    "pe": 17.23,
+    "pb": 2.11,
+    "market_cap": 2268.34,
+    "dividend": 1.25,
+    "timestamp": "2026-06-07 03:56:46"
+  },
+  "technical_indicators": {
+    "symbol": "",
+    "price": 72.46,
+    "ma5": 73.96,
+    "ma10": 74.66,
+    "ma20": 77.72,
+    "ma60": 82.5,
+    "rsi_14": 25.65,
+    "macd_dif": -3.14,
+    "macd_dea": -2.7759,
+    "macd_hist": -0.7281,
+    "kdj_k": 15.15,
+    "kdj_d": 15.15,
+    "kdj_j": 15.15,
+    "boll_upper": 84.97,
+    "boll_middle": 77.72,
+    "boll_lower": 70.47,
+    "volume_ratio": 1.01,
+    "amplitude": 4.37
+  },
+  "financial_summary": {
+    "symbol": "600309",
+    "name": "万华化学",
+    "revenue": 145.32,
+    "revenue_yoy": 11.625,
+    "net_profit": 124.91,
+    "net_profit_yoy": -3.8814,
+    "eps": 3.99,
+    "roe": 12.3462,
+    "gross_margin": 13.6123,
+    "debt_ratio": 62.8095,
+    "report_date": "20251231"
+  },
+  "news": [
+    {
+      "title": "万华化学获得发明专利授权：“一种硅胶负载型镍钒双金属催化剂及其制备方法与应用”",
+      "url": "https://cj.sina.cn/articles/view/1850649324/6e4eaaec02002ba4k",
+      "publish_time": "2026-06-06 03:35",
+      "source": "新浪财经"
+    },
+    {
+      "title": "06月05日丙二醇9766.67元/吨 90天上涨57.53%",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-05/doc-iniaiyyr1668579.shtml",
+      "publish_time": "2026-06-05 16:45",
+      "source": "新浪财经"
+    },
+    {
+      "title": "产业链多点突破 钠离子电池储能加快从示范验证迈向规模化应用",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-05/doc-iniaiyys8430708.shtml",
+      "publish_time": "2026-06-05 16:10",
+      "source": "新浪财经"
+    },
+    {
+      "title": "万华化学(600309)：聚氨酯价格上涨推动1Q26业绩回升 看好公司产业链逐步延伸",
+      "url": "http://stock.finance.sina.com.cn/stock/go.php/vReport_Show/kind/search/rptid/833987630764/index.phtml",
+      "publish_time": "2026-06-05 15:40",
+      "source": "新浪财经"
+    },
+    {
+      "title": "钠离子电池储能产业提速：材料降本、订单落地、应用扩围",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-05/doc-iniaiqkw8607897.shtml",
+      "publish_time": "2026-06-05 12:52",
+      "source": "新浪财经"
+    },
+    {
+      "title": "“碳排放双控”强化叠加出口高增，化工景气回暖从预期走向兑现",
+      "url": "https://finance.sina.com.cn/jjxw/2026-06-05/doc-iniaiqkt9685943.shtml",
+      "publish_time": "2026-06-05 11:18",
+      "source": "新浪财经"
+    },
+    {
+      "title": "对人是真皮的有了实感：机器人穿上\"皮肤\"，具身智能的触觉革命",
+      "url": "https://t.cj.sina.cn/articles/view/7879924061/1d5ae195d02001f7l0",
+      "publish_time": "2026-06-04 17:17",
+      "source": "新浪财经"
+    },
+    {
+      "title": "06月04日PMMA价格15700.00元/吨 90天上涨4.43%",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-04/doc-iniafrtq3690602.shtml",
+      "publish_time": "2026-06-04 16:48",
+      "source": "新浪财经"
+    },
+    {
+      "title": "国内产能已达144万吨！万华化学、华谊、卫星化学都在布局",
+      "url": "https://finance.sina.com.cn/stock/relnews/cn/2026-06-04/doc-iniafrtt2621818.shtml",
+      "publish_time": "2026-06-04 15:42",
+      "source": "新浪财经"
+    },
+    {
+      "title": "三大巨头涨价！巴斯夫，MDI装置突发异常",
+      "url": "https://finance.sina.com.cn/roll/2026-06-04/doc-iniafrtt2597450.shtml",
+      "publish_time": "2026-06-04 14:51",
+      "source": "新浪财经"
+    },
+    {
+      "title": "万华化学扩建4000吨封端聚醚项目",
+      "url": "https://finance.sina.com.cn/wm/2026-06-04/doc-iniafmmv2709607.shtml",
+      "publish_time": "2026-06-04 14:09",
+      "source": "新浪财经"
+    },
+    {
+      "title": "雪球关注 1498597人  |  最新价 ¥72.46",
+      "url": "",
+      "publish_time": "2026-06-07",
+      "source": "雪球"
+    }
+  ],
+  "guba_posts": [
+    {
+      "title": "2次90多机会走了吗小伙伴们，又开始啦65到72月跌越买吧",
+      "author": "非常长bfg",
+      "publish_time": "06-07 08:32",
+      "read_count": 155,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "继续下跌，这是我说的",
+      "author": "股友EjoJNZ",
+      "publish_time": "06-06 08:52",
+      "read_count": 96,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "靠你们接盘了，美股崩盘，怕散户抢跑踩踏！",
+      "author": "基民70h17A9985",
+      "publish_time": "06-06 07:46",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "聚合mdi只有16000一吨了，还是需求太弱，供给面靠这个扑朔迷离的石油价格，终",
+      "author": "股友7q626767L2",
+      "publish_time": "06-06 07:38",
+      "read_count": 70,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "周末话万华化学：周五回顾与下周一展望行情参考：下方71.51元是盘面参考价位，企",
+      "author": "不忘初心fdsz",
+      "publish_time": "06-06 06:22",
+      "read_count": 418,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "几个大主播重仓！跟了！",
+      "author": "陆老割",
+      "publish_time": "06-06 04:00",
+      "read_count": 359,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "美股科技股暴跌，黄金狂跌，原油大跌，万爷翻倍行情来了，下周低开低吸，满仓干！",
+      "author": "有正义感的袁聪16",
+      "publish_time": "06-06 03:54",
+      "read_count": 199,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "既然都熬到这个位置没割了星期一你们跑我来吃带血筹码",
+      "author": "低抛高吸做T王",
+      "publish_time": "06-06 02:10",
+      "read_count": 51,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "起码有华总陪伴被套踏实一些",
+      "author": "低抛高吸做T王",
+      "publish_time": "06-06 12:39",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "我们这情绪已经被杀的风平浪静了？",
+      "author": "低抛高吸做T王",
+      "publish_time": "06-06 12:09",
+      "read_count": 32,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "80的本，以后是底部，没想到半山腰",
+      "author": "股友0108q871K5",
+      "publish_time": "06-06 11:25",
+      "read_count": 98,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "周一不会跟科技股吧",
+      "author": "zhonghff8385",
+      "publish_time": "06-06 10:51",
+      "read_count": 200,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "绝大多数化工股全怕加息（万华、卫星、荣盛这些）万华做的塑料原料用来造冰箱、家具、",
+      "author": "盯紧五日线",
+      "publish_time": "06-06 09:30",
+      "read_count": 754,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "就问一句，散户的承压能力有多大，主力可以通过一天内的做t确保盈利，散户可以吗？那",
+      "author": "若柳的窦筝",
+      "publish_time": "06-06 09:23",
+      "read_count": 157,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "这只票目前处于套牢下刹阶段，谁来都一样。我已经割肉了，接下来还有人接着套牢接着割",
+      "author": "若柳的窦筝",
+      "publish_time": "06-06 09:18",
+      "read_count": 158,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "星期一还会踩踏吗",
+      "author": "低抛高吸做T王",
+      "publish_time": "06-06 08:53",
+      "read_count": 110,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "万华化学：融资净买入1014.13万元，融资余额30.68亿元",
+      "author": "万华化学资讯",
+      "publish_time": "06-06 07:37",
+      "read_count": 83,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "昨晚美股跌那么多周一大盘是不是要跟啊A股一贯跟跌不跟涨，那么大盘下行万华要不要破",
+      "author": "主力收割的韭菜苗",
+      "publish_time": "06-06 07:15",
+      "read_count": 232,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "72左右应该是最近的底部基准线了，在72左右买都能回本赚钱",
+      "author": "股友750082l91i",
+      "publish_time": "06-05 11:19",
+      "read_count": 78,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "入股市第一周今作：1手云天化建仓两个老登股，股友们多久能反转。股市基础知识学",
+      "author": "陈严严严",
+      "publish_time": "06-05 10:52",
+      "read_count": 579,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "这只股最会搞那些虚假信息",
+      "author": "股友EjoJNZ",
+      "publish_time": "06-05 10:45",
+      "read_count": 40,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "业内人士：钠离子电池储能正加快走向规模化应用",
+      "author": "容百科技资讯",
+      "publish_time": "06-05 10:25",
+      "read_count": 2830,
+      "comment_count": 10,
+      "content": null
+    },
+    {
+      "title": "股市没有冲击我的金钱观，反而让我更明白：钱真的很难赚",
+      "author": "漫长的投资",
+      "publish_time": "06-05 09:53",
+      "read_count": 11158,
+      "comment_count": 88,
+      "content": null
+    },
+    {
+      "title": "什么时候改变趋势再加仓",
+      "author": "姑苏城外寂寞的鱼",
+      "publish_time": "06-05 09:49",
+      "read_count": 40,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "盘前对岸纳指大跌，今晚美股科技股又将血流成河，下周开盘易中天必然崩盘，万哥机会来",
+      "author": "有正义感的袁聪16",
+      "publish_time": "06-05 07:46",
+      "read_count": 246,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "越想越气，买了这lj",
+      "author": "就是乱买的",
+      "publish_time": "06-05 07:39",
+      "read_count": 47,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "6.5日华能、万华、炜冈复盘",
+      "author": "十倍笔记",
+      "publish_time": "06-05 07:04",
+      "read_count": 1212,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "6.05收评，中天守关口、平安磨底、万华翻红",
+      "author": "大道生金",
+      "publish_time": "06-05 05:28",
+      "read_count": 917,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "市值都跌到沪深A股排名70多了，再跌下去，下次又要被踢出A50了",
+      "author": "股友tbHXmw",
+      "publish_time": "06-05 04:54",
+      "read_count": 194,
+      "comment_count": 7,
+      "content": null
+    },
+    {
+      "title": "产业链协同材料、系统、应用多点突破 钠离子电池储能驶入规模化应用快车道",
+      "author": "容百科技资讯",
+      "publish_time": "06-05 04:37",
+      "read_count": 1344,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "像今天这种情况我几年前碰见过一次，次日挨毒打，我是不敢了，尾盘竞价亏两个半点跑了",
+      "author": "乔乔乔馨卉",
+      "publish_time": "06-05 04:34",
+      "read_count": 225,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "产业链多点突破 钠离子电池储能加快从示范验证迈向规模化应用",
+      "author": "容百科技资讯",
+      "publish_time": "06-05 04:12",
+      "read_count": 1737,
+      "comment_count": 8,
+      "content": null
+    },
+    {
+      "title": "假装在这里要筑一个双底，结果一看资金净流出。",
+      "author": "恍幻梁黄",
+      "publish_time": "06-05 03:16",
+      "read_count": 72,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "收盘拉这么一下是啥意思？",
+      "author": "zxjs888",
+      "publish_time": "06-05 03:15",
+      "read_count": 217,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "说起来也是红的",
+      "author": "机灵聪慧的钱清平",
+      "publish_time": "06-05 03:13",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "回本就远离",
+      "author": "日进斗金万事顺心",
+      "publish_time": "06-05 03:06",
+      "read_count": 65,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "什么意思尾盘竞价高了3毛多",
+      "author": "股友376K9f0397",
+      "publish_time": "06-05 03:02",
+      "read_count": 169,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "周周创新低",
+      "author": "主力收割的韭菜苗",
+      "publish_time": "06-05 03:00",
+      "read_count": 28,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "我裂开了，你怎么搞这种骚操作",
+      "author": "活泼的许昊滨",
+      "publish_time": "06-05 02:59",
+      "read_count": 169,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "今天把你成本干到74.9了哥",
+      "author": "低抛高吸做T王",
+      "publish_time": "06-05 02:56",
+      "read_count": 180,
+      "comment_count": 9,
+      "content": null
+    },
+    {
+      "title": "搞得AI都傻了，一会让你买，一会又撤了。",
+      "author": "haiba8000",
+      "publish_time": "06-05 02:53",
+      "read_count": 28,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "$万华化学(SH600309)$",
+      "author": "大唐发电翻三倍",
+      "publish_time": "06-05 02:52",
+      "read_count": 123,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "收盘红一分吧！要求不多心情舒服一点。",
+      "author": "善良的柯沛冬",
+      "publish_time": "06-05 02:51",
+      "read_count": 248,
+      "comment_count": 14,
+      "content": null
+    },
+    {
+      "title": "人人都看好你，你却最不争气",
+      "author": "一半天使",
+      "publish_time": "06-05 02:51",
+      "read_count": 41,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "$万华化学(SH600309)$",
+      "author": "大唐发电翻三倍",
+      "publish_time": "06-05 02:51",
+      "read_count": 23,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "任何价位，它都可以玩",
+      "author": "haiba8000",
+      "publish_time": "06-05 02:50",
+      "read_count": 33,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "简直不是人",
+      "author": "股友A703313a99",
+      "publish_time": "06-05 02:49",
+      "read_count": 29,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "……",
+      "author": "股友A703313a99",
+      "publish_time": "06-05 02:48",
+      "read_count": 32,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "终于绿了，确实牛",
+      "author": "贝勒888",
+      "publish_time": "06-05 02:48",
+      "read_count": 31,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "下跌趋势成了，这货还要跌一个月，看到50。",
+      "author": "炒股养木卯",
+      "publish_time": "06-05 02:48",
+      "read_count": 70,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "单位退休老头上个月83拿了几年回本了，老头回本了我85挂上面成老头了",
+      "author": "股友i57R299593",
+      "publish_time": "06-05 02:47",
+      "read_count": 142,
+      "comment_count": 4,
+      "content": null
+    },
+    {
+      "title": "人才",
+      "author": "有自信的玉米",
+      "publish_time": "06-05 02:47",
+      "read_count": 25,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "……",
+      "author": "a耶a耶a耶",
+      "publish_time": "06-05 02:45",
+      "read_count": 24,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "终于绿了，舒服了",
+      "author": "万华化学第一多头",
+      "publish_time": "06-05 02:44",
+      "read_count": 37,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "瘟股",
+      "author": "骊峄",
+      "publish_time": "06-05 02:43",
+      "read_count": 26,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "我的融资盘崩了爆仓了",
+      "author": "机灵聪慧的钱清平",
+      "publish_time": "06-05 02:42",
+      "read_count": 119,
+      "comment_count": 3,
+      "content": null
+    },
+    {
+      "title": "这玩意就俩字",
+      "author": "基民1379Z29p76",
+      "publish_time": "06-05 02:42",
+      "read_count": 31,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "一起卖了吧，不再玩了",
+      "author": "股友1e22157O75",
+      "publish_time": "06-05 02:41",
+      "read_count": 31,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "今天诱多成功漂亮，下周60见",
+      "author": "股中娶乐",
+      "publish_time": "06-05 02:41",
+      "read_count": 26,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "绝无仅有的市场",
+      "author": "n2748136879079721263",
+      "publish_time": "06-05 02:41",
+      "read_count": 30,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "狂震！猜不透啊！",
+      "author": "haiba8000",
+      "publish_time": "06-05 02:39",
+      "read_count": 36,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "为何山东两个化工股都这么恶心",
+      "author": "机灵聪慧的钱清平",
+      "publish_time": "06-05 02:37",
+      "read_count": 66,
+      "comment_count": 2,
+      "content": null
+    },
+    {
+      "title": "上午割了真是明智",
+      "author": "股友58Z6609x16",
+      "publish_time": "06-05 02:36",
+      "read_count": 31,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "什么市场",
+      "author": "n2748136879079721263",
+      "publish_time": "06-05 02:35",
+      "read_count": 29,
+      "comment_count": 1,
+      "content": null
+    },
+    {
+      "title": "扛不住啦，拜拜，每天拉高一点点，收盘天天创新低，这一个多月拿的情绪都不稳定啦",
+      "author": "活泼的许昊滨",
+      "publish_time": "06-05 02:35",
+      "read_count": 29,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "什么市场，天天这样跌",
+      "author": "n2748136879079721263",
+      "publish_time": "06-05 02:34",
+      "read_count": 27,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "我来了",
+      "author": "低抛高吸做T王",
+      "publish_time": "06-05 02:33",
+      "read_count": 27,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "没眼看",
+      "author": "欣喜地绯村剑心",
+      "publish_time": "06-05 02:31",
+      "read_count": 23,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "从红到绿",
+      "author": "財到了",
+      "publish_time": "06-05 02:30",
+      "read_count": 44,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "这股真是废",
+      "author": "股友88c736206n",
+      "publish_time": "06-05 02:30",
+      "read_count": 26,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "天天创新低",
+      "author": "崇高de史都华德",
+      "publish_time": "06-05 02:30",
+      "read_count": 27,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "太特么恶心了",
+      "author": "n2748136879079721263",
+      "publish_time": "06-05 02:29",
+      "read_count": 16,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "完蛋完意",
+      "author": "基民X1hPNw",
+      "publish_time": "06-05 02:29",
+      "read_count": 23,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "终于绿了",
+      "author": "蓝版王",
+      "publish_time": "06-05 02:28",
+      "read_count": 22,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "什么意思啊，大哥们，现在能建仓吗",
+      "author": "又空仓了",
+      "publish_time": "06-05 02:27",
+      "read_count": 24,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "像是走进了迷宫你的操作大都是错的",
+      "author": "haiba8000",
+      "publish_time": "06-05 02:27",
+      "read_count": 21,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "，真币的绿了",
+      "author": "再也不能冲动",
+      "publish_time": "06-05 02:26",
+      "read_count": 28,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "没什么跌头了，接下来要振仓了",
+      "author": "股友170989Aq32",
+      "publish_time": "06-05 02:25",
+      "read_count": 26,
+      "comment_count": 0,
+      "content": null
+    },
+    {
+      "title": "害死我了！",
+      "author": "周密的余睿博",
+      "publish_time": "06-05 02:25",
+      "read_count": 23,
+      "comment_count": 0,
+      "content": null
+    }
+  ],
+  "sentiment_news": {
+    "avg_score": 0.2083,
+    "positive_ratio": 0.4167,
+    "negative_ratio": 0.0,
+    "total_count": 12,
+    "positive_count": 5,
+    "negative_count": 0
+  },
+  "sentiment_guba": {
+    "avg_score": -0.0253,
+    "positive_ratio": 0.0633,
+    "negative_ratio": 0.1139,
+    "total_count": 79,
+    "positive_count": 5,
+    "negative_count": 9
+  },
+  "signals": {
+    "overall": "neutral",
+    "score": -0.2,
+    "label": "中性",
+    "technical": -1.0,
+    "fundamental": 1.1,
+    "sentiment": 0.3,
+    "regime": "trending_down",
+    "confidence": "低",
+    "details": [
+      {
+        "factor": "RSI(14)=26",
+        "impact": "positive",
+        "weight": 1.9,
+        "contribution": 1.9025,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=-0.728",
+        "impact": "negative",
+        "weight": 0.06,
+        "contribution": -0.06025655172413792,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "weight": 1.5,
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.14)",
+        "impact": "positive",
+        "weight": 0.91,
+        "contribution": 0.9068965517241389,
+        "description": "触下轨反弹"
+      },
+      {
+        "factor": "量价关系(量比=1.0)",
+        "impact": "neutral",
+        "weight": 0,
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "weight": 1.02,
+        "contribution": -1.0151827071538866,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "weight": 3.0,
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(12.3%)",
+        "impact": "positive",
+        "weight": 0.5,
+        "contribution": 0.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(-3.9%)",
+        "impact": "positive",
+        "weight": 0.02,
+        "contribution": 0.019214999999999996,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "weight": 0.3,
+        "contribution": 0.3,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=0.21)",
+        "impact": "positive",
+        "weight": 0.32,
+        "contribution": 0.3182361111111111,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.03)",
+        "impact": "negative",
+        "weight": 0.03,
+        "contribution": -0.031625,
+        "description": ""
+      }
+    ]
+  },
+  "llm_analysis": "当前持有0股，建议观望。理由：PE历史低位但净利润下降，存在价值陷阱风险；技术面弱势，短期不宜介入。等待基本面改善或价格跌至68.84附近再考虑。",
+  "prediction_summary": {
+    "outlook": "下跌",
+    "confidence": "中",
+    "price_target_current": 72.46,
+    "price_target_low": 65,
+    "price_target_high": 85,
+    "reason": "当前持有0股，建议观望。理由：PE历史低位但净利润下降，存在价值陷阱风险；技术面弱势，短期不宜介入。等待基本面改善或价格跌至68.84附近再考虑。",
+    "tech_view": {
+      "role": "技术分析师",
+      "outlook": "看空",
+      "confidence": "高",
+      "score": -4.5,
+      "key_points": [
+        "MACD死叉且柱状线为负，短期动能偏空",
+        "均线空头排列，趋势弱势",
+        "价格跌破MA20，中期承压",
+        "量比1.01，缩量下跌"
+      ],
+      "risks": [
+        "RSI=25.65接近超卖区，技术性反弹概率增加",
+        "价格接近布林下轨70.47，可能获得支撑"
+      ]
+    },
+    "fund_view": {
+      "role": "基本面分析师",
+      "outlook": "中性",
+      "confidence": "中",
+      "score": 0.0,
+      "key_points": [
+        "ROE为12.35%，高于10%门槛",
+        "营收同比增长11.6%，表现稳健"
+      ],
+      "risks": [
+        "净利润同比下降3.9%，盈利下滑",
+        "负债率62.8%，处于较高水平"
+      ]
+    },
+    "sent_view": {
+      "role": "舆情分析师",
+      "outlook": "中性",
+      "confidence": "中",
+      "score": 2.0,
+      "key_points": [
+        "丙二醇价格大涨57%形成利好",
+        "聚氨酯价格上涨推动业绩回升",
+        "融资净买入超千万",
+        "股吧情感略偏负面但整体中性"
+      ],
+      "risks": [
+        "股吧存在看空言论",
+        "散户承压能力受质疑，注意踩踏风险"
+      ]
+    },
+    "short_term": {
+      "direction": "下跌",
+      "change_pct": -3,
+      "confidence": "中",
+      "reason": "技术面空头排列，MACD死叉，RSI超卖但短期可能继续下探支撑位70.47"
+    },
+    "mid_term": {
+      "direction": "震荡",
+      "change_pct": 0,
+      "confidence": "中",
+      "reason": "基本面多空交织，营收与利润背离，PE低位提供支撑但盈利改善需时间"
+    },
+    "long_term": {
+      "direction": "上涨",
+      "change_pct": 15,
+      "confidence": "低",
+      "reason": "若公司巩固MDI龙头地位，受益于化工需求长期增长，估值有望修复至合理水平"
+    },
+    "suggested_action": {
+      "action": "观望",
+      "reason": "等待净利润同比转正或股价跌至68.84附近且RSI出现底背离，可考虑建仓10%",
+      "stop_loss": 0,
+      "take_profit": 0
+    },
+    "cio_decision": {
+      "master_name": "菲利普·费雪",
+      "master_key": "fisher",
+      "decision_summary": "当前持有0股，建议观望。理由：PE历史低位但净利润下降，存在价值陷阱风险；技术面弱势，短期不宜介入。等待基本面改善或价格跌至68.84附近再考虑。",
+      "rationale": "采纳估值分析师的低PE观点，但否决其作为买入依据，因净利润同比下滑3.9%表明盈利恶化，低估值可能为陷阱。采纳基本面分析师的营收增长和ROE高于10%，但否决其中性评级，因营收增长仍支撑长期潜力。否决技术分析师看空，因RSI超卖可能反弹，但均线空头排列需谨慎。采纳监察员的价值陷阱和产品价格波动盲点。综合权衡，当前利润下降与技术弱势主导决策，选择观望。",
+      "evidence_chain": [
+        "宏观分析师: PMI 53.0扩张区间→采纳，宏观环境支持但影响有限",
+        "行业政策分析师: 政策偏利空但影响有限→否决，缺乏具体数据",
+        "估值分析师: PE处于历史0%分位→部分采纳，但警惕价值陷阱",
+        "基本面分析师: ROE 12.35%，营收增长11.6%→采纳，但净利润下降为隐忧",
+        "技术分析师: MACD死叉，均线空头排列→参考但否决，因超卖可能反弹",
+        "舆情分析师: 丙二醇涨价利好，融资净买入→参考，但股吧情绪偏负面",
+        "风险经理: 下行趋势，振幅偏高→采纳，短期谨慎",
+        "监察员: 价值陷阱、产品价格波动、盈利下滑→高度重视，成为决策关键"
+      ],
+      "base_case": {
+        "direction": "震荡",
+        "target": 72.46,
+        "probability": 0.55,
+        "reason": "营收增长支撑但净利润下滑，股价在低估值与基本面恶化间拉锯，短期维持震荡"
+      },
+      "bull_case": {
+        "direction": "上涨",
+        "target": 85,
+        "probability": 0.25,
+        "reason": "净利润恢复增长，化工品价格持续上涨，市场重拾信心推动估值修复至均值"
+      },
+      "bear_case": {
+        "direction": "下跌",
+        "target": 65,
+        "probability": 0.2,
+        "reason": "盈利继续恶化，负债率拖累现金流，宏观需求下滑导致营收增速转负"
+      },
+      "order": {
+        "action": "观望",
+        "order_rationale": "选择观望而非买入，因当前盈利下行趋势未扭转且技术面弱势，等待更明确信号。不卖出因无持仓。",
+        "position_size_pct": 0,
+        "position_note": "当前无持仓，建议观望不建仓",
+        "entry_conditions": "等待净利润同比转正或股价跌至68.84附近且RSI出现底背离，可考虑建仓10%",
+        "stop_loss": {
+          "level": 0,
+          "type": "固定止损",
+          "trigger": "不适用"
+        },
+        "take_profit": {
+          "level_1": 0,
+          "level_2": 0,
+          "type": "不适用"
+        }
+      },
+      "short_term": {
+        "direction": "下跌",
+        "change_pct": -3,
+        "confidence": "中",
+        "reason": "技术面空头排列，MACD死叉，RSI超卖但短期可能继续下探支撑位70.47"
+      },
+      "mid_term": {
+        "direction": "震荡",
+        "change_pct": 0,
+        "confidence": "中",
+        "reason": "基本面多空交织，营收与利润背离，PE低位提供支撑但盈利改善需时间"
+      },
+      "long_term": {
+        "direction": "上涨",
+        "change_pct": 15,
+        "confidence": "低",
+        "reason": "若公司巩固MDI龙头地位，受益于化工需求长期增长，估值有望修复至合理水平"
+      },
+      "risk_monitoring": [
+        {
+          "trigger": "净利润连续两季同比下滑超10%",
+          "action": "彻底放弃该标的"
+        },
+        {
+          "trigger": "股价跌破67元",
+          "action": "技术破位，需重新评估"
+        }
+      ],
+      "decision_quality": {
+        "confidence": "中",
+        "key_uncertainties": [
+          "净利润何时恢复增长",
+          "化工品价格走势"
+        ],
+        "next_review": "1个月后，待季报公布"
+      },
+      "veto_response": "无",
+      "raw_llm_output": "{\"decision_summary\": \"当前持有0股，建议观望。理由：PE历史低位但净利润下降，存在价值陷阱风险；技术面弱势，短期不宜介入。等待基本面改善或价格跌至68.84附近再考虑。\", \"rationale\": \"采纳估值分析师的低PE观点，但否决其作为买入依据，因净利润同比下滑3.9%表明盈利恶化，低估值可能为陷阱。采纳基本面分析师的营收增长和ROE高于10%，但否决其中性评级，因营收增长仍支撑长期潜力。否决技术分析师看空，因RSI超卖可能反弹，但均线空头排列需谨慎。采纳监察员的价值陷阱和产品价格波动盲点。综合权衡，当前利润下降与技术弱势主导决策，选择观望。\", \"evidence_chain\": [\"宏观分析师: PMI 53.0扩张区间→采纳，宏观环境支持但影响有限\", \"行业政策分析师: 政策偏利空但影响有限→否决，缺乏具体数据\", \"估值分析师: PE处于历史0%分位→部分采纳，但警惕价值陷阱\", \"基本面分析师: ROE 12.35%，营收增长11.6%→采纳，但净利润下降为隐忧\", \"技术分析师: MACD死叉，均线空头排列→参考但否决，因超卖可能反弹\", \"舆情分析师: 丙二醇涨价利好，融资净买入→参考，但股吧情绪偏负面\", \"风险经理: 下行趋势，振幅偏高→采纳，短期谨慎\", \"监察员: 价值陷阱、产品价格波动、盈利下滑→高度重视，成为决策关键\"], \"base_case\": {\"direction\": \"震荡\", \"target\": 72.46, \"probability\": 0.55, \"reason\": \"营收增长支撑但净利润下滑，股价在低估值与基本面恶化间拉锯，短期维持震荡\"}, \"bull_case\": {\"direction\": \"上涨\", \"target\": 85, \"probability\": 0.25, \"reason\": \"净利润恢复增长，化工品价格持续上涨，市场重拾信心推动估值修复至均值\"}, \"bear_case\": {\"direction\": \"下跌\", \"target\": 65, \"probability\": 0.2, \"reason\": \"盈利继续恶化，负债率拖累现金流，宏观需求下滑导致营收增速转负\"}, \"order\": {\"action\": \"观望\", \"order_rationale\": \"选择观望而非买入，因当前盈利下行趋势未扭转且技术面弱势，等待更明确信号。不卖出因无持仓。\", \"position_size_pct\": 0, \"position_note\": \"当前无持仓，建议观望不建仓\", \"entry_conditions\": \"等待净利润同比转正或股价跌至68.84附近且RSI出现底背离，可考虑建仓10%\", \"stop_loss\": {\"level\": 0, \"type\": \"固定止损\", \"trigger\": \"不适用\"}, \"take_profit\": {\"level_1\": 0, \"level_2\": 0, \"type\": \"不适用\"}}, \"short_term\": {\"direction\": \"下跌\", \"change_pct\": -3, \"confidence\": \"中\", \"reason\": \"技术面空头排列，MACD死叉，RSI超卖但短期可能继续下探支撑位70.47\"}, \"mid_term\": {\"direction\": \"震荡\", \"change_pct\": 0, \"confidence\": \"中\", \"reason\": \"基本面多空交织，营收与利润背离，PE低位提供支撑但盈利改善需时间\"}, \"long_term\": {\"direction\": \"上涨\", \"change_pct\": 15, \"confidence\": \"低\", \"reason\": \"若公司巩固MDI龙头地位，受益于化工需求长期增长，估值有望修复至合理水平\"}, \"risk_monitoring\": [{\"trigger\": \"净利润连续两季同比下滑超10%\", \"action\": \"彻底放弃该标的\"}, {\"trigger\": \"股价跌破67元\", \"action\": \"技术破位，需重新评估\"}], \"decision_quality\": {\"confidence\": \"中\", \"key_uncertainties\": [\"净利润何时恢复增长\", \"化工品价格走势\"], \"next_review\": \"1个月后，待季报公布\"}, \"veto_response\": \"无\"}",
+      "error": null
+    },
+    "employee_reports": [
+      {
+        "employee_id": "risk",
+        "role": "风险经理",
+        "department": "风控部",
+        "outlook": "看空",
+        "confidence": "低",
+        "score": 4.0,
+        "key_points": [
+          "市场处于下行趋势",
+          "振幅偏高，短期波动加大"
+        ],
+        "risks": [
+          "趋势性下行风险",
+          "振幅偏大可能触发止损"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "valuation",
+        "role": "估值分析师",
+        "department": "研究部",
+        "outlook": "看多",
+        "confidence": "中",
+        "score": 3.0,
+        "key_points": [
+          "PE处于历史0%分位，显著低于均值，估值极低",
+          "PB为2.11，未破净，但估值偏低"
+        ],
+        "risks": [
+          "低估值可能反映市场对基本面的担忧，需警惕价值陷阱",
+          "ROE为12.35%，低于15%，增长动力不足"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "fundamental",
+        "role": "基本面分析师",
+        "department": "研究部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 0.0,
+        "key_points": [
+          "ROE为12.35%，高于10%门槛",
+          "营收同比增长11.6%，表现稳健"
+        ],
+        "risks": [
+          "净利润同比下降3.9%，盈利下滑",
+          "负债率62.8%，处于较高水平"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "policy",
+        "role": "行业政策分析师",
+        "department": "宏观部",
+        "outlook": "看空",
+        "confidence": "低",
+        "score": -2.0,
+        "key_points": [
+          "政策环境评估偏利空，但影响有限",
+          "营收同比增长11.6%，未达景气上行标准",
+          "缺乏行业PE分位、动量等关键数据"
+        ],
+        "risks": [
+          "政策不确定性可能压制估值",
+          "宏观经济放缓影响化工需求",
+          "原材料价格波动风险"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "macro",
+        "role": "宏观分析师",
+        "department": "宏观部",
+        "outlook": "中性",
+        "confidence": "低",
+        "score": 2.0,
+        "key_points": [
+          "制造业PMI为53.0，高于50，经济扩张",
+          "货币政策LPR保持不变，无明确宽松或收紧信号"
+        ],
+        "risks": [
+          "CPI同比高达7.0781%，可能制约未来宽松空间",
+          "北向资金数据缺失，外资动向不明",
+          "大盘状态缺失，趋势不确定"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "technical",
+        "role": "技术分析师",
+        "department": "研究部",
+        "outlook": "看空",
+        "confidence": "高",
+        "score": -4.5,
+        "key_points": [
+          "MACD死叉且柱状线为负，短期动能偏空",
+          "均线空头排列，趋势弱势",
+          "价格跌破MA20，中期承压",
+          "量比1.01，缩量下跌"
+        ],
+        "risks": [
+          "RSI=25.65接近超卖区，技术性反弹概率增加",
+          "价格接近布林下轨70.47，可能获得支撑"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "sentiment",
+        "role": "舆情分析师",
+        "department": "交易部",
+        "outlook": "中性",
+        "confidence": "中",
+        "score": 2.0,
+        "key_points": [
+          "丙二醇价格大涨57%形成利好",
+          "聚氨酯价格上涨推动业绩回升",
+          "融资净买入超千万",
+          "股吧情感略偏负面但整体中性"
+        ],
+        "risks": [
+          "股吧存在看空言论",
+          "散户承压能力受质疑，注意踩踏风险"
+        ],
+        "error": null
+      },
+      {
+        "employee_id": "overseer",
+        "role": "独立监察员",
+        "department": "监察部",
+        "outlook": "中性",
+        "confidence": "高",
+        "score": 0.0,
+        "key_points": [
+          "盲点1: 团队过度依赖PE0%分位作为看多论据，但净利润同比下降3.9%表明盈利可能继续恶化，低估值可能是价值陷阱而非安全边际",
+          "盲点2: 分析师普遍假设产品价格（如丙二醇）上涨趋势持续，但历史表明化工品价格波动剧烈，若价格回落将冲击营收和利润",
+          "替代情景1: 若宏观经济下滑超预期，化工下游需求萎缩，营收增速可能转负，叠加高负债率（62.8%），现金流压力将导致股价进一步下跌",
+          "替代情景2: 若行业政策由中性转为收紧（如环保限产或出口受限），供给端虽受控但成本上升，盈利空间被压缩，PE可能被动抬升"
+        ],
+        "risks": [
+          "认知偏差: 团队存在'确认偏误'——看多者聚焦低PE而忽略盈利下修，看空者则过度依赖技术指标而忽视基本面改善迹象",
+          "数据质量: 舆情数据主要来自股吧，样本量小且情绪指标模糊，可能无法代表机构投资者或真实市场情绪",
+          "遗漏因素: 未讨论大股东减持风险、分红政策变化或可转债转股压力，这些可能稀释每股收益并压制股价"
+        ],
+        "error": null
+      }
+    ]
+  },
+  "risk_factors": [
+    {
+      "factor": "趋势性下行风险"
+    },
+    {
+      "factor": "振幅偏大可能触发止损"
+    },
+    {
+      "factor": "低估值可能反映市场对基本面的担忧，需警惕价值陷阱"
+    },
+    {
+      "factor": "ROE为12.35%，低于15%，增长动力不足"
+    },
+    {
+      "factor": "净利润同比下降3.9%，盈利下滑"
+    },
+    {
+      "factor": "负债率62.8%，处于较高水平"
+    },
+    {
+      "factor": "政策不确定性可能压制估值"
+    },
+    {
+      "factor": "宏观经济放缓影响化工需求"
+    },
+    {
+      "factor": "CPI同比高达7.0781%，可能制约未来宽松空间"
+    },
+    {
+      "factor": "北向资金数据缺失，外资动向不明"
+    },
+    {
+      "factor": "RSI=25.65接近超卖区，技术性反弹概率增加"
+    },
+    {
+      "factor": "价格接近布林下轨70.47，可能获得支撑"
+    },
+    {
+      "factor": "股吧存在看空言论"
+    },
+    {
+      "factor": "散户承压能力受质疑，注意踩踏风险"
+    },
+    {
+      "factor": "认知偏差: 团队存在'确认偏误'——看多者聚焦低PE而忽略盈利下修，看空者则过度依赖技术指标而忽视基本面改善迹象"
+    },
+    {
+      "factor": "数据质量: 舆情数据主要来自股吧，样本量小且情绪指标模糊，可能无法代表机构投资者或真实市场情绪"
+    }
+  ],
+  "price_target": {
+    "current": 72.46,
+    "low": 65,
+    "high": 85
+  },
+  "short_term_pred": null,
+  "mid_term_pred": null,
+  "long_term_pred": null,
+  "suggested_action": null,
+  "score_breakdown": {
+    "final": -0.2,
+    "label": "中性",
+    "technical": -1.0,
+    "fundamental": 1.1,
+    "sentiment": 0.3,
+    "regime": "trending_down",
+    "confidence": "低",
+    "weights": {
+      "technical": 0.55,
+      "fundamental": 0.25,
+      "sentiment": 0.2
+    },
+    "breakdown": [
+      {
+        "factor": "RSI(14)=26",
+        "impact": "positive",
+        "contribution": 1.9025,
+        "description": "非线性加速映射"
+      },
+      {
+        "factor": "MACD柱=-0.728",
+        "impact": "negative",
+        "contribution": -0.06025655172413792,
+        "description": "ATR归一化"
+      },
+      {
+        "factor": "均线排列",
+        "impact": "negative",
+        "contribution": -1.5,
+        "description": "空头排列"
+      },
+      {
+        "factor": "布林带(%B=0.14)",
+        "impact": "positive",
+        "contribution": 0.9068965517241389,
+        "description": "触下轨反弹"
+      },
+      {
+        "factor": "量价关系(量比=1.0)",
+        "impact": "neutral",
+        "contribution": 0,
+        "description": ""
+      },
+      {
+        "factor": "20日动量",
+        "impact": "negative",
+        "contribution": -1.0151827071538866,
+        "description": ""
+      },
+      {
+        "factor": "PE估值分位(0%)",
+        "impact": "positive",
+        "contribution": 3.0,
+        "description": "正常"
+      },
+      {
+        "factor": "ROE(12.3%)",
+        "impact": "positive",
+        "contribution": 0.5,
+        "description": ""
+      },
+      {
+        "factor": "利润增长(-3.9%)",
+        "impact": "positive",
+        "contribution": 0.019214999999999996,
+        "description": ""
+      },
+      {
+        "factor": "分红潜力",
+        "impact": "positive",
+        "contribution": 0.3,
+        "description": ""
+      },
+      {
+        "factor": "新闻情感(avg=0.21)",
+        "impact": "positive",
+        "contribution": 0.3182361111111111,
+        "description": ""
+      },
+      {
+        "factor": "股吧情感(avg=-0.03)",
+        "impact": "negative",
+        "contribution": -0.031625,
+        "description": ""
+      }
+    ]
+  },
+  "valuation_level": "正常",
+  "valuation_percentile": 0.0,
+  "suggested_buy_price": 68.84,
+  "historical_pe_avg": 0.0,
+  "important_bullish_news": [
+    {
+      "title": "06月05日丙二醇9766.67元/吨 90天上涨57.53%",
+      "source": "新浪财经",
+      "publish_time": "2026-06-05 16:45",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "产业链多点突破 钠离子电池储能加快从示范验证迈向规模化应用",
+      "source": "新浪财经",
+      "publish_time": "2026-06-05 16:10",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "万华化学(600309)：聚氨酯价格上涨推动1Q26业绩回升 看好公司产业链逐步延伸",
+      "source": "新浪财经",
+      "publish_time": "2026-06-05 15:40",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    }
+  ],
+  "important_bearish_news": [],
+  "important_bullish_guba": [
+    {
+      "title": "就问一句，散户的承压能力有多大，主力可以通过一天内的做t确保盈利，散户可以吗？那",
+      "source": "若柳的窦筝",
+      "publish_time": "06-06 09:23",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "万华化学：融资净买入1014.13万元，融资余额30.68亿元",
+      "source": "万华化学资讯",
+      "publish_time": "06-06 07:37",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    },
+    {
+      "title": "产业链协同材料、系统、应用多点突破 钠离子电池储能驶入规模化应用快车道",
+      "source": "容百科技资讯",
+      "publish_time": "06-05 04:37",
+      "sentiment_score": 0.5,
+      "sentiment_label": "正面"
+    }
+  ],
+  "important_bearish_guba": [
+    {
+      "title": "2次90多机会走了吗小伙伴们，又开始啦65到72月跌越买吧",
+      "source": "非常长bfg",
+      "publish_time": "06-07 08:32",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "继续下跌，这是我说的",
+      "source": "股友EjoJNZ",
+      "publish_time": "06-06 08:52",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    },
+    {
+      "title": "靠你们接盘了，美股崩盘，怕散户抢跑踩踏！",
+      "source": "基民70h17A9985",
+      "publish_time": "06-06 07:46",
+      "sentiment_score": -0.5,
+      "sentiment_label": "负面"
+    }
+  ],
+  "macro_context": {
+    "source": "akshare",
+    "pmi": 53.0,
+    "cpi_yoy": 7.0781,
+    "shibor": 1.324,
+    "lpr_1y": 3.0,
+    "lpr_5y": 3.5,
+    "policy_tilt": "中性 (LPR不变)",
+    "m2_yoy": 18.88,
+    "social_financing": 6245.0,
+    "northbound_flow": null,
+    "northbound_5d_avg": null,
+    "usd_cny": null,
+    "macro_events": [
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-投标倍数(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日12个月期国债竞拍-中标利率(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-总金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-投标倍数(倍)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高配置百分比(%)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M1金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国10月季调后货币供应M2金额(亿美元)",
+        "importance": 1
+      },
+      {
+        "date": "2025-11-26",
+        "region": "美国",
+        "event": "美国11月25日5年期国债竞拍-高收益率(%)",
+        "importance": 1
+      }
+    ],
+    "policy_headlines": [
+      "习近平在重庆考察时强调 进一步全面深化改革开放 不断谱写中国式现代化重庆篇章",
+      "【央视快评】奋力谱写西部大开发新篇章",
+      "习近平向首届“中国－拉美和加勒比国家航天合作论坛”致贺信",
+      "十四届全国人大常委会举行第二十四次委员长会议 听取有关草案和议案审议情况汇报 赵乐际主持"
+    ]
+  },
+  "industry_context": {
+    "source": "akshare",
+    "policy_events": [
+      "央行连续第19个月增持黄金",
+      "据央行数据，5月末外汇储备报34422.38亿美元",
+      "证监会主席吴清：公募基金从“重规模”到“重回报”"
+    ],
+    "policy_impact": "偏利空"
+  }
+}
