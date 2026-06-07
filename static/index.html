@@ -179,6 +179,96 @@
       .two-col { flex-direction: column; }
       .pred-timeline { grid-template-columns: 1fr; }
     }
+
+    /* === Batch Mode === */
+    .batch-toggle-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; margin-bottom: 16px;
+      background: linear-gradient(135deg, #1a2d42, #1e3a5f);
+      border: 1px dashed #ffa502; border-radius: 10px;
+      cursor: pointer; user-select: none;
+      transition: all 0.25s;
+    }
+    .batch-toggle-bar:hover { background: linear-gradient(135deg, #1e3a5f, #2a4a6f); border-color: #ff4757; }
+    .batch-toggle-bar.active { background: linear-gradient(135deg, #16213e, #1a1a2e); border-style: solid; border-color: #ff4757; }
+    .batch-toggle-icon { font-size: 20px; }
+    .batch-toggle-arrow { font-size: 14px; color: #ffa502; margin-left: auto; }
+    #batchToggleText { font-size: 14px; color: #8ab4f8; font-weight: 500; }
+
+    .batch-stock-result {
+      border: 1px solid #1e3a5f; border-radius: 12px;
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .batch-stock-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 18px;
+      background: linear-gradient(135deg, #1a2d42, #16213e);
+      border-bottom: 1px solid #1e3a5f;
+    }
+    .batch-stock-symbol { font-size: 16px; font-weight: 700; color: #ffa502; }
+    .batch-stock-badge {
+      font-size: 11px; padding: 4px 12px;
+      background: rgba(255,165,2,.15); color: #ffa502;
+      border-radius: 12px;
+    }
+    .batch-stock-body { padding: 16px; }
+
+    .batch-progress-wrap {
+      margin-bottom: 18px; padding: 14px 18px;
+      background: #152436; border: 1px solid #1e3a5f;
+      border-radius: 10px;
+    }
+    .batch-progress-bar {
+      width: 100%; height: 10px;
+      background: #0f1923; border-radius: 5px;
+      overflow: hidden; margin: 10px 0;
+    }
+    .batch-progress-fill {
+      height: 100%; border-radius: 5px; transition: width 0.4s;
+      background: linear-gradient(90deg, #ffa502, #ff4757);
+    }
+    .batch-progress-info {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: #6b8db5;
+    }
+
+    .batch-summary-section, .batch-quality-section {
+      margin-bottom: 18px;
+    }
+    .batch-summary-card, .batch-quality-card {
+      background: #152436; border: 1px solid #1e3a5f;
+      border-radius: 12px; padding: 20px;
+    }
+    .batch-quality-card {
+      border-color: #ffa502;
+      background: linear-gradient(135deg, rgba(255,165,2,.06), #152436);
+    }
+    .batch-ranking-table {
+      width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px;
+    }
+    .batch-ranking-table th {
+      background: #1a2d42; color: #8ab4f8; padding: 8px 12px;
+      text-align: left; border: 1px solid #1e3a5f; font-weight: 600;
+    }
+    .batch-ranking-table td {
+      padding: 8px 12px; border: 1px solid #1e3a5f; color: #c0c8d0;
+    }
+    .batch-ranking-table tr:nth-child(even) { background: rgba(26,45,66,.5); }
+
+    .batch-best-stock {
+      border: 2px solid #ff4757; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,71,87,.08), #152436);
+      padding: 18px; margin-bottom: 16px;
+    }
+    .batch-best-badge {
+      display: inline-block; padding: 4px 12px;
+      background: #ff4757; color: #fff; border-radius: 6px;
+      font-size: 13px; font-weight: 700; margin-bottom: 10px;
+    }
+    .batch-runner-up {
+      border: 1px solid #ffa502; border-radius: 10px;
+      background: rgba(255,165,2,.05); padding: 14px;
+    }
   </style>
 </head>
 <body>
@@ -188,10 +278,19 @@
     <div id="backendStatus" style="font-size:12px;color:#6b8db5;">加载中...</div>
   </header>
 
+  <!-- Batch mode toggle -->
+  <div id="batchModeToggle" class="batch-toggle-bar" onclick="toggleBatchMode()">
+    <span class="batch-toggle-icon">📊</span>
+    <span id="batchToggleText">进入批量分析模式</span>
+    <span class="batch-toggle-arrow">→</span>
+  </div>
+
   <div class="search-box">
     <input id="symbolInput" type="text" placeholder="股票代码 (600519)" value="600519" />
-    <input id="costInput" type="number" step="0.01" placeholder="成本价格 (选填)" />
-        <input id="sharesInput" type="number" step="1" placeholder="数量/股 (选填)" style="max-width:120px;" />
+    <input id="costInput" type="text" inputmode="decimal" placeholder="成本价格 (选填)" />
+    <span class="hint" style="margin-left:-6px;">选填</span>
+        <input id="sharesInput" type="text" inputmode="decimal" placeholder="数量/股 (选填)" style="max-width:120px;" />
+    <span class="hint" style="margin-left:-6px;">选填</span>
         <input id="assetsInput" type="number" step="0.01" placeholder="总资产/元 (选填)" style="max-width:140px;" />
         <input id="cashInput" type="number" step="0.01" placeholder="可用资金/元 (选填)" style="max-width:150px;" />
     <button id="analyzeBtn" onclick="analyze()">分析</button>
@@ -228,6 +327,49 @@
 
 <script>
 const API = '';
+let isBatchMode = false;
+
+function toggleBatchMode() {
+  isBatchMode = !isBatchMode;
+  const toggleBar = document.getElementById('batchModeToggle');
+  const toggleText = document.getElementById('batchToggleText');
+  const btn = document.getElementById('analyzeBtn');
+  const simLabel = document.getElementById('simLabel');
+  const symbolInput = document.getElementById('symbolInput');
+  const costInput = document.getElementById('costInput');
+  const sharesInput = document.getElementById('sharesInput');
+
+  if (isBatchMode) {
+    toggleBar.classList.add('active');
+    toggleText.textContent = '返回单股分析模式';
+    toggleBar.querySelector('.batch-toggle-arrow').textContent = '←';
+    toggleBar.querySelector('.batch-toggle-icon').textContent = '📋';
+    btn.textContent = '批量分析';
+    simLabel.style.display = 'none';
+    symbolInput.placeholder = '600519/000858/000001 (以/分隔)';
+    costInput.placeholder = '150/0/0 (以/分隔)';
+    costInput.inputMode = 'text';
+    sharesInput.placeholder = '100/0/0 (以/分隔)';
+    sharesInput.inputMode = 'text';
+    // Clear previous results
+    document.getElementById('result').innerHTML = '';
+    document.getElementById('reportLink').style.display = 'none';
+    document.getElementById('simLog').style.display = 'none';
+  } else {
+    toggleBar.classList.remove('active');
+    toggleText.textContent = '进入批量分析模式';
+    toggleBar.querySelector('.batch-toggle-arrow').textContent = '→';
+    toggleBar.querySelector('.batch-toggle-icon').textContent = '📊';
+    btn.textContent = '分析';
+    simLabel.style.display = '';
+    symbolInput.placeholder = '股票代码 (600519)';
+    costInput.placeholder = '成本价格 (选填)';
+    costInput.inputMode = 'decimal';
+    sharesInput.placeholder = '数量/股 (选填)';
+    sharesInput.inputMode = 'decimal';
+    document.getElementById('result').innerHTML = '';
+  }
+}
 
 async function analyze() {
   const symbol = document.getElementById('symbolInput').value.trim();
@@ -244,6 +386,12 @@ async function analyze() {
   const availableCash = parseFloat(document.getElementById('cashInput').value) || 0;
 
   if (!symbol) { alert('请输入股票代码'); return; }
+
+  // ── Batch mode ──
+  if (isBatchMode) {
+    return batchAnalyze();
+  }
+
   btn.disabled = true;
   resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析...</div>';
 
@@ -256,9 +404,6 @@ async function analyze() {
       const body = { symbol, scenario: 'base' };
       if (costPrice > 0) body.cost_price = costPrice;
       if (master) body.master = master;
-      if (shares > 0) body.shares = shares;
-      if (totalAssets > 0) body.total_assets = totalAssets;
-      if (availableCash > 0) body.available_cash = availableCash;
       if (shares > 0) body.shares = shares;
       if (totalAssets > 0) body.total_assets = totalAssets;
       if (availableCash > 0) body.available_cash = availableCash;
@@ -281,6 +426,9 @@ async function analyze() {
       const body = { symbol };
       if (costPrice > 0) body.cost_price = costPrice;
       if (master) body.master = master;
+      if (shares > 0) body.shares = shares;
+      if (totalAssets > 0) body.total_assets = totalAssets;
+      if (availableCash > 0) body.available_cash = availableCash;
 
       const resp = await fetch(`${API}/api/analyze`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -443,6 +591,380 @@ async function pollLegacy(taskId) {
     await new Promise(r => setTimeout(r, 3000));
     pollCount++;
   }
+}
+
+// ── Batch Analysis ──
+
+async function batchAnalyze() {
+  const symbolsRaw = document.getElementById('symbolInput').value.trim();
+  const costPricesRaw = document.getElementById('costInput').value.trim();
+  const sharesRaw = document.getElementById('sharesInput').value.trim();
+  const totalAssets = parseFloat(document.getElementById('assetsInput').value) || 0;
+  const availableCash = parseFloat(document.getElementById('cashInput').value) || 0;
+  const masterSelect = document.getElementById('masterSelect');
+  const master = masterSelect ? masterSelect.value : '';
+  const btn = document.getElementById('analyzeBtn');
+  const resultDiv = document.getElementById('result');
+  const simLogDiv = document.getElementById('simLog');
+
+  if (!symbolsRaw) { alert('请输入至少一只股票代码'); return; }
+
+  const symbols = symbolsRaw.split('/').map(s => s.trim()).filter(Boolean);
+  if (symbols.length === 0) { alert('请输入有效的股票代码'); return; }
+  if (symbols.length > 10) { alert('最多支持10只股票'); return; }
+
+  btn.disabled = true;
+  resultDiv.innerHTML = '';
+  simLogDiv.style.display = 'block';
+  simLogDiv.textContent = '';
+  const startTime = Date.now();
+
+  // Build request body
+  const body = {
+    symbols: symbolsRaw,
+    cost_prices: costPricesRaw || '',
+    shares: sharesRaw || '',
+    total_assets: totalAssets,
+    available_cash: availableCash,
+    master: master,
+  };
+
+  try {
+    const resp = await fetch(`${API}/api/batch/analyze`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      resultDiv.innerHTML = `<div class="error">${err.error || '请求失败'}</div>`;
+      btn.disabled = false;
+      return;
+    }
+    const init = await resp.json();
+    const taskId = init.task_id;
+
+    // Show initial progress
+    resultDiv.innerHTML = `<div class="batch-progress-wrap">
+      <div style="font-size:15px;font-weight:600;color:#ffa502;">📊 批量分析进行中</div>
+      <div style="font-size:12px;color:#6b8db5;margin-top:4px;">共 ${symbols.length} 只股票</div>
+      <div class="batch-progress-bar"><div class="batch-progress-fill" id="batchProgressFill" style="width:0%"></div></div>
+      <div class="batch-progress-info"><span id="batchProgressMsg">正在启动...</span><span id="batchProgressPct">0%</span></div>
+    </div><div id="batchResults"></div>`;
+
+    // SSE streaming
+    const evtSource = new EventSource(`${API}/api/batch/analyze/${taskId}/stream`);
+    let stockCount = 0;
+    const totalStocks = symbols.length;
+    let batchSummaryData = null;
+    let qualityPickData = null;
+
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+      simLogDiv.textContent += `[${elapsed}s] ${data.message || data.type || ''}\n`;
+      simLogDiv.scrollTop = simLogDiv.scrollHeight;
+
+      if (data.type === 'progress') {
+        const progress = Math.round((data.progress || 0) * 100);
+        document.getElementById('batchProgressFill').style.width = progress + '%';
+        document.getElementById('batchProgressMsg').textContent = data.message || '';
+        document.getElementById('batchProgressPct').textContent = progress + '%';
+      }
+
+      if (data.type === 'stock_result') {
+        stockCount++;
+        const pct = Math.round(stockCount / totalStocks * 100);
+        document.getElementById('batchProgressFill').style.width = pct + '%';
+        document.getElementById('batchProgressMsg').textContent = `已完成 ${stockCount}/${totalStocks} 只`;
+        document.getElementById('batchProgressPct').textContent = pct + '%';
+
+        const stockHtml = renderBatchStockResult(stockCount, totalStocks, data.symbol, data.data);
+        document.getElementById('batchResults').innerHTML += stockHtml;
+      }
+
+      if (data.type === 'batch_summary') {
+        batchSummaryData = data.summary;
+        qualityPickData = data.quality_pick;
+      }
+
+      if (data.type === 'completed') {
+        simLogDiv.textContent += `[${elapsed}s] ✅ 批量分析完成\n`;
+        evtSource.close();
+        btn.disabled = false;
+        document.getElementById('batchProgressFill').style.width = '100%';
+        document.getElementById('batchProgressMsg').textContent = `全部完成 (${stockCount}/${totalStocks})`;
+        document.getElementById('batchProgressPct').textContent = '100%';
+
+        // Render summary and quality pick
+        if (batchSummaryData) {
+          document.getElementById('batchResults').innerHTML += renderBatchSummary(batchSummaryData);
+        }
+        if (qualityPickData) {
+          document.getElementById('batchResults').innerHTML += renderQualityPick(qualityPickData);
+        }
+      }
+
+      if (data.type === 'failed') {
+        evtSource.close();
+        btn.disabled = false;
+        document.getElementById('batchResults').innerHTML +=
+          `<div class="error">批量分析失败: ${data.message || '未知错误'}</div>`;
+      }
+    };
+
+    evtSource.onerror = function() {
+      evtSource.close();
+      btn.disabled = false;
+      // SSE fallback: poll for results
+      pollBatchResult(taskId, symbols, startTime);
+    };
+
+    // Update backend status
+    fetch(`${API}/api/config`).then(r => r.json()).then(cfg => {
+      document.getElementById('backendStatus').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+    }).catch(() => {});
+
+  } catch (e) {
+    resultDiv.innerHTML = `<div class="error">网络错误: ${e.message}</div>`;
+    btn.disabled = false;
+  }
+}
+
+async function pollBatchResult(taskId, symbols, startTime) {
+  // Fallback polling for batch status
+  let lastResultCount = 0;
+
+  while (true) {
+    try {
+      const resp = await fetch(`${API}/api/batch/analyze/${taskId}`);
+      const st = await resp.json();
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+      document.getElementById('batchProgressFill').style.width = Math.round((st.progress || 0) * 100) + '%';
+      document.getElementById('batchProgressMsg').textContent = st.message || '';
+
+      if (st.status === 'completed' || st.status === 'failed') {
+        document.getElementById('batchProgressMsg').textContent = st.status === 'completed' ? '全部完成' : '失败';
+        document.getElementById('batchProgressPct').textContent = '100%';
+        document.getElementById('analyzeBtn').disabled = false;
+        return;
+      }
+
+      await new Promise(r => setTimeout(r, 3000));
+    } catch(e) {
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+}
+
+function renderBatchStockResult(index, total, symbol, data) {
+  const q = data.quote || {};
+  const price = q.price;
+  const signalKey = (data.signals || {}).overall || 'neutral';
+  const sigCls = signalKey === 'bullish' ? 'signal-bullish' : signalKey === 'bearish' ? 'signal-bearish' : 'signal-neutral';
+  const sigEmoji = signalKey === 'bullish' ? '▲' : signalKey === 'bearish' ? '▼' : '◆';
+  const sigLabel = (data.signals || {}).label || (signalKey === 'bullish' ? '看多' : signalKey === 'bearish' ? '看空' : '中性');
+  const sb = data.score_breakdown || {};
+  const status = data.status || 'complete';
+  const isError = status === 'error';
+
+  let innerHtml = '';
+  if (isError) {
+    innerHtml = `<div class="error" style="margin:16px;">⚠️ 分析失败: ${data.error || '未知错误'}</div>`;
+  } else {
+    // Reuse the rendering logic by calling renderAnalysis into a temp container
+    var tempDiv = document.createElement('div');
+    // We can't easily call renderAnalysis here because it writes to #result.
+    // Instead, build a lightweight summary inline.
+    const pred = data.prediction_summary || {};
+    const cio = pred.cio_decision || {};
+    const valLevel = data.valuation_level || '正常';
+    const valCls = valLevel === '很低' || valLevel === '偏低' ? 'positive' :
+                   valLevel === '偏高' || valLevel === '很高' ? 'negative' : 'neutral';
+    const changePct = q.change_pct;
+    const changeFmt = cfmt(changePct, 2);
+
+    innerHtml = `
+    <div class="signal-box ${sigCls}" style="margin:16px 16px 0;">
+      <span class="signal-icon">${sigEmoji}</span>
+      <div>
+        <div class="signal-label">${sigLabel} (${sb.final != null ? sb.final : '-'} / 5)</div>
+        <div class="signal-meta">${data.stock_name || data.symbol} | PE分位: ${data.valuation_percentile != null ? data.valuation_percentile + '%' : '-'} | 估值: ${valLevel}</div>
+      </div>
+    </div>
+    <div style="padding:0 16px 16px;">
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">当前价格</div>
+        <div class="value ${changeFmt.cls}">${price != null ? price.toFixed(2) : '-'}</div>
+        <div class="sub ${changeFmt.cls}">涨跌 ${changeFmt.text}%</div>
+      </div>
+      <div class="card">
+        <div class="label">PE / PB</div>
+        <div class="value">${q.pe != null ? q.pe.toFixed(1) : '-'} / ${q.pb != null ? q.pb.toFixed(1) : '-'}</div>
+        <div class="sub">市值: ${q.market_cap != null ? (q.market_cap >= 1e4 ? (q.market_cap/1e4).toFixed(2)+'万亿' : q.market_cap.toFixed(0)+'亿') : '-'}</div>
+      </div>
+      <div class="card">
+        <div class="label">当前估值</div>
+        <div class="value ${valCls}">${valLevel}</div>
+        <div class="sub">建议买入价: ${data.suggested_buy_price != null ? data.suggested_buy_price.toFixed(2) : '-'}</div>
+      </div>
+      <div class="card">
+        <div class="label">ROE / EPS</div>
+        <div class="value">${(data.financial_summary || {}).roe != null ? (data.financial_summary.roe + '%') : '-'}</div>
+        <div class="sub">EPS: ${(data.financial_summary || {}).eps != null ? data.financial_summary.eps : '-'}</div>
+      </div>
+    </div>`;
+
+    // CIO decision summary if available
+    if (cio.master_name) {
+      innerHtml += `<div style="margin-top:12px;padding:12px;background:rgba(255,165,2,.06);border:1px solid rgba(255,165,2,.2);border-radius:10px;">
+        <div style="font-size:13px;font-weight:600;color:#ffa502;margin-bottom:6px;">🧠 ${cio.master_name} 决策</div>
+        <div style="font-size:13px;line-height:1.6;color:#e0e6ed;">${cio.decision_summary || '-'}</div>
+        ${cio.order && cio.order.action ? `<div style="margin-top:6px;font-size:12px;"><span class="${cio.order.action.includes('买')||cio.order.action.includes('加')?'positive':cio.order.action.includes('卖')||cio.order.action.includes('减')?'negative':'neutral'}" style="font-weight:600;">${cio.order.action}</span><span style="color:#6b8db5;margin-left:8px;">目标仓位: ${cio.order.position_size_pct || 0}%</span></div>` : ''}
+      </div>`;
+    } else if (pred.outlook) {
+      innerHtml += `<div style="margin-top:12px;padding:12px;background:rgba(138,180,248,.06);border:1px solid rgba(138,180,248,.15);border-radius:10px;">
+        <div style="font-size:13px;font-weight:600;color:#8ab4f8;margin-bottom:6px;">综合预测</div>
+        <div style="font-size:13px;color:#e0e6ed;">${pred.outlook || '-'} (置信度: ${pred.confidence || '-'})</div>
+        <div style="font-size:12px;color:#6b8db5;margin-top:4px;">${pred.reason || ''}</div>
+      </div>`;
+    }
+
+    // Multi-period predictions
+    const st = pred.short_term || {};
+    const mt = pred.mid_term || {};
+    const lt = pred.long_term || {};
+    if (st.direction || mt.direction || lt.direction) {
+      innerHtml += `<div style="margin-top:12px;"><div style="font-size:11px;color:#6b8db5;margin-bottom:6px;">多周期预测</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">`;
+      [{label:'短期',p:st},{label:'中期',p:mt},{label:'长期',p:lt}].forEach(({label,p}) => {
+        const dCls = p.direction && p.direction.includes('涨') ? 'positive' : p.direction && p.direction.includes('跌') ? 'negative' : 'neutral';
+        innerHtml += `<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:10px;color:#6b8db5;">${label}</div>
+          <div style="font-size:14px;font-weight:600;" class="${dCls}">${p.direction||'-'} ${p.change_pct!=null?(p.change_pct>0?'+':'')+p.change_pct.toFixed(1)+'%':''}</div>
+        </div>`;
+      });
+      innerHtml += `</div></div>`;
+    }
+
+    innerHtml += '</div>'; // end padding
+  }
+
+  return `
+  <div class="batch-stock-result" id="batch-${symbol}">
+    <div class="batch-stock-header">
+      <span class="batch-stock-symbol">${data.stock_name || symbol} (${symbol})</span>
+      <span class="batch-stock-badge">${index} / ${total}</span>
+    </div>
+    <div class="batch-stock-body">${innerHtml}</div>
+  </div>`;
+}
+
+function renderBatchSummary(summary) {
+  if (!summary) return '';
+
+  let html = '<div class="batch-summary-section">';
+  html += '<div class="section-title">📋 批量分析总结</div>';
+  html += '<div class="batch-summary-card">';
+
+  if (summary.summary_text) {
+    html += `<div style="font-size:14px;line-height:1.8;color:#e0e6ed;margin-bottom:16px;">${summary.summary_text}</div>`;
+  }
+
+  if (summary.ranking && summary.ranking.length > 0) {
+    html += '<div style="font-size:14px;font-weight:600;color:#8ab4f8;margin-bottom:8px;">🏆 综合排序</div>';
+    html += '<table class="batch-ranking-table"><thead><tr><th>#</th><th>股票</th><th>评分</th><th>理由</th></tr></thead><tbody>';
+    for (const item of summary.ranking) {
+      html += `<tr>
+        <td style="font-weight:700;color:#ffa502;">#${item.rank}</td>
+        <td>${item.name || item.symbol} (${item.symbol})</td>
+        <td style="font-weight:600;">${item.score != null ? item.score.toFixed(1) : '-'}</td>
+        <td style="font-size:12px;color:#c0c8d0;">${item.reason || ''}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+  }
+
+  if (summary.common_themes && summary.common_themes.length > 0) {
+    html += '<div style="font-size:13px;color:#8ab4f8;margin-top:12px;">📌 共性趋势</div>';
+    for (const t of summary.common_themes) {
+      html += `<div style="font-size:12px;color:#c0c8d0;padding:4px 0;">• ${t}</div>`;
+    }
+  }
+
+  if (summary.key_divergences && summary.key_divergences.length > 0) {
+    html += '<div style="font-size:13px;color:#ffa502;margin-top:12px;">⚡ 关键分歧</div>';
+    for (const d of summary.key_divergences) {
+      html += `<div style="font-size:12px;color:#c0c8d0;padding:4px 0;">• ${d}</div>`;
+    }
+  }
+
+  if (summary.overall_assessment) {
+    html += `<div style="margin-top:14px;padding:12px;background:rgba(255,165,2,.06);border-radius:8px;font-size:13px;line-height:1.7;color:#e0e6ed;">💡 ${summary.overall_assessment}</div>`;
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderQualityPick(pick) {
+  if (!pick) return '';
+  const best = pick.best_stock;
+  const runnerUp = pick.runner_up;
+  if (!best) return '';
+
+  let html = '<div class="batch-quality-section">';
+  html += '<div class="section-title">⭐ 优质股票推荐</div>';
+  html += '<div class="batch-quality-card">';
+
+  // Best stock
+  html += '<div class="batch-best-stock">';
+  html += '<div class="batch-best-badge">🏆 最值得买入</div>';
+  html += `<div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">${best.name || best.symbol} (${best.symbol})</div>`;
+  if (best.suggested_action) {
+    const actCls = best.suggested_action.includes('买')||best.suggested_action.includes('加') ? 'positive' : 'neutral';
+    html += `<div style="font-size:14px;margin-bottom:4px;">操作: <span class="${actCls}" style="font-weight:600;">${best.suggested_action}</span>`;
+    if (best.suggested_position_pct) html += ` <span style="color:#ffa502;">| 建议仓位: ${best.suggested_position_pct}%</span>`;
+    html += `</div>`;
+  }
+  if (best.reasons && best.reasons.length > 0) {
+    html += '<div style="margin-top:10px;">';
+    for (const r of best.reasons) {
+      html += `<div style="font-size:12px;color:#c0c8d0;padding:3px 0;line-height:1.5;">✓ ${r}</div>`;
+    }
+    html += '</div>';
+  }
+  if (best.position_note) {
+    html += `<div style="margin-top:10px;padding:10px;background:rgba(255,71,87,.08);border-radius:6px;font-size:12px;color:#ff6b7a;line-height:1.6;">📊 ${best.position_note}</div>`;
+  }
+  if (best.risk_note) {
+    html += `<div style="margin-top:8px;font-size:11px;color:#6b8db5;">⚠️ ${best.risk_note}</div>`;
+  }
+  html += '</div>';
+
+  // Runner-up
+  if (runnerUp) {
+    html += '<div class="batch-runner-up">';
+    html += '<div style="font-size:13px;font-weight:600;color:#ffa502;margin-bottom:4px;">🥈 次优选择</div>';
+    html += `<div style="font-size:16px;font-weight:600;color:#e0e6ed;">${runnerUp.name || runnerUp.symbol} (${runnerUp.symbol})</div>`;
+    if (runnerUp.reasons && runnerUp.reasons.length > 0) {
+      for (const r of runnerUp.reasons.slice(0, 2)) {
+        html += `<div style="font-size:12px;color:#6b8db5;margin-top:4px;">• ${r}</div>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  // Selection rationale
+  if (pick.selection_rationale) {
+    html += `<div style="margin-top:14px;font-size:13px;line-height:1.7;color:#c0c8d0;">${pick.selection_rationale}</div>`;
+  }
+
+  html += '</div></div>';
+  return html;
 }
 
 function cfmt(val, digits) {

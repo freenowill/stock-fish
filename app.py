@@ -25,6 +25,7 @@ from loguru import logger
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config import settings
 from analysis.agent import StockAnalysisAgent
+from analysis.batch_analyzer import BatchAnalyzer
 from simulation_bridge.orchestrator import SimulationOrchestrator
 from prediction_report.report_generator import PredictionReportGenerator
 
@@ -33,10 +34,13 @@ CORS(app)
 
 # ===== 全局状态 =====
 agent = StockAnalysisAgent()
+batch_analyzer = BatchAnalyzer()
 orchestrator = SimulationOrchestrator()
 report_gen = PredictionReportGenerator()
 predictions = {}
 _predictions_lock = threading.Lock()
+batch_tasks = {}
+_batch_lock = threading.Lock()
 
 
 # ==========================================
@@ -233,6 +237,214 @@ def predict_report(task_id: str):
             html = f.read()
         return Response(html, mimetype='text/html')
     return jsonify(pred.get('report', {}))
+
+
+# ==========================================
+#  API: 批量分析 (Batch Analysis)
+# ==========================================
+
+@app.route('/api/batch/analyze', methods=['POST'])
+def batch_analyze():
+    """启动批量股票分析"""
+    data = request.get_json(silent=True) or {}
+    symbols_raw = data.get('symbols', '').strip()
+    cost_prices_raw = data.get('cost_prices', '').strip()
+    shares_raw = data.get('shares', '').strip()
+    master = data.get('master', '').strip().lower()
+    total_assets = data.get('total_assets', 0) or 0.0
+    available_cash = data.get('available_cash', 0) or 0.0
+
+    if not symbols_raw:
+        return jsonify({'error': '请提供至少一只股票代码（多只以 / 分隔）'}), 400
+
+    # 解析 / 分隔的输入
+    symbols = [s.strip().upper() for s in symbols_raw.split('/') if s.strip()]
+    cost_prices = [float(c.strip()) if c.strip() else 0.0 for c in cost_prices_raw.split('/')] if cost_prices_raw else []
+    shares_list = [int(s.strip()) if s.strip() else 0 for s in shares_raw.split('/')] if shares_raw else []
+
+    # 校验
+    if len(symbols) > 10:
+        return jsonify({'error': f'最多支持10只股票，当前{len(symbols)}只'}), 400
+
+    if cost_prices and len(cost_prices) != len(symbols):
+        return jsonify({'error': f'成本价数量({len(cost_prices)})与股票数量({len(symbols)})不一致'}), 400
+    if shares_list and len(shares_list) != len(symbols):
+        return jsonify({'error': f'数量({len(shares_list)})与股票数量({len(symbols)})不一致'}), 400
+
+    # 补齐缺失
+    while len(cost_prices) < len(symbols):
+        cost_prices.append(0.0)
+    while len(shares_list) < len(symbols):
+        shares_list.append(0)
+
+    task_id = f"batch_{uuid.uuid4().hex[:12]}"
+
+    task_data = {
+        'task_id': task_id,
+        'symbols': symbols,
+        'cost_prices': cost_prices,
+        'shares_list': shares_list,
+        'total_assets': float(total_assets),
+        'available_cash': float(available_cash),
+        'master': master,
+        'status': 'pending',
+        'message': '',
+        'progress': 0.0,
+        'results': [],
+        'summary': None,
+        'quality_pick': None,
+        'created_at': datetime.now().isoformat(),
+        'completed_at': None,
+    }
+
+    with _batch_lock:
+        batch_tasks[task_id] = task_data
+
+    logger.info(f"批量分析启动 task_id={task_id}, symbols={symbols}, master={master or 'off'}")
+
+    def _run_batch():
+        try:
+            def _progress(event_type, event_data):
+                if event_type == 'progress':
+                    current = event_data.get('current', 0)
+                    total = event_data.get('total', 1)
+                    _update_batch(task_id, current / total,
+                                 'running', event_data.get('message', ''),
+                                 current_stock=event_data.get('symbol', ''))
+                elif event_type == 'stock_result':
+                    _update_batch(task_id, None, 'running',
+                                 event_data.get('message', ''),
+                                 add_result={
+                                     'symbol': event_data.get('symbol', ''),
+                                     'data': event_data.get('data', {}),
+                                 })
+                elif event_type == 'batch_summary':
+                    _update_batch(task_id, 0.9, 'summarizing', '批量总结完成',
+                                 summary=event_data.get('summary'),
+                                 quality_pick=event_data.get('quality_pick'))
+                elif event_type == 'completed':
+                    _update_batch(task_id, 1.0, 'completed', event_data.get('message', ''))
+
+            result = batch_analyzer.run_batch(
+                symbols=symbols,
+                cost_prices=cost_prices,
+                shares_list=shares_list,
+                total_assets=float(total_assets),
+                available_cash=float(available_cash),
+                master=master,
+                progress_callback=_progress,
+            )
+
+            # 如果 completed 事件没发出来（降级路径）
+            with _batch_lock:
+                bt = batch_tasks.get(task_id)
+                if bt and bt['status'] not in ('completed', 'failed'):
+                    bt['status'] = 'completed'
+                    bt['progress'] = 1.0
+                    bt['message'] = '批量分析完成'
+                    bt['summary'] = result.get('summary')
+                    bt['quality_pick'] = result.get('quality_pick')
+                    bt['completed_at'] = datetime.now().isoformat()
+
+        except Exception as e:
+            import traceback
+            logger.error(f"批量分析失败: {e}\n{traceback.format_exc()}")
+            _update_batch(task_id, 1.0, 'failed', f"批量分析异常: {str(e)}")
+
+    thread = threading.Thread(target=_run_batch, daemon=True)
+    thread.start()
+
+    return jsonify({
+        'task_id': task_id,
+        'symbols': symbols,
+        'status': 'queued',
+    })
+
+
+@app.route('/api/batch/analyze/<task_id>', methods=['GET'])
+def batch_status(task_id: str):
+    """查询批量分析任务状态"""
+    with _batch_lock:
+        bt = batch_tasks.get(task_id)
+    if not bt:
+        return jsonify({'error': '任务不存在'}), 404
+    return jsonify({
+        'task_id': bt['task_id'],
+        'symbols': bt['symbols'],
+        'status': bt['status'],
+        'progress': bt['progress'],
+        'message': bt['message'],
+        'results_count': len(bt.get('results', [])),
+        'created_at': bt['created_at'],
+        'completed_at': bt['completed_at'],
+    })
+
+
+@app.route('/api/batch/analyze/<task_id>/stream', methods=['GET'])
+def batch_stream(task_id: str):
+    """SSE 批量分析进度流"""
+    def generate():
+        last_progress = -1
+        last_result_count = 0
+        while True:
+            with _batch_lock:
+                bt = batch_tasks.get(task_id)
+            if not bt:
+                yield f"data: {json.dumps({'type': 'error', 'message': '任务不存在'})}\n\n"
+                break
+
+            current_progress = bt.get('progress', 0)
+            results = bt.get('results', [])
+            current_result_count = len(results)
+
+            # 推送新完成的 stock_result
+            if current_result_count > last_result_count:
+                for r in results[last_result_count:]:
+                    yield f"data: {json.dumps({'type': 'stock_result', 'symbol': r['symbol'], 'data': r['data']}, ensure_ascii=False)}\n\n"
+                last_result_count = current_result_count
+
+            # 推送 progress
+            if current_progress != last_progress:
+                msg = bt.get('message', '')
+                current_stock = bt.get('current_stock', '')
+                yield f"data: {json.dumps({'type': 'progress', 'progress': current_progress, 'message': msg, 'current_stock': current_stock}, ensure_ascii=False)}\n\n"
+                last_progress = current_progress
+
+            # 终端状态推送 summary + quality_pick
+            if bt['status'] in ('completed', 'failed'):
+                if bt['status'] == 'completed':
+                    summary = bt.get('summary')
+                    quality_pick = bt.get('quality_pick')
+                    if summary or quality_pick:
+                        yield f"data: {json.dumps({'type': 'batch_summary', 'summary': summary, 'quality_pick': quality_pick}, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps({'type': bt['status'], 'message': bt.get('message', '')})}\n\n"
+                break
+
+            time.sleep(1)
+
+    return Response(stream_with_context(generate()),
+                    mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+def _update_batch(task_id, progress, status, message, **kwargs):
+    """更新批量分析任务状态（线程安全）"""
+    with _batch_lock:
+        bt = batch_tasks.get(task_id)
+        if not bt:
+            return
+        if progress is not None:
+            bt['progress'] = progress
+        bt['status'] = status
+        bt['message'] = message
+        # 追加结果
+        add_result = kwargs.pop('add_result', None)
+        if add_result:
+            bt.setdefault('results', []).append(add_result)
+        for k, v in kwargs.items():
+            bt[k] = v
+        if status in ('completed', 'failed'):
+            bt['completed_at'] = datetime.now().isoformat()
 
 
 # ==========================================
