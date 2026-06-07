@@ -35,7 +35,8 @@ class CIODecision:
     """最终决策人的决策输出 — 结构化决策框架"""
     master_name: str = ""          # 大师名（中文）
     master_key: str = ""           # 大师 key (buffett/graham/...)
-    decision_summary: str = ""     # 决策摘要 (80字内)
+    decision_summary: str = ""     # 决策摘要 (120字内)
+    rationale: str = ""            # 详细决策逻辑 (200-300字)
 
     # 证据链
     evidence_chain: list = field(default_factory=list)
@@ -71,6 +72,7 @@ class CIODecision:
             'master_name': self.master_name,
             'master_key': self.master_key,
             'decision_summary': self.decision_summary,
+            'rationale': self.rationale,
             'evidence_chain': self.evidence_chain,
             'base_case': self.base_case,
             'bull_case': self.bull_case,
@@ -337,6 +339,19 @@ class BaseAgent:
             f"政策倾向: {macro.get('policy_tilt', 'N/A')}",
             f"大盘状态: {macro.get('market_regime', 'N/A')}",
         ]
+        # 宏观经济事件
+        events = macro.get('macro_events', [])
+        if events:
+            lines.append("近期重要经济事件:")
+            for ev in events[:5]:
+                stars = '★' * ev.get('importance', 1)
+                lines.append(f"  [{ev.get('region', '')}] {ev.get('date', '')}: {ev.get('event', '')} {stars}")
+        # 政策新闻
+        headlines = macro.get('policy_headlines', [])
+        if headlines:
+            lines.append("政策新闻头条:")
+            for h in headlines[:5]:
+                lines.append(f"  - {h}")
         return "\n".join(lines)
 
     @staticmethod

@@ -71,11 +71,11 @@
 <table>
 <tr>
 <td align="center" width="50%">
-  <a href="https://b23.tv/5etEKuw">
-    <img src="document/demo_local_thumb.png" alt="📊 Basic Analysis Mode" width="100%">
+  <a href="https://b23.tv/aL2XhZG">
+    <img src="document/demo_local_thumb.png" alt="🧠 Master Decision Mode" width="100%">
   </a>
-  <br><b>📊 Basic Analysis Mode</b>
-  <br>StockFish multi-factor analysis (local mode)
+  <br><b>🧠 Master Decision Mode</b>
+  <br>StockFish multi-factor analysis + Master CIO decision (8 agents + CIO verdict)
 </td>
 <td align="center" width="50%">
   <a href="https://b23.tv/AJChmUb">

@@ -46,6 +46,24 @@ class MacroAgent(BaseAgent):
             f"大盘状态: {macro.get('market_regime', 'N/A')}",
             f"标的现价: {q.get('price', '?')}",
         ]
+
+        # 国内外宏观经济事件日历
+        macro_events = macro.get('macro_events', [])
+        if macro_events:
+            lines.append("")
+            lines.append("## 近期国内外重要经济事件")
+            for ev in macro_events[:8]:
+                stars = '★' * ev.get('importance', 1)
+                lines.append(f"- [{ev.get('region', '')}] {ev.get('date', '')}: {ev.get('event', '')} {stars}")
+
+        # 政策新闻(CCTV头条)
+        headlines = macro.get('policy_headlines', [])
+        if headlines:
+            lines.append("")
+            lines.append("## 政策与宏观新闻头条")
+            for h in headlines[:5]:
+                lines.append(f"- {h}")
+
         return "\n".join(lines)
 
     def _llm_analyze(self, data: str) -> EmployeeReport:

@@ -507,6 +507,12 @@ function renderMasterDecision(pred) {
   html += '<div class="cio-section"><div class="cio-section-title">最终策略</div>';
   html += '<div class="cio-summary">' + (cio.decision_summary || '-') + '</div></div>';
 
+  // Rationale (详细决策逻辑)
+  if (cio.rationale) {
+    html += '<div class="cio-section"><div class="cio-section-title">📝 决策逻辑详解</div>';
+    html += '<div style="font-size:14px;color:#ccd6f6;line-height:1.7;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:6px;">' + cio.rationale + '</div></div>';
+  }
+
   // Evidence Chain
   if (cio.evidence_chain && cio.evidence_chain.length > 0) {
     html += '<div class="cio-section"><div class="cio-section-title">关键证据链</div>';
@@ -547,7 +553,7 @@ function renderMasterDecision(pred) {
     html += '<div class="cio-section"><div class="cio-section-title">操作指令</div>';
     html += '<div class="cio-order">';
     html += '<div class="cio-order-item"><div class="label">操作</div><div style="font-size:20px;font-weight:700;" class="' + (order.action.includes('买')||order.action.includes('加')?'positive':order.action.includes('卖')||order.action.includes('减')?'negative':'neutral') + '">' + order.action + '</div></div>';
-    html += '<div class="cio-order-item"><div class="label">仓位</div><div style="font-size:18px;font-weight:600;color:#ffa502;">' + (order.position_size_pct || 0) + '%</div></div>';
+    html += '<div class="cio-order-item"><div class="label">目标仓位</div><div style="font-size:18px;font-weight:600;color:#ffa502;">' + (order.position_size_pct || 0) + '%</div></div>';
     if (order.stop_loss && order.stop_loss.level) {
       html += '<div class="cio-order-item"><div class="label">止损</div><div style="font-size:18px;font-weight:600;color:#00d4aa;">¥' + (typeof order.stop_loss === "object" ? order.stop_loss.level.toFixed(1) : order.stop_loss) + '</div></div>';
     }
@@ -556,6 +562,9 @@ function renderMasterDecision(pred) {
       html += '<div class="cio-order-item"><div class="label">止盈</div><div style="font-size:18px;font-weight:600;color:#ff4757;">¥' + (tpLevel || 0).toFixed(1) + '</div></div>';
     }
     html += '</div>';
+    if (order.order_rationale) {
+      html += '<div style="font-size:14px;color:#ccd6f6;margin-top:6px;padding:6px 10px;background:rgba(255,255,255,.05);border-radius:6px;line-height:1.6;">💡 操作理由: ' + order.order_rationale + '</div>';
+    }
     if (order.position_note) {
       html += '<div style="font-size:13px;color:#ffa502;margin-top:6px;padding:6px 10px;background:rgba(255,165,2,.08);border-radius:6px;">📊 仓位分析: ' + order.position_note + '</div>';
     }

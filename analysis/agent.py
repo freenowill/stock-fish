@@ -400,14 +400,16 @@ class StockAnalysisAgent:
         except Exception as e:
             logger.debug(f"社融获取失败: {e}")
 
-        # --- 北向资金 (stock_hsgt_north_net_flow_in_em 已废弃, 改用 stock_hsgt_fund_flow_summary_em) ---
+        # --- 北向资金 (使用 stock_hsgt_hist_em 获取历史序列，避免当日汇总数据为0) ---
         try:
-            df = StockAnalysisAgent._safe_ak_call(ak.stock_hsgt_fund_flow_summary_em)
-            if df is not None and len(df) > 0:
-                nb = df[df['资金方向'] == '北向']
-                if len(nb) > 0:
-                    ctx['northbound_flow'] = float(nb['成交净买额'].sum())
-                    ctx['northbound_5d_avg'] = round(float(nb['成交净买额'].sum()) / max(1, len(nb)), 1)
+            df = StockAnalysisAgent._safe_ak_call(ak.stock_hsgt_hist_em)
+            if df is not None and len(df) >= 2:
+                # 按日期降序排列，取最近 5 个交易日
+                df_sorted = df.sort_values('日期', ascending=False)
+                latest_5 = df_sorted.head(5)
+                ctx['northbound_flow'] = float(latest_5.iloc[0]['当日成交净买额'])
+                ctx['northbound_5d_avg'] = round(float(latest_5['当日成交净买额'].mean()), 1)
+                logger.info(f"北向资金: 当日={ctx['northbound_flow']:.1f}亿, 5日均={ctx['northbound_5d_avg']:.1f}亿")
         except Exception as e:
             logger.debug(f"北向资金获取失败: {e}")
 
@@ -424,6 +426,40 @@ class StockAnalysisAgent:
                     ctx['usd_cny'] = StockAnalysisAgent._safe_float(v)
         except Exception as e:
             logger.debug(f"汇率获取失败: {e}")
+
+        # --- 大盘状态推断 ---
+        # --- 宏观经济日历 (国内外头部事件) ---
+        try:
+            df = StockAnalysisAgent._safe_ak_call(ak.news_economic_baidu)
+            if df is not None and len(df) > 0:
+                # 只取近期高重要性事件
+                recent = df.head(20)
+                events = []
+                for _, row in recent.iterrows():
+                    importance = row.get('重要性', 1)
+                    if int(importance) >= 1:  # 中等重要以上
+                        events.append({
+                            'date': str(row.get('日期', '')),
+                            'region': str(row.get('地区', '')),
+                            'event': str(row.get('事件', '')),
+                            'importance': int(importance),
+                        })
+                ctx['macro_events'] = events[:10]  # 最多 10 条
+        except Exception as e:
+            logger.debug(f"宏观经济日历获取失败: {e}")
+
+        # --- 政策新闻 (CCTV 头条) ---
+        try:
+            df = StockAnalysisAgent._safe_ak_call(ak.news_cctv)
+            if df is not None and len(df) > 0:
+                headlines = []
+                for _, row in df.head(5).iterrows():
+                    title = str(row.get('title', ''))
+                    if len(title) > 10:  # 过滤过短的标题
+                        headlines.append(title)
+                ctx['policy_headlines'] = headlines
+        except Exception as e:
+            logger.debug(f"CCTV 新闻获取失败: {e}")
 
         # --- 大盘状态推断 ---
         try:

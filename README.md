@@ -69,11 +69,11 @@
 <table>
 <tr>
 <td align="center" width="50%">
-  <a href="https://b23.tv/5etEKuw">
-    <img src="document/demo_local_thumb.png" alt="📊 基础分析模式" width="100%">
+  <a href="https://b23.tv/aL2XhZG">
+    <img src="document/demo_local_thumb.png" alt="🧠 大师决策模式" width="100%">
   </a>
-  <br><b>📊 基础分析模式</b>
-  <br>StockFish 多因子分析（本地模式）
+  <br><b>🧠 大师决策模式</b>
+  <br>StockFish 多因子分析 + 大师决策（8 Agent + CIO 裁决）
 </td>
 <td align="center" width="50%">
   <a href="https://b23.tv/AJChmUb">
