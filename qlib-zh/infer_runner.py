@@ -47,6 +47,8 @@ def _resolve_model(model_name: str) -> dict:
                 "workflow_config_lightgbm_Alpha158_csi1000.yaml"
             ),
             "qlib_data_dir": "/root/.qlib/qlib_data/cn_data",
+            # CSI1000 walk_forward 在 models/ 目录下，不在 DATA/analysis_outputs/
+            "use_models_dir": True,
         }
     else:
         # 默认 CSI300
@@ -113,8 +115,9 @@ def run_inference(
     _log(f"镜像: {DOCKER_IMAGE}")
 
     # 构建 Docker 命令
-    output_root_ctr = f"{WORKDIR}/DATA/analysis_outputs/{model_name}/model_predict"
-    analysis_root_ctr = f"{WORKDIR}/DATA/analysis_outputs/{model_name}"
+    base_dir = f"{WORKDIR}/models" if cfg.get("use_models_dir") else f"{WORKDIR}/DATA/analysis_outputs"
+    output_root_ctr = f"{base_dir}/{model_name}/model_predict"
+    analysis_root_ctr = f"{base_dir}/{model_name}"
 
     cmd = [
         "docker", "run", "--rm",
@@ -185,24 +188,20 @@ def run_inference(
         raise RuntimeError("推理超时 (900s)")
 
     # 读取 scores.csv
-    scores_csv = (
-        _LOCAL_PROJECT_ROOT / "DATA" / "analysis_outputs" / model_name
-        / "model_predict" / "scores.csv"
-    )
+    # 读取 scores.csv（路径需与 Docker --output-root 一致）
+    _base_local = _LOCAL_PROJECT_ROOT / "models" if cfg.get("use_models_dir") else _LOCAL_PROJECT_ROOT / "DATA" / "analysis_outputs"
+    scores_csv = _base_local / model_name / "model_predict" / "scores.csv"
 
     if not scores_csv.exists():
         # 尝试 predict_only 子目录
-        alt_dir = (
-            _LOCAL_PROJECT_ROOT / "DATA" / "analysis_outputs" / model_name
-            / "model_predict" / "walk_forward"
-        )
+        alt_dir = _base_local / model_name / "model_predict" / "walk_forward"
         found_csvs = list(alt_dir.glob(f"predict_only_{pred_date.replace('-', '')}/**/scores.csv"))
         if found_csvs:
             scores_csv = found_csvs[0]
 
     if not scores_csv.exists():
         # 列出所有 csv 文件帮助调试
-        out_dir = _LOCAL_PROJECT_ROOT / "DATA" / "analysis_outputs" / model_name
+        out_dir = _base_local / model_name
         all_csvs = list(out_dir.glob("**/*.csv"))
         raise FileNotFoundError(
             f"未找到 scores.csv，尝试的路径:\n"

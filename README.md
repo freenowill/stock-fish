@@ -151,6 +151,31 @@ docker compose pull                 # 更新到最新镜像
 
 ---
 
+## 📦 Qlib 预训练模型下载
+
+### CSI300 Alpha158（沪深 300）
+
+预训练 LightGBM 模型，walk-forward 训练（8 folds，覆盖 2016~2023），适用于 `--predict-only` 增量推理。
+
+**命令行下载：**
+```bash
+wget https://github.com/freenowill/stock-fish/releases/latest/download/csi300-alpha158.tar.gz
+tar -xzf csi300-alpha158.tar.gz -C qlib-zh/models/
+```
+
+**发布网页：** [github.com/freenowill/stock-fish/releases](https://github.com/freenowill/stock-fish/releases)
+
+解压后目录结构：
+```
+qlib-zh/models/2026-05-27-csi300-alpha158/model_predict/walk_forward/
+├── 2016-05-26/          # fold 1 checkpoint
+├── ...
+├── 2023-05-26/          # fold 8 checkpoint
+└── segments/            # fold 索引（推理时用于定位最新 fold）
+```
+
+---
+
 ## 🚀 快速开始
 
 ### 1. 配置 `.env`

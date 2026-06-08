@@ -30,6 +30,12 @@
 - [x] Front-end master selector + multi-master comparison
 - [x] Macro/industry analyst integration
 
+**🤖 Qlib Inference** (completed)
+- [x] `--predict-only` inference integrated with batch analysis mode
+- [x] CSI300 / CSI1000 model selection
+- [x] Docker container orchestration (`zhuhai123/qlib-rdagent:v1`)
+- [x] Auto-fill Top 20 stock codes after inference
+
 **📊 Batch Stock Analysis** (completed)
 - [x] `POST /api/batch/analyze` sequential multi-symbol analysis
 - [x] Real-time SSE per-stock result + sequential front-end rendering
@@ -62,7 +68,7 @@
 - **John Templeton**: Renowned for contrarian investing, his creed: "Buy when others are selling in despair, sell when others are buying in enthusiasm"
 
 ### Macro Investing Style
-- **George Soros**: Leading figure in global macro strategy, famous for shorting the British pound and狙击the Thai baht. His philosophy, deeply influenced by his teacher Karl Popper, emphasizes cognitive biases of market participants and the reflexivity effect on markets
+- **George Soros**: Leading figure in global macro strategy, famous for shorting the British pound and attacking the Thai baht. His philosophy, deeply influenced by his teacher Karl Popper, emphasizes cognitive biases of market participants and the reflexivity effect on markets
 - **Ray Dalio**: Founder of Bridgewater Associates. Unlike Soros's view of the economy as a machine, Dalio's investment system emphasizes historical cycles and logical analysis to predict asset performance under different economic environments
 
 ---
@@ -143,6 +149,31 @@ docker compose logs -f stockfish    # View logs
 docker compose logs -f mirofish     # View MiroFish logs
 docker compose down                 # Stop services
 docker compose pull                 # Update to latest images
+```
+
+---
+
+## 📦 Qlib Pre-trained Model Download
+
+### CSI300 Alpha158
+
+Pre-trained LightGBM model, walk-forward trained (8 folds, covering 2016~2023), designed for `--predict-only` incremental inference.
+
+**Download:**
+```bash
+wget https://github.com/freenowill/stock-fish/releases/latest/download/csi300-alpha158.tar.gz
+tar -xzf csi300-alpha158.tar.gz -C qlib-zh/models/
+```
+
+**Release page:** [github.com/freenowill/stock-fish/releases](https://github.com/freenowill/stock-fish/releases)
+
+Directory structure after extraction:
+```
+qlib-zh/models/2026-05-27-csi300-alpha158/model_predict/walk_forward/
+├── 2016-05-26/          # fold 1 checkpoint
+├── ...
+├── 2023-05-26/          # fold 8 checkpoint
+└── segments/            # fold index (used by inference to locate the latest fold)
 ```
 
 ---
