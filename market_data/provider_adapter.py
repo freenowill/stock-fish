@@ -528,7 +528,7 @@ class AdvancedBackend(BaseStockBackend):
                 try:
                     svc = self._build_search_service()
                     result_container['resp'] = svc.search_comprehensive_intel(
-                        symbol, name, max_results=max_results
+                        stock_code=symbol, stock_name=name, max_searches=max_results
                     )
                 except Exception as e:
                     result_container['error'] = e
@@ -541,15 +541,22 @@ class AdvancedBackend(BaseStockBackend):
                 return items
 
             resp = result_container['resp']
-            if resp and resp.results:
-                for r in resp.results:
-                    items.append(NewsItem(
-                        title=r.title or '',
-                        url=r.url or '',
-                        publish_time=r.published_date or '',
-                        source=f'{r.source or "web"}',
-                    ))
-                logger.info(f"AdvancedBackend: 搜索服务获取到 {len(items)} 条结果")
+            # search_comprehensive_intel 返回 Dict[str, SearchResponse]
+            if resp and isinstance(resp, dict):
+                seen = set()
+                for dim_name, dim_resp in resp.items():
+                    if hasattr(dim_resp, 'results') and dim_resp.results:
+                        for r in dim_resp.results:
+                            key = r.url or r.title
+                            if key and key not in seen:
+                                seen.add(key)
+                                items.append(NewsItem(
+                                    title=r.title or '',
+                                    url=r.url or '',
+                                    publish_time=getattr(r, 'published_date', '') or '',
+                                    source=f'{dim_name}/{r.source or "web"}',
+                                ))
+                logger.info(f"AdvancedBackend: 搜索服务获取到 {len(items)} 条结果 ({len(resp)} 个维度)")
             if result_container['error']:
                 raise result_container['error']
         except Exception as e:

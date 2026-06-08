@@ -10,6 +10,7 @@ StockEngine Agent
 """
 import os
 import math
+import time
 from typing import Optional, Dict, Any
 from datetime import datetime
 
@@ -22,25 +23,34 @@ from analysis.state.state import AnalysisState
 from analysis.nodes.prediction_node import PredictionNode
 from analysis.scoring import ScoringEngine
 
-# 延迟导入，避免循环依赖
-_search_service = None
+# SearchService 缓存（5分钟有效期，支持key热更新）
+_search_service_cache = None
+_search_service_cache_time = 0
 
 
 def _get_search_service():
-    global _search_service
-    if _search_service is None:
-        try:
-            from market_data.search.search_service import SearchService
-            import os as _os
-            bocha_key = _os.environ.get('BOCHA_API_KEY') or getattr(settings, 'BOCHA_API_KEY', None)
-            bocha_keys = [k.strip() for k in bocha_key.split(',') if k.strip()] if bocha_key else None
-            tavily_key = _os.environ.get('TAVILY_API_KEY') or getattr(settings, 'TAVILY_API_KEY', None)
-            tavily_keys = [k.strip() for k in tavily_key.split(',') if k.strip()] if tavily_key else None
-            _search_service = SearchService(bocha_keys=bocha_keys, tavily_keys=tavily_keys)
-        except Exception as e:
-            logger.warning(f"SearchService 初始化失败: {e}")
-            _search_service = False
-    return _search_service if _search_service is not False else None
+    """获取 SearchService 实例（5分钟缓存，自动读取最新 env）"""
+    global _search_service_cache, _search_service_cache_time
+    now = time.time()
+    if _search_service_cache is not None and (now - _search_service_cache_time) < 300:
+        return _search_service_cache if _search_service_cache is not False else None
+
+    try:
+        from market_data.search.search_service import SearchService
+        import os as _os
+        bocha_key = _os.environ.get('BOCHA_API_KEY') or getattr(settings, 'BOCHA_API_KEY', None)
+        bocha_keys = [k.strip() for k in bocha_key.split(',') if k.strip()] if bocha_key else None
+        tavily_key = _os.environ.get('TAVILY_API_KEY') or getattr(settings, 'TAVILY_API_KEY', None)
+        tavily_keys = [k.strip() for k in tavily_key.split(',') if k.strip()] if tavily_key else None
+        svc = SearchService(bocha_keys=bocha_keys, tavily_keys=tavily_keys)
+        _search_service_cache = svc
+        _search_service_cache_time = now
+        return svc
+    except Exception as e:
+        logger.warning(f"SearchService 初始化失败: {e}")
+        _search_service_cache = False
+        _search_service_cache_time = now
+        return None
 
 
 class StockAnalysisAgent:
