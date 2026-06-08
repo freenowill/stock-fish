@@ -2,10 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 基础依赖（gcc 只在需要编译扩展时安装）
+# 基础依赖（gcc + Docker CLI 用于 qlib 推理容器编排）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# 安装 Docker CLI（仅客户端，无需 daemon）
+RUN curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz \
+    | tar xzv -C /usr/local/bin --strip-components=1 docker/docker \
+    && chmod +x /usr/local/bin/docker
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

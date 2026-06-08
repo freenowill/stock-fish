@@ -22,6 +22,26 @@ from analysis.state.state import AnalysisState
 from analysis.nodes.prediction_node import PredictionNode
 from analysis.scoring import ScoringEngine
 
+# 延迟导入，避免循环依赖
+_search_service = None
+
+
+def _get_search_service():
+    global _search_service
+    if _search_service is None:
+        try:
+            from market_data.search.search_service import SearchService
+            import os as _os
+            bocha_key = _os.environ.get('BOCHA_API_KEY') or getattr(settings, 'BOCHA_API_KEY', None)
+            bocha_keys = [k.strip() for k in bocha_key.split(',') if k.strip()] if bocha_key else None
+            tavily_key = _os.environ.get('TAVILY_API_KEY') or getattr(settings, 'TAVILY_API_KEY', None)
+            tavily_keys = [k.strip() for k in tavily_key.split(',') if k.strip()] if tavily_key else None
+            _search_service = SearchService(bocha_keys=bocha_keys, tavily_keys=tavily_keys)
+        except Exception as e:
+            logger.warning(f"SearchService 初始化失败: {e}")
+            _search_service = False
+    return _search_service if _search_service is not False else None
+
 
 class StockAnalysisAgent:
 
@@ -55,6 +75,30 @@ class StockAnalysisAgent:
             state.guba_posts = market.get('guba_posts', [])
             state.macro_context = market.get('macro_context') or self._fetch_macro_context()
             state.industry_context = market.get('industry_context') or self._fetch_industry_context(symbol)
+
+            # Step 1b: Web 搜索（股票相关新闻/研报/舆情）
+            try:
+                svc = _get_search_service()
+                if svc:
+                    stock_name = state.stock_name or symbol
+                    resp = svc.search_stock_news(
+                        stock_code=symbol,
+                        stock_name=stock_name,
+                        max_results=8,
+                    )
+                    state.search_results = {
+                        'query': resp.query,
+                        'provider': resp.provider,
+                        'results': [{'title': r.title, 'url': r.url, 'snippet': r.snippet,
+                                     'source': r.source, 'date': getattr(r, 'date', '')}
+                                    for r in (resp.results or [])],
+                        'context': resp.to_context(max_results=8),
+                    }
+                    logger.info(f"[{symbol}] Web 搜索完成: {len(state.search_results.get('results', []))} 条结果 ({resp.provider})")
+            except Exception as e:
+                logger.warning(f"[{symbol}] Web 搜索失败（非致命）: {e}")
+                state.search_results = {'results': [], 'context': '', 'error': str(e)}
+
             logger.info(f"[{symbol}] Step 1/4: 数据采集完成")
 
             # Step 2: 舆情情感分析

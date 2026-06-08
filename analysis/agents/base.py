@@ -275,6 +275,10 @@ class BaseAgent:
             lines.append(f"  - [{n.get('source', '')}] {n.get('title', '')}")
         for g in bear_guba[:2]:
             lines.append(f"  - [股吧] {g.get('title', '')}")
+
+        # 追加 Web 搜索结果
+        lines.append("")
+        lines.append(BaseAgent.build_search_context(state))
         return "\n".join(lines)
 
     @staticmethod
@@ -365,4 +369,25 @@ class BaseAgent:
             f"政策影响: {ind.get('policy_impact', 'N/A')}",
             f"近期政策事件: {ind.get('policy_events', '无')}",
         ]
+        return "\n".join(lines)
+
+    @staticmethod
+    def build_search_context(state: dict) -> str:
+        """提取 Web 搜索结果"""
+        sr = state.get('search_results') or {}
+        results = sr.get('results', [])
+        if not results:
+            return "（无Web搜索结果）"
+
+        lines = ["## Web 搜索结果\n"]
+        for i, r in enumerate(results[:8], 1):
+            title = r.get('title', '无标题')
+            snippet = r.get('snippet', r.get('content', ''))
+            url = r.get('url', '')
+            source = r.get('source', '')
+            date = r.get('date', '')
+            meta = f"来源: {source}" + (f" | 日期: {date}" if date else "")
+            lines.append(f"{i}. **{title}**\n   {snippet}\n   {meta} | {url}")
+        if sr.get('summary'):
+            lines.append(f"\n搜索摘要: {sr['summary']}")
         return "\n".join(lines)

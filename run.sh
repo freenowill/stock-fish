@@ -112,7 +112,7 @@ echo "  ✓ Docker $(docker --version | cut -d' ' -f3 | tr -d ',')"
 
 # 拉取 / 检查镜像
 echo "  拉取镜像..."
-IMAGES=("zhuhai123/stockfish-stockfish:latest" "zhuhai123/stockfish-mirofish:latest")
+IMAGES=("zhuhai123/stockfish-stockfish:latest" "zhuhai123/stockfish-mirofish:latest" "zhuhai123/qlib-rdagent:v1")
 ALL_PULLED=true
 for img in "${IMAGES[@]}"; do
     if docker pull "$img" --quiet 2>/dev/null; then

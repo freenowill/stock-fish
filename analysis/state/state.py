@@ -63,6 +63,9 @@ class AnalysisState:
     macro_context: Optional[Dict] = None
     industry_context: Optional[Dict] = None
 
+    # Web 搜索结果 (Phase 4 新增)
+    search_results: Optional[Dict] = None  # {query, results: [{title, url, snippet, source}], summary}
+
     def to_dict(self) -> dict:
         d = asdict(self)
         d['created_at'] = self.created_at or datetime.now().isoformat()

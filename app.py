@@ -9,6 +9,7 @@ API:
   GET  /api/predict/<id>/report  推演报告 HTML
   GET  /api/config      系统配置
 """
+import importlib.util
 import json
 import os
 import sys
@@ -29,6 +30,13 @@ from analysis.batch_analyzer import BatchAnalyzer
 from simulation_bridge.orchestrator import SimulationOrchestrator
 from prediction_report.report_generator import PredictionReportGenerator
 
+# ---- Qlib 推理模块 (目录名含连字符，使用 importlib 加载) ----
+_qlib_zh_dir = Path(__file__).resolve().parent / "qlib-zh"
+_spec = importlib.util.spec_from_file_location("infer_runner", _qlib_zh_dir / "infer_runner.py")
+_infer_runner_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_infer_runner_mod)
+run_qlib_inference = _infer_runner_mod.run_inference
+
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 
@@ -41,6 +49,8 @@ predictions = {}
 _predictions_lock = threading.Lock()
 batch_tasks = {}
 _batch_lock = threading.Lock()
+qlib_tasks = {}
+_qlib_lock = threading.Lock()
 
 
 # ==========================================
@@ -263,9 +273,6 @@ def batch_analyze():
     shares_list = [int(s.strip()) if s.strip() else 0 for s in shares_raw.split('/')] if shares_raw else []
 
     # 校验
-    if len(symbols) > 10:
-        return jsonify({'error': f'最多支持10只股票，当前{len(symbols)}只'}), 400
-
     if cost_prices and len(cost_prices) != len(symbols):
         return jsonify({'error': f'成本价数量({len(cost_prices)})与股票数量({len(symbols)})不一致'}), 400
     if shares_list and len(shares_list) != len(symbols):
@@ -445,6 +452,239 @@ def _update_batch(task_id, progress, status, message, **kwargs):
             bt[k] = v
         if status in ('completed', 'failed'):
             bt['completed_at'] = datetime.now().isoformat()
+
+
+def _update_qlib(task_id, progress, status, message, **kwargs):
+    """更新 qlib 推理任务状态（线程安全）"""
+    with _qlib_lock:
+        qt = qlib_tasks.get(task_id)
+        if not qt:
+            return
+        if progress is not None:
+            qt['progress'] = progress
+        qt['status'] = status
+        qt['message'] = message
+        for k, v in kwargs.items():
+            qt[k] = v
+        if status in ('completed', 'failed'):
+            qt['completed_at'] = datetime.now().isoformat()
+
+
+# ==========================================
+#  API: Qlib 推理
+# ==========================================
+
+@app.route('/api/qlib/models', methods=['GET'])
+def qlib_models():
+    """列出 StockFish/qlib-zh/models/ 下的可用模型"""
+    models_dir = Path(__file__).resolve().parent / "qlib-zh" / "models"
+    models = []
+    if models_dir.exists():
+        for d in sorted(models_dir.iterdir()):
+            if d.is_dir():
+                name = d.name
+                # 从目录名解析 market 和 date
+                market = "unknown"
+                if "csi300" in name.lower():
+                    market = "csi300"
+                elif "csi1000" in name.lower():
+                    market = "csi1000"
+                # 提取日期 (YYYY-MM-DD 格式)
+                date_part = name[:10] if len(name) >= 10 and name[4] == "-" else ""
+                has_scores = (d / "model_predict" / "scores.csv").exists()
+                models.append({
+                    "name": name,
+                    "market": market,
+                    "date": date_part,
+                    "has_scores": has_scores,
+                })
+    return jsonify(models)
+
+
+@app.route('/api/qlib/infer', methods=['POST'])
+def qlib_infer():
+    """启动 qlib 推理任务"""
+    data = request.get_json(silent=True) or {}
+    model = data.get('model', '').strip()
+
+    if not model:
+        return jsonify({'error': '请选择模型'}), 400
+
+    models_dir = Path(__file__).resolve().parent / "qlib-zh" / "models"
+    if not (models_dir / model).exists():
+        return jsonify({'error': f'模型不存在: {model}'}), 400
+
+    task_id = f"qlib_{uuid.uuid4().hex[:12]}"
+
+    task_data = {
+        'task_id': task_id,
+        'model': model,
+        'status': 'pending',
+        'message': '',
+        'progress': 0.0,
+        'stocks': '',
+        'count': 0,
+        'scores': [],
+        'pred_date': '',
+        'error': '',
+        'created_at': datetime.now().isoformat(),
+        'completed_at': None,
+    }
+
+    with _qlib_lock:
+        qlib_tasks[task_id] = task_data
+
+    logger.info(f"Qlib 推理启动 task_id={task_id}, model={model}")
+
+    def _run():
+        try:
+            def _progress(event_data):
+                status = event_data.get('status', 'running')
+                message = event_data.get('message', '')
+                if status == 'completed':
+                    _update_qlib(task_id, 1.0, 'completed', message,
+                                 stocks=event_data.get('stocks', ''),
+                                 count=event_data.get('count', 0),
+                                 scores=event_data.get('scores', []),
+                                 pred_date=event_data.get('pred_date', ''))
+                else:
+                    progress = 0.5 if '推理' in message else 0.1
+                    _update_qlib(task_id, progress, 'running', message)
+
+            result = run_qlib_inference(model, top_n=20, progress_callback=_progress)
+
+            # 确保完成状态
+            with _qlib_lock:
+                qt = qlib_tasks.get(task_id)
+                if qt and qt['status'] not in ('completed', 'failed'):
+                    qt['status'] = 'completed'
+                    qt['progress'] = 1.0
+                    qt['stocks'] = result.get('stocks', '')
+                    qt['count'] = result.get('count', 0)
+                    qt['scores'] = result.get('scores', [])
+                    qt['pred_date'] = result.get('pred_date', '')
+                    qt['message'] = f"完成 — 已选出 {result.get('count', 0)} 只股票"
+
+        except Exception as e:
+            logger.error(f"Qlib 推理失败 task_id={task_id}: {e}")
+            _update_qlib(task_id, 0.0, 'failed', str(e), error=str(e))
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
+    return jsonify({'task_id': task_id, 'status': 'pending'})
+
+
+@app.route('/api/qlib/infer/<task_id>/stream', methods=['GET'])
+def qlib_infer_stream(task_id):
+    """SSE 流 — qlib 推理进度"""
+    def generate():
+        last_progress = -1
+        last_result_count = 0
+        while True:
+            with _qlib_lock:
+                qt = qlib_tasks.get(task_id)
+            if not qt:
+                yield f"data: {json.dumps({'status': 'not_found'})}\n\n"
+                break
+
+            data = {
+                'status': qt.get('status'),
+                'progress': qt.get('progress', 0),
+                'message': qt.get('message', ''),
+            }
+            current_progress = qt.get('progress', 0)
+
+            if qt.get('status') == 'completed':
+                data['stocks'] = qt.get('stocks', '')
+                data['count'] = qt.get('count', 0)
+                data['pred_date'] = qt.get('pred_date', '')
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if qt.get('status') == 'failed':
+                data['error'] = qt.get('error', '未知错误')
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if current_progress != last_progress:
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                last_progress = current_progress
+
+            time.sleep(1)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
+
+
+# ---- 指数成分股缓存 ----
+_index_stocks_cache = {}
+_index_stocks_cache_time = {}
+
+
+@app.route('/api/qlib/index-stocks', methods=['GET'])
+def qlib_index_stocks():
+    """返回指数成分股列表。从 ~/.qlib/qlib_data/cn_data/instruments/ 读取"""
+    index_name = request.args.get('index', 'csi300').strip().lower()
+    exclude_star = request.args.get('exclude_star', 'false').strip().lower() == 'true'
+
+    if index_name not in ('csi300', 'csi500', 'csi1000'):
+        return jsonify({'error': f'不支持的指数: {index_name}，支持 csi300/csi500/csi1000'}), 400
+
+    # 缓存 1 小时
+    cache_key = f"{index_name}_{exclude_star}"
+    now = time.time()
+    if cache_key in _index_stocks_cache and (now - _index_stocks_cache_time.get(cache_key, 0)) < 3600:
+        return jsonify(_index_stocks_cache[cache_key])
+
+    # 读取 qlib 数据中的成分股文件
+    inst_file = Path.home() / ".qlib" / "qlib_data" / "cn_data" / "instruments" / f"{index_name}.txt"
+    if not inst_file.exists():
+        return jsonify({'error': f'成分股文件不存在: {inst_file}'}), 404
+
+    # 解析：instrument start_date end_date
+    date_groups = {}
+    for line in inst_file.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split('\t')
+        if len(parts) < 3:
+            continue
+        inst, start, end = parts[0], parts[1], parts[2]
+        date_groups.setdefault(end, []).append(inst)
+
+    # 取最大 end_date 作为当前成分股
+    if not date_groups:
+        return jsonify({'stocks': '', 'count': 0})
+
+    max_date = max(date_groups.keys())
+    stocks = sorted(set(date_groups[max_date]))
+
+    # 转换 instrument 为纯代码: SZ000001 → 000001
+    codes = []
+    for inst in stocks:
+        code = inst[2:] if inst.startswith(('SZ', 'SH', 'BJ')) else inst
+        # 剔除科创板 (688xxx)
+        if exclude_star and code.startswith('688'):
+            continue
+        codes.append(code)
+
+    result = {
+        'stocks': '/'.join(codes),
+        'count': len(codes),
+        'index': index_name,
+        'date': max_date,
+        'exclude_star': exclude_star,
+    }
+
+    _index_stocks_cache[cache_key] = result
+    _index_stocks_cache_time[cache_key] = now
+
+    return jsonify(result)
 
 
 # ==========================================

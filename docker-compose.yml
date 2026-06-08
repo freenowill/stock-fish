@@ -7,6 +7,10 @@ services:
       - .env
     environment:
       - OASIS_DEBUG=${OASIS_DEBUG:-false}
+      # Docker-in-Docker: 宿主机路径传给内部 docker run -v 使用
+      - QLIB_HOST_PROJECT_ROOT=${PWD}/qlib-zh
+      - QLIB_HOST_DATA_DIR=${HOME}/.qlib
+      - QLIB_HOST_MLRUNS_DIR=${HOME}/github/qlib-zh/mlruns
     ports:
       - "8000:8000"
     depends_on:
@@ -15,6 +19,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/app                      # 项目代码挂载，改代码即时生效
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket（qlib 推理需要）
+      - ~/.qlib:/root/.qlib          # qlib 数据
+      - ~/github/qlib-zh/mlruns:/root/github/qlib-zh/mlruns  # MLflow 模型
     networks:
       - stockfish-net
 
