@@ -14,6 +14,13 @@ build/
 .eggs/
 *.whl
 
+# Qlib 推理缓存
+qlib-zh/DATA/
+qlib-zh/models/
+
+# 批量分析缓存
+batch_results/
+
 # 虚拟环境
 venv/
 .venv/
