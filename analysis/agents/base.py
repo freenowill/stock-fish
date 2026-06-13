@@ -216,12 +216,18 @@ class BaseAgent:
         """提取基本面数据 (复用自 PredictionNode._build_fund_data)"""
         fs = state.get('financial_summary', {}) or {}
         q = state.get('quote', {}) or {}
+        vp = state.get('valuation_percentile')
+        vp_str = f"{vp:.1f}%" if vp is not None else "N/A"
         lines = [
             f"PE: {q.get('pe', '?')}  PB: {q.get('pb', '?')}  市值: {q.get('market_cap', '?')}亿",
-            f"估值等级: {state.get('valuation_level', '?')} (PE分位: {state.get('valuation_percentile', '?')}%)",
-            f"历史PE均值: {state.get('historical_pe_avg', '?')}  建议买入价: {state.get('suggested_buy_price', '?')}",
-            f"EPS: {fs.get('eps', '?')}  ROE: {fs.get('roe', '?')}%",
+            f"估值等级: {state.get('valuation_level', '?')} (PE分位: {vp_str})",
+            f"历史PE均值: {state.get('historical_pe_avg') or 'N/A'}  "
+            f"建议买入价: {state.get('suggested_buy_price', '?')}",
+            f"EPS: {fs.get('eps', '?')}  ROE: {fs.get('roe', '?')}%  "
+            f"经营现金流: {fs.get('operating_cash_flow', 'N/A')}亿",
             f"营收: {fs.get('revenue', '?')}亿  净利: {fs.get('net_profit', '?')}亿",
+            f"毛利率: {fs.get('gross_margin', '?')}%  负债率: {fs.get('debt_ratio', '?')}%  "
+            f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield', 'N/A')}%",
             f"毛利率: {fs.get('gross_margin', '?')}%  负债率: {fs.get('debt_ratio', '?')}%",
             f"营收同比: {fs.get('revenue_yoy', '?')}%  净利同比: {fs.get('net_profit_yoy', '?')}%",
         ]
@@ -232,16 +238,18 @@ class BaseAgent:
         """提取估值专项数据 (比 fund_context 更聚焦于估值维度)"""
         q = state.get('quote', {}) or {}
         fs = state.get('financial_summary', {}) or {}
+        vp = state.get('valuation_percentile')
+        vp_str = f"{vp:.1f}%" if vp is not None else "N/A"
         lines = [
             f"当前股价: {q.get('price', '?')}元",
             f"PE: {q.get('pe', '?')}  PB: {q.get('pb', '?')}  PS: {q.get('ps', 'N/A')}",
             f"总市值: {q.get('market_cap', '?')}亿",
-            f"PE 历史分位: {state.get('valuation_percentile', '?')}% (近365日)",
-            f"历史 PE 均值: {state.get('historical_pe_avg', '?')}",
+            f"PE 历史分位: {vp_str} (近365日)",
+            f"历史 PE 均值: {state.get('historical_pe_avg') or 'N/A'}",
             f"估值等级: {state.get('valuation_level', '正常')}",
             f"建议买入价 (系统计算): {state.get('suggested_buy_price', '?')}",
             f"EPS: {fs.get('eps', '?')}  ROE: {fs.get('roe', '?')}%",
-            f"股息率: {q.get('dividend_yield', 'N/A')}%",
+            f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield', 'N/A')}%",
         ]
         return "\n".join(lines)
 
@@ -328,7 +336,9 @@ class BaseAgent:
         lines.append(f"现价: {q.get('price', 'N/A')}  PE: {q.get('pe', 'N/A')}  PB: {q.get('pb', 'N/A')}")
         fs = state.get('financial_summary', {}) or {}
         lines.append(f"ROE: {fs.get('roe', 'N/A')}%  EPS: {fs.get('eps', 'N/A')}")
-        lines.append(f"估值分位: {state.get('valuation_percentile', 'N/A')}%")
+        pe_pct = state.get('valuation_percentile')
+        pe_pct_str = f"{pe_pct:.1f}%" if pe_pct is not None else "N/A"
+        lines.append(f"估值分位: {pe_pct_str}")
         return "\n".join(lines)
 
     @staticmethod
@@ -380,13 +390,18 @@ class BaseAgent:
             return "（无Web搜索结果）"
 
         lines = ["## Web 搜索结果\n"]
+        dims = sr.get('dimensions', [])
+        if dims:
+            lines.append(f"搜索维度: {' | '.join(dims)}\n")
+
         for i, r in enumerate(results[:8], 1):
             title = r.get('title', '无标题')
             snippet = r.get('snippet', r.get('content', ''))
             url = r.get('url', '')
             source = r.get('source', '')
             date = r.get('date', '')
-            meta = f"来源: {source}" + (f" | 日期: {date}" if date else "")
+            dim = r.get('dimension', '')
+            meta = f"来源: {source}" + (f" | 日期: {date}" if date else "") + (f" | 维度: {dim}" if dim else "")
             lines.append(f"{i}. **{title}**\n   {snippet}\n   {meta} | {url}")
         if sr.get('summary'):
             lines.append(f"\n搜索摘要: {sr['summary']}")

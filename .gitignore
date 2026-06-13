@@ -77,3 +77,9 @@ pickle_cache/
 
 # wget
 wget-log*
+
+# Claude Code
+.claude/
+
+# Model archives
+*.tar.gz

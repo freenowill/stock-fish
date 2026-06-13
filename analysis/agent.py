@@ -86,28 +86,57 @@ class StockAnalysisAgent:
             state.macro_context = market.get('macro_context') or self._fetch_macro_context()
             state.industry_context = market.get('industry_context') or self._fetch_industry_context(symbol)
 
-            # Step 1b: Web 搜索（股票相关新闻/研报/舆情）
+            # Step 1b: Web 搜索（多维度情报 — 新闻/研报/风险/业绩）
             try:
                 svc = _get_search_service()
                 if svc:
                     stock_name = state.stock_name or symbol
-                    resp = svc.search_stock_news(
+                    intel = svc.search_comprehensive_intel(
                         stock_code=symbol,
                         stock_name=stock_name,
-                        max_results=8,
+                        max_searches=3,
                     )
+                    # 聚合多维度搜索结果
+                    all_results = []
+                    dim_contexts = []
+                    for dim_name, dim_resp in intel.items():
+                        if dim_resp and dim_resp.results:
+                            for r in dim_resp.results:
+                                all_results.append({
+                                    'title': r.title, 'url': r.url, 'snippet': r.snippet,
+                                    'source': r.source, 'date': getattr(r, 'date', ''),
+                                    'dimension': dim_name,
+                                })
+                        dim_contexts.append(
+                            f"[{dim_resp.desc if hasattr(dim_resp, 'desc') else dim_name}]\n"
+                            f"{dim_resp.to_context(max_results=5) if dim_resp else ''}"
+                        )
                     state.search_results = {
-                        'query': resp.query,
-                        'provider': resp.provider,
-                        'results': [{'title': r.title, 'url': r.url, 'snippet': r.snippet,
-                                     'source': r.source, 'date': getattr(r, 'date', '')}
-                                    for r in (resp.results or [])],
-                        'context': resp.to_context(max_results=8),
+                        'query': f'{stock_name}({symbol}) 综合情报',
+                        'provider': '|'.join(set(r.get('source', '') for r in all_results)) or 'comprehensive',
+                        'results': all_results,
+                        'context': '\n\n'.join(dim_contexts),
+                        'dimensions': list(intel.keys()),
                     }
-                    logger.info(f"[{symbol}] Web 搜索完成: {len(state.search_results.get('results', []))} 条结果 ({resp.provider})")
+                    logger.info(f"[{symbol}] 综合情报搜索完成: {len(all_results)} 条结果 ({len(intel)} 个维度)")
             except Exception as e:
-                logger.warning(f"[{symbol}] Web 搜索失败（非致命）: {e}")
-                state.search_results = {'results': [], 'context': '', 'error': str(e)}
+                logger.warning(f"[{symbol}] 综合情报搜索失败, 降级到基础搜索: {e}")
+                # 降级: 基础新闻搜索
+                try:
+                    if svc:
+                        resp = svc.search_stock_news(
+                            stock_code=symbol, stock_name=stock_name, max_results=8)
+                        state.search_results = {
+                            'query': resp.query, 'provider': resp.provider,
+                            'results': [{'title': r.title, 'url': r.url, 'snippet': r.snippet,
+                                         'source': r.source, 'date': getattr(r, 'date', '')}
+                                        for r in (resp.results or [])],
+                            'context': resp.to_context(max_results=8),
+                            'dimensions': ['latest_news'],
+                        }
+                except Exception as e2:
+                    logger.warning(f"[{symbol}] 基础搜索也失败: {e2}")
+                    state.search_results = {'results': [], 'context': '', 'error': str(e)}
 
             logger.info(f"[{symbol}] Step 1/4: 数据采集完成")
 
@@ -214,6 +243,8 @@ class StockAnalysisAgent:
 
             if not pe_values or not current_pe or current_pe <= 0:
                 state.valuation_level = '正常'
+                state.valuation_percentile = None
+                state.historical_pe_avg = None
                 state.suggested_buy_price = round(current_price * 0.95, 2) if current_price else 0
                 return
 
@@ -222,6 +253,8 @@ class StockAnalysisAgent:
             pe_array = pe_array[pe_array > 0]
             if len(pe_array) < 30:
                 state.valuation_level = '正常'
+                state.valuation_percentile = None
+                state.historical_pe_avg = None
                 state.suggested_buy_price = round(current_price * 0.95, 2) if current_price else 0
                 return
 
@@ -259,6 +292,8 @@ class StockAnalysisAgent:
         except Exception as e:
             logger.warning(f"[{symbol}] 估值计算失败: {e}")
             state.valuation_level = '正常'
+            state.valuation_percentile = None
+            state.historical_pe_avg = None
             state.suggested_buy_price = round((state.quote or {}).get('price', 100) * 0.95, 2)
 
     # ---- 信号生成（新版 ScoringEngine）----

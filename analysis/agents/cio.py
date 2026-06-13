@@ -155,10 +155,14 @@ class CIOAgent(BaseAgent):
         lines.append("## 关键原始数据 (供交叉验证)")
         ti = state.get('technical_indicators', {}) or {}
         fs = state.get('financial_summary', {}) or {}
+        pe_pct = state.get('valuation_percentile')
+        pe_pct_str = f"{pe_pct:.1f}%" if pe_pct is not None else "N/A"
         lines.append(f"PE: {q.get('pe', 'N/A')}  PB: {q.get('pb', 'N/A')}  市值: {q.get('market_cap', 'N/A')}亿")
-        lines.append(f"ROE: {fs.get('roe', 'N/A')}%  EPS: {fs.get('eps', 'N/A')}")
+        lines.append(f"ROE: {fs.get('roe', 'N/A')}%  EPS: {fs.get('eps', 'N/A')}  "
+                     f"经营现金流: {fs.get('operating_cash_flow', 'N/A')}亿  "
+                     f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield', 'N/A')}%")
         lines.append(f"RSI(14): {ti.get('rsi_14', 'N/A')}  MACD柱: {ti.get('macd_hist', 'N/A')}")
-        lines.append(f"PE 分位: {state.get('valuation_percentile', 'N/A')}%")
+        lines.append(f"PE 分位: {pe_pct_str}")
 
         return "\n".join(lines)
 

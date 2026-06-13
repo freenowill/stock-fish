@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     LONGBRIDGE_APP_KEY: Optional[str] = None
     LONGBRIDGE_APP_SECRET: Optional[str] = None
     LONGBRIDGE_ACCESS_TOKEN: Optional[str] = None
+    LONGBRIDGE_REGION: Optional[str] = None  # cn|hk - 提升大陆连接稳定性
     FINNHUB_API_KEY: Optional[str] = None
     ALPHAVANTAGE_API_KEY: Optional[str] = None
     TICKFLOW_API_KEY: Optional[str] = None

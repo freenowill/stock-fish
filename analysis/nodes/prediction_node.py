@@ -498,12 +498,15 @@ class PredictionNode:
     def _build_fund_data(self, state: dict) -> str:
         fs = state.get('financial_summary', {}) or {}
         q = state.get('quote', {}) or {}
+        pe_pct = state.get('valuation_percentile')
+        pe_pct_str = f"{pe_pct:.1f}%" if pe_pct is not None else "N/A"
         lines = [
             f"PE: {q.get('pe','?')}  PB: {q.get('pb','?')}  市值: {q.get('market_cap','?')}亿",
-            f"估值等级: {state.get('valuation_level','?')} (PE分位: {state.get('valuation_percentile','?')}%)",
-            f"历史PE均值: {state.get('historical_pe_avg','?')}  建议买入价: {state.get('suggested_buy_price','?')}",
-            f"EPS: {fs.get('eps','?')}  ROE: {fs.get('roe','?')}%",
+            f"估值等级: {state.get('valuation_level','?')} (PE分位: {pe_pct_str})",
+            f"EPS: {fs.get('eps','?')}  ROE: {fs.get('roe','?')}%  "
+            f"经营现金流: {fs.get('operating_cash_flow','N/A')}亿",
             f"营收: {fs.get('revenue','?')}亿  净利: {fs.get('net_profit','?')}亿",
+            f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield','N/A')}%",
             f"毛利率: {fs.get('gross_margin','?')}%  负债率: {fs.get('debt_ratio','?')}%",
         ]
         return "\n".join(lines)

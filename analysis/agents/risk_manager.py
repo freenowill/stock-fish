@@ -107,18 +107,15 @@ class RiskManager(BaseAgent):
         if not veto:
             points.append(f"风险评分={risk_score:.0f}/10，在可控范围内")
 
-        # 基于风险评分决定 outlook
-        if risk_score <= 3:
-            outlook = "看多"
-        elif risk_score <= 5:
-            outlook = "中性"
-        else:
-            outlook = "看空"
+        # 评分标准化: -10 (高风险) ~ +10 (低风险)，与其他 agent 统一量纲
+        normalized_score = round((5 - risk_score) * 2.0, 1)
+        outlook = "看多" if normalized_score >= 2 else "看空" if normalized_score <= -2 else "中性"
+        conf = "高" if abs(risk_score - 5) > 3 else "中"
 
         return EmployeeReport(employee_id=self.employee_id, role=self.role,
                               department=self.department, outlook=outlook,
-                              confidence="高" if abs(risk_score - 5) > 3 else "中",
-                              score=round(5 - risk_score, 1),
+                              confidence=conf,
+                              score=normalized_score,
                               key_points=points, risks=risks)
 
     def _build_report(self, result: dict) -> EmployeeReport:

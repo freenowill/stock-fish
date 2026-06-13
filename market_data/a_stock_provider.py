@@ -61,6 +61,10 @@ class FinancialSummary:
     roe: Optional[float] = None
     gross_margin: Optional[float] = None
     debt_ratio: Optional[float] = None
+    operating_cash_flow: Optional[float] = None  # 经营活动现金流净额
+    free_cash_flow: Optional[float] = None       # 自由现金流
+    dividend_per_share: Optional[float] = None    # 每股股息（TTM，税前）
+    dividend_yield: Optional[float] = None        # 股息率 %
     report_date: str = ""
 
     def to_dict(self) -> dict:

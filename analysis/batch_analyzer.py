@@ -223,10 +223,12 @@ class BatchAnalyzer:
             order = cio.get('order', {}) or {}
             suggested = pred.get('suggested_action', {}) or {}
 
+            val_pct_display = 'N/A' if d.get('valuation_percentile') is None else f"{d['valuation_percentile']:.1f}"
+
             parts = [
                 f"### {i+1}. {d.get('stock_name', '')}({r['symbol']})",
                 f"- 现价: {q.get('price', 'N/A')}元  PE: {q.get('pe', 'N/A')}  PB: {q.get('pb', 'N/A')}",
-                f"- 估值等级: {d.get('valuation_level', 'N/A')} (PE分位: {d.get('valuation_percentile', 'N/A')}%)",
+                f"- 估值等级: {d.get('valuation_level', 'N/A')} (PE分位: {val_pct_display}%)",
                 f"- ROE: {fs.get('roe', 'N/A')}%  EPS: {fs.get('eps', 'N/A')}",
                 f"- 综合评分: {score_bd.get('final', 'N/A')} / {score_bd.get('label', 'N/A')}",
             ]
@@ -452,12 +454,14 @@ class BatchAnalyzer:
             d = r['data']
             score_bd = d.get('score_breakdown', {}) or {}
             final_score = score_bd.get('final', 0) or 0
+            vp = d.get('valuation_percentile')
+            vp_str = f"{vp:.1f}" if vp is not None else "N/A"
             ranking.append({
                 'symbol': r['symbol'],
                 'rank': i + 1,
                 'name': d.get('stock_name', ''),
                 'score': final_score,
-                'reason': f"综合评分 {final_score:+.1f}，估值分位 {d.get('valuation_percentile', 'N/A')}%",
+                'reason': f"综合评分 {final_score:+.1f}，估值分位 {vp_str}%",
             })
 
         # 按评分排序
@@ -495,12 +499,15 @@ class BatchAnalyzer:
         best_d = best['data']
         runner = scored[1][1] if len(scored) > 1 else None
 
+        vp = best_d.get('valuation_percentile')
+        vp_str = f"{vp:.1f}" if vp is not None else "N/A"
+
         return {
             'best_stock': {
                 'symbol': best['symbol'],
                 'name': best_d.get('stock_name', ''),
                 'reasons': [
-                    f"估值分位: {best_d.get('valuation_percentile', 'N/A')}%",
+                    f"估值分位: {vp_str}%",
                     f"综合评分: {best_d.get('score_breakdown', {}).get('final', 'N/A')}",
                 ],
                 'suggested_action': '买入',

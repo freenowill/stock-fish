@@ -256,6 +256,14 @@ class AdvancedBackend(BaseStockBackend):
                     except (TypeError, ValueError):
                         return default
 
+                dividend_payload = earnings.get('dividend', {}) or {}
+                div_per_share = dividend_payload.get('ttm_cash_dividend_per_share')
+                # 计算股息率 = 每股股息 / 股价
+                div_yield = None
+                price = _safe_float(ctx.get('quote', {}).get('price') or fin_report.get('price'))
+                if div_per_share and price and price > 0:
+                    div_yield = round(div_per_share / price * 100, 2)
+
                 fin = FinancialSummary(
                     symbol=symbol, name=name,
                     revenue=_safe_float(fin_report.get('revenue')),
@@ -266,6 +274,9 @@ class AdvancedBackend(BaseStockBackend):
                     roe=_safe_float(growth_payload.get('roe')),
                     gross_margin=_safe_float(growth_payload.get('gross_margin')),
                     debt_ratio=_safe_float(growth_payload.get('debt_ratio')),
+                    operating_cash_flow=_safe_float(fin_report.get('operating_cash_flow')),
+                    dividend_per_share=_safe_float(div_per_share),
+                    dividend_yield=div_yield,
                     report_date=str(fin_report.get('report_date', '')),
                 )
                 if fin.eps or fin.roe or fin.revenue or fin.net_profit:

@@ -95,13 +95,18 @@ class MacroAgent(BaseAgent):
     def _rule_analyze(self, state: dict, macro: dict) -> EmployeeReport:
         score = 0.0
         points, risks = [], []
+        available_fields = 0
+        total_fields = 6  # pmi, northbound, regime, policy, cpi, shibor
 
         pmi = macro.get('pmi')
         northbound = macro.get('northbound_flow')
         regime = macro.get('market_regime', '')
         policy = macro.get('policy_tilt', '')
+        cpi = macro.get('cpi_yoy')
+        shibor = macro.get('shibor')
 
         if pmi is not None and pmi != 'N/A':
+            available_fields += 1
             pmi = float(pmi)
             if pmi > 50:
                 score += 2; points.append(f"PMI={pmi}，制造业处于扩张区间")
@@ -111,6 +116,7 @@ class MacroAgent(BaseAgent):
                 score -= 2; risks.append(f"PMI={pmi}，制造业收缩")
 
         if northbound is not None and northbound != 'N/A':
+            available_fields += 1
             nb = float(northbound)
             if nb > 20:
                 score += 1; points.append(f"北向资金大幅流入({nb}亿)，外资看多")
@@ -122,21 +128,46 @@ class MacroAgent(BaseAgent):
                 score -= 0.5
 
         if policy and '宽松' in str(policy):
+            available_fields += 1
             score += 2; points.append("货币政策偏宽松，利好权益资产")
         elif policy and '收紧' in str(policy):
+            available_fields += 1
             score -= 2; risks.append("货币政策收紧，不利于权益资产")
+        elif policy:
+            available_fields += 1
 
         if regime and ('上升' in str(regime) or 'bull' in str(regime).lower()):
+            available_fields += 1
             score += 1; points.append("大盘处于上升趋势")
         elif regime and ('下降' in str(regime) or 'bear' in str(regime).lower()):
+            available_fields += 1
             score -= 1; risks.append("大盘处于下降趋势")
+        elif regime:
+            available_fields += 1  # 震荡也算有数据
+
+        if cpi is not None and cpi != 'N/A':
+            available_fields += 1
+        if shibor is not None and shibor != 'N/A':
+            available_fields += 1
+
+        # 数据完整性标注
+        completeness = available_fields / total_fields if total_fields > 0 else 0
+        if completeness < 0.5:
+            risks.append(f"宏观数据完整度{completeness:.0%}（{available_fields}/{total_fields}），部分指标不可用，本报告置信度应下调")
+        elif completeness < 0.8:
+            points.append(f"宏观数据部分缺失（{available_fields}/{total_fields}），结论需谨慎对待")
+        else:
+            points.append(f"宏观数据较为完整（{available_fields}/{total_fields}）")
 
         if not points and not risks:
             points.append("宏观数据不完整，无法做出全面判断")
             risks.append("数据缺失风险：部分宏观指标不可用")
 
-        outlook = "看多" if score > 2 else "看空" if score < -2 else "中性"
+        outlook = "看多" if score >= 2 else "看空" if score <= -2 else "中性"
         conf = "高" if abs(score) > 4 else "中" if abs(score) > 2 else "低"
+        # 数据不完整时下调置信度
+        if completeness < 0.5:
+            conf = "低"
 
         return EmployeeReport(employee_id=self.employee_id, role=self.role,
                               department=self.department, outlook=outlook, confidence=conf,

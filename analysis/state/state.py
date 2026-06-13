@@ -49,9 +49,9 @@ class AnalysisState:
 
     # 估值分析
     valuation_level: str = ""
-    valuation_percentile: float = 0.0
+    valuation_percentile: Optional[float] = None  # None = 未计算/数据不可用
     suggested_buy_price: float = 0.0
-    historical_pe_avg: float = 0.0
+    historical_pe_avg: Optional[float] = None     # None = 未计算/数据不可用
 
     # 重要新闻/股吧摘要
     important_bullish_news: List[Dict] = field(default_factory=list)

@@ -24,14 +24,20 @@ class PolicyAgent(BaseAgent):
     def _format_policy_data(self, state: dict, industry: dict) -> str:
         q = state.get('quote', {}) or {}
         fs = state.get('financial_summary', {}) or {}
+
+        # 追加 build_industry_context() 的结构化行业数据（cross-reference）
+        ind_ctx = self.build_industry_context(state)
+
+        flow_direction = '流入' if industry.get('industry_fund_flow_bullish') else '流出'
         lines = [
             "# 行业与政策背景数据",
             "",
             "## 行业概况",
-            f"所属行业: {industry.get('industry_name', 'N/A')}",
-            f"行业 PE 分位: {industry.get('industry_pe_percentile', 'N/A')}%",
+            f"板块概况: {industry.get('industry_names', 'N/A')}",
+            f"板块涨跌比: {industry.get('industry_up_ratio', 'N/A')}% 上涨",
+            f"板块平均涨跌幅: {industry.get('industry_avg_change', 'N/A')}%",
+            f"板块资金流向: {industry.get('industry_fund_flow', 'N/A')}亿元 ({flow_direction})",
             f"行业 20 日动量: {industry.get('industry_momentum', 'N/A')}%",
-            f"行业景气阶段: {industry.get('industry_cycle', 'N/A')}",
             "",
             "## 政策环境",
             f"政策影响评估: {industry.get('policy_impact', 'N/A')}",
@@ -41,6 +47,9 @@ class PolicyAgent(BaseAgent):
             f"股票: {state.get('stock_name', '?')} ({state.get('symbol', '?')})",
             f"现价: {q.get('price', '?')}元  PE: {q.get('pe', '?')}",
             f"ROE: {fs.get('roe', '?')}%  营收同比: {fs.get('revenue_yoy', '?')}%",
+            "",
+            "## 原始行业数据 (供交叉验证)",
+            ind_ctx,
         ]
         return "\n".join(lines)
 
@@ -76,8 +85,8 @@ class PolicyAgent(BaseAgent):
 
         impact = industry.get('policy_impact', '')
         momentum = industry.get('industry_momentum')
-        pe_pct = industry.get('industry_pe_percentile')
-        cycle = industry.get('industry_cycle', '')
+        fund_flow = industry.get('industry_fund_flow')
+        up_ratio = industry.get('industry_up_ratio')
 
         if impact and '利好' in str(impact):
             score += 3; points.append(f"政策面利好: {impact}")
@@ -95,22 +104,24 @@ class PolicyAgent(BaseAgent):
             elif m < -10:
                 score -= 1; risks.append(f"行业动量{m}%，近期弱势")
 
-        if pe_pct is not None and pe_pct != 'N/A':
-            p = float(pe_pct)
-            if p < 30:
-                score += 1; points.append(f"行业PE处于{p}%分位，整体低估")
-            elif p > 70:
-                score -= 1; risks.append(f"行业PE处于{p}%分位，整体高估")
+        if fund_flow is not None and fund_flow != 'N/A':
+            f = float(fund_flow)
+            if f > 0:
+                points.append(f"板块资金净流入{f}亿元")
+            else:
+                risks.append(f"板块资金净流出{abs(f)}亿元")
 
-        if cycle and '成长' in str(cycle):
-            score += 1; points.append(f"行业处于{cycle}阶段")
-        elif cycle and '衰退' in str(cycle):
-            score -= 1; risks.append(f"行业处于{cycle}阶段")
+        if up_ratio is not None and up_ratio != 'N/A':
+            u = float(up_ratio)
+            if u > 60:
+                points.append(f"板块普涨 ({u:.0f}%上涨)")
+            elif u < 40:
+                risks.append(f"板块普跌 ({u:.0f}%上涨)")
 
         if not points and not risks:
             points.append("行业政策数据不完整，无法做深度判断")
 
-        outlook = "看多" if score > 2 else "看空" if score < -2 else "中性"
+        outlook = "看多" if score >= 2 else "看空" if score <= -2 else "中性"
         conf = "高" if abs(score) > 4 else "中" if abs(score) > 2 else "低"
 
         return EmployeeReport(employee_id=self.employee_id, role=self.role,

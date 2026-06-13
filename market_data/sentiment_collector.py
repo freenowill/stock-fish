@@ -120,10 +120,11 @@ class SentimentCollector:
         return self._hf_reachable
 
     def analyze_text(self, text: str) -> SentimentScore:
-        """分析单条文本情感"""
+        """分析单条文本情感 — 混合策略: 模型 + 关键词规则互补"""
         if not text or not text.strip():
             return SentimentScore(text=text, label='中性', confidence=1.0, score=0.0)
 
+        model_result = None
         # 尝试使用模型分析
         if self._initialize():
             try:
@@ -131,8 +132,8 @@ class SentimentCollector:
                 label = result.sentiment_label
                 confidence = result.confidence
                 score = self._label_to_score(label, confidence)
-                return SentimentScore(
-                    text=text[:200],  # 截断避免过长
+                model_result = SentimentScore(
+                    text=text[:200],
                     label=label,
                     confidence=confidence,
                     score=score,
@@ -140,8 +141,20 @@ class SentimentCollector:
             except Exception as e:
                 logger.debug(f"情感分析失败，使用规则降级: {e}")
 
-        # 规则降级: 基于关键词的简单情感判断（当模型不可用时）
-        return self._rule_based_sentiment(text)
+        # 规则降级: 基于关键词的简单情感判断（始终运行，与模型互补）
+        rule_result = self._rule_based_sentiment(text)
+
+        # 混合决策: 取信号更强的结果
+        # 模型对中文财经新闻标题常返回中性(score=0.0)，而规则能识别关键词
+        if model_result is None:
+            return rule_result
+        if abs(rule_result.score) > abs(model_result.score):
+            return rule_result
+        # 模型有非中性信号时优先用模型（置信度更高）
+        if abs(model_result.score) > 0.2:
+            return model_result
+        # 两者都弱信号时偏好规则的判断（对中文财经更敏感）
+        return rule_result
 
     def analyze_batch(self, texts: List[str]) -> SentimentSummary:
         """批量分析情感"""
@@ -194,9 +207,11 @@ class SentimentCollector:
 
         positive_words = ['涨', '涨停', '利好', '突破', '拉升', '买入', '推荐',
                           '增长', '盈利', '看好', '牛市', '反弹', '放量', '强势',
+                          '降准', '降息', '放水', '宽松', '复苏',
                           'up', 'bullish', 'buy', 'positive', 'growth', 'rally']
         negative_words = ['跌', '跌停', '利空', '暴跌', '减持', '卖出', '风险',
                           '亏损', '暴雷', '崩盘', '熊市', '破位', '缩量', '弱势',
+                          '加息', '收紧', '通缩', '违约', '退市', 'st', 'st\n*',
                           'down', 'bearish', 'sell', 'negative', 'crash', 'risk']
 
         pos_count = sum(1 for w in positive_words if w in text_lower)

@@ -88,7 +88,7 @@ class FundamentalAgent(BaseAgent):
         elif debt_ratio > 70:
             score -= 1; risks.append(f"负债率{debt_ratio:.1f}%，财务杠杆偏高")
 
-        outlook = "看多" if score > 2 else "看空" if score < -2 else "中性"
+        outlook = "看多" if score >= 2 else "看空" if score <= -2 else "中性"
         conf = "高" if abs(score) > 4 else "中" if abs(score) > 2 else "低"
 
         return EmployeeReport(employee_id=self.employee_id, role=self.role,

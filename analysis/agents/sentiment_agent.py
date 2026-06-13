@@ -85,7 +85,7 @@ class SentimentAgent(BaseAgent):
         if abs(news_avg - guba_avg) > 0.4:
             points.append("新闻与股吧情绪严重背离，市场信息不对称")
 
-        outlook = "看多" if score > 2 else "看空" if score < -2 else "中性"
+        outlook = "看多" if score >= 2 else "看空" if score <= -2 else "中性"
         conf = "高" if abs(score) > 4 else "中" if abs(score) > 2 else "低"
 
         return EmployeeReport(employee_id=self.employee_id, role=self.role,
