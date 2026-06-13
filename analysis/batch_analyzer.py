@@ -202,12 +202,28 @@ class BatchAnalyzer:
         total_assets: float,
         available_cash: float,
     ) -> Optional[Dict]:
-        """调用 LLM 拉通所有股票结果做总结"""
-        from analysis.agents.cio_prompts import get_master_info
+        """调用 CIO 大师做全量组合分析 — 使用大师的投资哲学 + PORTFOLIO_OUTPUT_SCHEMA"""
+        from analysis.agents.cio_prompts import get_master_portfolio_prompt, get_master_info, PORTFOLIO_OUTPUT_SCHEMA
         from openai import OpenAI
 
         master_info = get_master_info(master) if master else None
         master_name = master_info['name'] if master_info else '综合'
+
+        # 加载大师的组合版 prompt（投资哲学 + PORTFOLIO_OUTPUT_SCHEMA）
+        system_prompt = None
+        if master:
+            system_prompt = get_master_portfolio_prompt(master)
+        if not system_prompt:
+            # 无大师时：通用组合分析
+            system_prompt = f"""你是一位资深投资组合经理。你面前有 {len(results)} 只股票，每只已完成完整的 CIO 级决策。
+请基于各股票的 CIO 决策结果，做跨股票统筹分析。
+
+## 你的任务
+1. 横向对比所有股票，找出共性趋势和分歧点
+2. 按投资价值排序（综合考虑安全边际、成长性、风险、估值）
+3. 在 {total_assets:.0f} 元总资产、{available_cash:.0f} 元可用资金的约束下，给出整体配置建议
+
+{PORTFOLIO_OUTPUT_SCHEMA}"""
 
         # 构建每只股票的摘要
         stocks_text_parts = []
@@ -255,36 +271,17 @@ class BatchAnalyzer:
 
         stocks_text = "\n".join(stocks_text_parts)
 
-        system_prompt = f"""你是一位资深投资组合经理。你面前是{len(results)}只股票各自的分析报告（含{'CIO大师' if master else ''}决策），请你做跨股票对比分析。
-
-你的任务:
-1. 横向对比所有股票，找出共性趋势和分歧点
-2. 按投资价值排序（综合考虑安全边际、成长性、风险、当前估值分位）
-3. 在{total_assets:.0f}元总资产、{available_cash:.0f}元可用资金的约束下，给出整体配置建议
-
-输出严格JSON:
-{{
-  "summary_text": "跨股票对比总结 (150-200字)",
-  "ranking": [
-    {{"symbol": "600519", "rank": 1, "name": "股票名", "score": 8.5, "reason": "入选理由(30字)"}}
-  ],
-  "common_themes": ["共性1", "共性2"],
-  "key_divergences": ["分歧1"],
-  "overall_assessment": "在给定资金约束下的整体配置建议 (100字内)"
-}}
-
-注意: ranking 必须包含所有成功分析的股票。"""
-
         user_prompt = f"""## 资金约束
 - 总资产: {total_assets:.0f}元
 - 可用资金: {available_cash:.0f}元
 - 投资风格: {master_name}
 
-## 各股票分析摘要
+## 各股票分析摘要 (含各股CIO决策)
 
 {stocks_text}
 
-请给出跨股票对比分析和排序。"""
+请作为{master_name}，基于你的投资哲学，对以上所有股票做跨股票统筹决策。
+输出严格遵循 JSON schema。"""
 
         try:
             result = self._call_llm(system_prompt, user_prompt, temperature=0.3)

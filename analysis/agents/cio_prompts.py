@@ -264,12 +264,76 @@ MASTER_DEFINITIONS: Dict[str, Dict] = {
 }
 
 
+# ── 投资组合输出 JSON Schema (大师统筹多只股票时使用) ──
+
+PORTFOLIO_OUTPUT_SCHEMA = """输出 JSON 格式 (严格遵守):
+{
+  "portfolio_summary": "整体组合判断：当前市场环境适合什么仓位水平？各标的是否协同或对冲？(150字内)",
+  "rationale": "详细决策逻辑：如何权衡各股票的优劣？资金分配背后的核心原则？(200-300字)",
+
+  "ranking": [
+    {
+      "rank": 1,
+      "symbol": "600519",
+      "name": "股票名",
+      "conviction": "高/中/低",
+      "reason": "该股在所有候选中的定位及入选核心理由(40字)",
+      "suggested_action": "买入/加仓/持有/减仓/卖出/观望",
+      "target_pct": 20,
+      "entry_note": "入场条件提示(30字)"
+    }
+  ],
+
+  "allocation": {
+    "total_invested_pct": 70,
+    "cash_reserve_pct": 30,
+    "rebalance_note": "调仓说明：当前持有与目标仓位的差距及操作计划(80字)"
+  },
+
+  "common_themes": ["所有股票的共性趋势1", "共性趋势2"],
+  "key_divergences": ["股票间的关键分歧1"],
+
+  "risk_watch": [
+    {"risk": "组合层面的风险1", "mitigation": "应对措施"}
+  ],
+
+  "decision_quality": {
+    "confidence": "高/中/低",
+    "key_uncertainties": ["不确定性1", "不确定性2"],
+    "next_review": "下次回顾时间(如: 1个月后)"
+  }
+}
+
+注意:
+- ranking 必须包含所有候选股票，按投资优先级排序
+- target_pct 是该股的目标仓位（占总资产百分比），所有股票 target_pct + cash_reserve_pct = 100%
+- conviction 反映大师对该股判断的确信程度
+- 输出必须是合法的 JSON，不要额外文字"""
+
+
 # ── 辅助函数 ──
 
 def get_master_prompt(master_key: str) -> Optional[str]:
-    """根据大师 key 返回 system_prompt；未匹配返回 None"""
+    """根据大师 key 返回单股决策 system_prompt；未匹配返回 None"""
     m = MASTER_DEFINITIONS.get(master_key.lower())
     return m['system_prompt'] if m else None
+
+
+def get_master_portfolio_prompt(master_key: str) -> Optional[str]:
+    """
+    返回投资组合版大师 prompt — 注入大师哲学，但使用 PORTFOLIO_OUTPUT_SCHEMA。
+    用于批量分析完成后的多股票统筹决策。
+    """
+    m = MASTER_DEFINITIONS.get(master_key.lower())
+    if not m:
+        return None
+
+    # 保留大师的投资哲学和决策原则，去掉单股 CIO_OUTPUT_SCHEMA
+    base = m['system_prompt']
+    # 原 prompt 以 CIO_OUTPUT_SCHEMA 结尾，替换为 PORTFOLIO_OUTPUT_SCHEMA
+    if CIO_OUTPUT_SCHEMA in base:
+        base = base.replace(CIO_OUTPUT_SCHEMA, PORTFOLIO_OUTPUT_SCHEMA)
+    return base
 
 
 def get_master_info(master_key: str) -> Optional[Dict]:
