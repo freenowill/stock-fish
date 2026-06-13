@@ -13,6 +13,9 @@ bash run.sh              # Docker: pulls zhuhai123/stockfish-* images, starts St
 bash run.sh --local      # Local Python (no Docker, port 8000)
 bash run.sh --no-mirofish # Docker: StockFish only, skip MiroFish
 
+# Install dependencies
+pip install -r requirements.txt
+
 # API: multi-factor analysis (~2 min)
 curl -X POST http://localhost:8000/api/analyze \
   -H 'Content-Type: application/json' \
@@ -33,6 +36,16 @@ curl -X POST http://localhost:8000/api/predict \
   -H 'Content-Type: application/json' \
   -d '{"symbol":"600519","scenario":"base","master":"graham"}'
 
+# API: batch analysis (async, SSE)
+curl -X POST http://localhost:8000/api/batch/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"symbols":["600519","000858","300750"],"cost_prices":{"600519":150}}'
+
+# API: Qlib model inference
+curl -X POST http://localhost:8000/api/qlib/infer \
+  -H 'Content-Type: application/json' \
+  -d '{"symbol":"600519","model":"alpha360"}'
+
 # SSE progress stream
 curl -N http://localhost:8000/api/predict/<task_id>/stream
 
@@ -48,11 +61,11 @@ curl http://localhost:8000/api/masters
 # List all predictions
 curl http://localhost:8000/api/predictions
 
+# List Qlib models
+curl http://localhost:8000/api/qlib/models
+
 # System config
 curl http://localhost:8000/api/config
-
-# Install dependencies
-pip install -r requirements.txt
 ```
 
 No test framework exists (`tests/__init__.py` is empty). No linting/formatting config.
@@ -62,13 +75,13 @@ No test framework exists (`tests/__init__.py` is empty). No linting/formatting c
 **5-step analysis pipeline** (`POST /api/analyze`):
 
 1. **Data Collection** (`analysis/agent.py:StockAnalysisAgent.analyze`) — fetches quote, technical indicators, financials, news, guba posts via `AStockProvider` (auto-selects backend). Supports A-shares, BSE stocks (`.BJ` suffix auto-converted for Tushare), HK/US stocks.
-2. **Sentiment** (`market_data/sentiment_collector.py`) — HuggingFace multilingual model → 5-class sentiment, with keyword-rule fallback. Reuses BettaFish's model if available.
+2. **Sentiment** (`market_data/sentiment_collector.py`) — HuggingFace multilingual model → 5-class sentiment, with keyword-rule fallback.
 3. **Valuation + Signal Generation** (`analysis/scoring.py:ScoringEngine`) — PE percentile → valuation level (很低~很高), suggested buy price (PE mean-reversion + Bollinger lower support). -5~+5 composite score: technical (RSI/MACD/MA/Bollinger/volume/momentum) + fundamental (PE/ROE/growth/dividend) + sentiment (news/guba). Adaptive weights based on market regime.
-4. **LLM Prediction** (`analysis/nodes/prediction_node.py`) — Two modes:
+4. **LLM Prediction** (`analysis/nodes/prediction_node.py`) — Three modes:
    - **Multi-agent (master) mode** (when `master` param set): 8 employee agents → CIO master decision (see Multi-Agent System below)
-   - **Legacy multi-agent mode** (no master): 3 parallel agents (tech/fundamental/sentiment) → Moderator synthesis
-   - **Rule mode** (no LLM API key): threshold-based scoring with price range
-5. **Frontend rendering** — `static/index.html`: dark-theme single-page SPA (~950 lines, no build step).
+   - **Legacy multi-agent mode** (no master, `LLM_API_KEY` set): 3 parallel agents (tech/fundamental/sentiment) → Moderator synthesis
+   - **Rule mode** (no `LLM_API_KEY`): threshold-based scoring with price range
+5. **Frontend rendering** — `static/index.html`: dark-theme single-page SPA (~1665 lines, no build step).
 
 ### Multi-Agent Investment Decision System (`analysis/agents/`)
 
@@ -107,12 +120,32 @@ Each master has a distinct `system_prompt` encoding 6 investment principles + pe
 
 **API**: `GET /api/masters` returns available masters for the frontend dropdown.
 
-**Simulation bridge** (`POST /api/predict`, background thread):
+### Batch Analysis (`POST /api/batch/analyze`)
+
+Serial multi-stock analysis with SSE progress streaming. Accepts `symbols` list + optional `cost_prices` dict. Each stock runs through the full 5-step pipeline. Results cached in `batch_results/` directory. Frontend supports comma/newline-separated symbol input (max 20).
+
+### Qlib Model Inference (`POST /api/qlib/infer`, `qlib-zh/`)
+
+Microsoft Qlib integration for deep learning price prediction. Docker-based: `app.py` shells out to `docker run` with the Qlib image, mounting `qlib-zh/DATA/` for data and `qlib-zh/models/` for pre-trained models. `infer_runner.py` is loaded dynamically via importlib inside the container.
+
+Key files:
+- `qlib-zh/infer_runner.py` — Qlib inference script (Alpha360/LSTM/GRU/Transformer models)
+- `qlib-zh/DATA/` — Qlib-format market data (gitignored)
+- `qlib-zh/models/` — Pre-trained model checkpoints (gitignored)
+- `GET /api/qlib/models` — Lists available pre-trained models
+- `GET /api/qlib/index-stocks` — Lists index constituent stocks for batch Qlib inference
+
+### Simulation Bridge (`POST /api/predict`, background thread)
+
 - `analysis/agent.py` → `simulation_bridge/seed_builder.py` → `simulation_bridge/orchestrator.py` → MiroFish HTTP API
 - Seed document embeds **7 agent roles** (Buffett/Munger/Valuation/Sentiment/Fundamental/Technical/RiskManager) + explicit entity-relationship statements for Zep GraphRAG extraction
 - Pipeline: ontology generation → graph build → simulation create → agent profile prep → OASIS run → report generation
 - Each stage has polling with configurable timeouts; falls back to standalone mode on any MiroFish failure
 - SSE progress stream with real-time log messages (EventSource in frontend, polling fallback)
+
+### Prediction Report (`prediction_report/report_generator.py`)
+
+`PredictionReportGenerator` merges analysis results + simulation output into dark-theme HTML reports. Saved to `reports/` directory.
 
 ## Data Backends (`market_data/a_stock_provider.py`)
 
@@ -134,9 +167,11 @@ Plugin architecture: each source extends `BaseNewsSource` or `BaseGubaSource`, r
 
 ## Frontend (`static/index.html`)
 
-Single-file dark-theme SPA (~950 lines, no build step). Features:
+Single-file dark-theme SPA (~1665 lines, no build step). Features:
 - Stock symbol + cost price input, optional "智能推演" checkbox (toggles between `/api/analyze` and `/api/predict`)
 - **Master selection dropdown** — choose from 7 investment masters (格雷厄姆/巴菲特/费雪/林奇/邓普顿/索罗斯/达利欧), populates via `GET /api/masters`. When selected, activates the multi-agent CIO pipeline; when unselected, falls back to legacy 3-agent debate
+- **Batch mode toggle** — multi-symbol input (comma/newline-separated, max 20), per-stock progress bars
+- **Qlib inference panel** — model selection dropdown, inference with SSE progress
 - SSE real-time log streaming during simulation, polling fallback on SSE error
 - Analysis view: signal header, 6-card grid (price/dividend/cost/buy price/valuation/sentiment), multi-cycle LLM predictions, suggested action with stop-loss/take-profit, technical + fundamental detail grids, score breakdown, news/guba summaries, CIO master decision card (avatar + decision_summary + 3-scenario analysis + order), multi-agent debate panel (hidden when master mode active)
 - Report view: download HTML button, print/PDF export button
@@ -152,8 +187,9 @@ Adaptive weights: trending → technical +5%; ranging → fundamental +5%. Missi
 
 ## LLM Prediction (`analysis/nodes/prediction_node.py`)
 
-Two modes controlled by `LLM_API_KEY`:
-- **Multi-agent mode** (key set): 3 agents debate in parallel via `ThreadPoolExecutor(max_workers=3)`, then Moderator synthesizes → structured JSON with `short_term`/`mid_term`/`long_term` predictions (direction + change_pct + confidence + reason) and `suggested_action` (action + reason + stop_loss + take_profit). Uses OpenAI-compatible API (`response_format: json_object`). Moderator failure → majority-vote fallback.
+Three modes controlled by `LLM_API_KEY` and `master` param:
+- **Master mode** (`master` param set): 8 employee agents → Overseer review → CIO master decision with structured `CIODecision` output
+- **Multi-agent mode** (`LLM_API_KEY` set, no master): 3 agents debate in parallel via `ThreadPoolExecutor(max_workers=3)`, then Moderator synthesizes → structured JSON with `short_term`/`mid_term`/`long_term` predictions (direction + change_pct + confidence + reason) and `suggested_action` (action + reason + stop_loss + take_profit). Uses OpenAI-compatible API (`response_format: json_object`). Moderator failure → majority-vote fallback.
 - **Rule mode** (no key): score-threshold based, outputs signal label + price range ±5-10%.
 
 Dataclasses: `AgentView` (per-agent), `PredictionResult` (final output, all fields).
@@ -171,9 +207,31 @@ The seed builder embeds 7 distinct agent personas for MiroFish OASIS simulation:
 
 Plus explicit `[Entity]` relationship statements at the end of the seed document for Zep GraphRAG extraction.
 
+## MiroFish Backend (`MiroFish/backend/`)
+
+Flask app (`:5001`) that StockFish's simulation bridge calls via HTTP. Key structure:
+
+```
+MiroFish/backend/
+├── run.py                          # Entry point, port 5001
+├── app/
+│   ├── __init__.py                 # create_app() factory, registers blueprints
+│   ├── config.py                   # Plain Config class (python-dotenv)
+│   ├── api/                        # Blueprint endpoints
+│   │   ├── graph.py               # Knowledge graph: project mgmt, ontology, graph building
+│   │   ├── simulation.py          # OASIS simulation lifecycle management
+│   │   └── report.py              # Report generation (async), status, download
+│   ├── models/                     # TaskManager, Project (status lifecycle)
+│   ├── services/                   # 14+ services: ontology, graph, simulation, report_agent, zep_*
+│   └── utils/                      # LLM client, file parser, locale, retry, logger
+└── scripts/                        # OASIS simulation scripts (run_twitter, run_reddit, run_parallel)
+```
+
+Uses `uv` package manager with `pyproject.toml`. Dependencies: flask, flask-cors, openai, zep-cloud, camel-oasis, camel-ai, PyMuPDF, pydantic.
+
 ## Configuration (`config.py`)
 
-pydantic-settings `Settings` loaded from `.env`. Adds BettaFish/MiroFish to Python path for cross-project imports. Copy `.env.example` to `.env` to get started.
+pydantic-settings `Settings` loaded from `.env`. Adds MiroFish to Python path for cross-project imports. Copy `.env.example` to `.env` to get started.
 
 Key env vars:
 - `LLM_API_KEY/BASE_URL/MODEL_NAME` — LLM config (OpenAI-compatible)
@@ -188,12 +246,18 @@ Key env vars:
 - Multi-source fetcher priorities: `EFINANCE_PRIORITY`, `YFINANCE_PRIORITY`, `PYTDX_PRIORITY`, `AKSHARE_PRIORITY`, `BAOSTOCK_PRIORITY`
 - Circuit breaker: `CIRCUIT_BREAKER_COOLDOWN` (default 300s), rate limits for each fetcher
 - `OASIS_DEFAULT_MAX_ROUNDS` (20), `OASIS_SIMULATION_AGENT_COUNT` (15)
+- `ZEP_API_KEY` — Zep Cloud for MiroFish graph memory (optional)
+- `QLIB_ENABLED` — Qlib model inference (default: false)
+- `BATCH_MAX_CONCURRENT` — Batch analysis concurrency limit (default: 5)
 
 ## Key Conventions
 
 - A-stock color scheme: **red = up (gain)**, green = down (loss) — opposite of Western markets
 - `Quote`, `FinancialSummary`, `TechnicalIndicators`, `NewsItem`, `GubaPost` — dataclasses with `to_dict()`, used across all backends
 - `AnalysisState` (`analysis/state/state.py`) — dataclass carrying full analysis state through all pipeline steps
+- `ScoreResult` (`analysis/scoring.py`) — composite score with breakdown, label, weights, and confidence
+- `PredictionResult`, `AgentView` (`analysis/nodes/prediction_node.py`) — LLM prediction output dataclasses
+- `EmployeeReport`, `CIODecision` (`analysis/agents/base.py`) — Multi-agent decision system dataclasses
 - `loguru` for logging consistently across all modules
 - `config:settings` singleton — imported at module level in `app.py`, lazy-imported elsewhere
 - `sxsc_tushare/` — vendored Tushare Pro SDK (山西证券 proxy), imported directly
@@ -201,20 +265,49 @@ Key env vars:
 - `.env` must exist in project root (checked by `run.sh`); copy from `.env.example`
 - `STOCK_BACKEND=mock` is default for zero-config dev; `advanced` for production
 - All timeouts in the orchestrator are configurable (graph: 300s, simulation: 900s, report: 600s)
+- Flask app global state in thread-safe dicts with locks: `predictions`, `batch_tasks`, `qlib_tasks`
 
 ## Directory Notes
 
-- `analysis/agents/` — Multi-agent investment committee: `base.py` (Agent/EmployeeReport/CIODecision), 8 employee agents, `cio.py` (CIOAgent), `cio_prompts.py` (7 master definitions + output schema), `overseer.py`
+- `analysis/agents/` — Multi-agent investment committee: `base.py` (BaseAgent/EmployeeReport/CIODecision), 8 employee agents, `cio.py` (CIOAgent), `cio_prompts.py` (7 master definitions + output schema), `overseer.py`
 - `analysis/nodes/prediction_node.py` — LLM prediction: legacy 3-agent debate + master-mode CIO pipeline
 - `analysis/tools/` — Agent utility tools
 - `market_data/data_fetchers/` — 14 fetchers (efinance/akshare/tushare/pytdx/baostock/yfinance/finnhub/alphavantage/longbridge/fundamental/realtime)
-- `market_data/search/` — 7-engine search service
-- `market_data/social_sentiment/` — Reddit/X/Polymarket sentiment
+- `market_data/search/search_service.py` — 7-engine search service (Tavily/Bocha/Brave/SerpAPI/Anspire/MiniMax/SearXNG)
+- `market_data/social_sentiment/` — Reddit/X/Polymarket sentiment (US stocks only)
 - `market_data/stock_index/` — Index loading, remote service, stock-to-index mapping
 - `market_data/patches/` — Runtime monkey-patches (e.g., Eastmoney API fixes)
 - `market_data/compat.py` — Backward-compatibility shims for data fetchers
-- `backend/app/` — alternate Flask entry point (WSGI-compatible), `backend/uploads/` — file uploads
-- `frontend/` — new Vite-based frontend (in development, currently only `.vite` scaffolding)
-- `document/` — documentation screenshots (1-4.png, label.png)
-- `reports/` — generated prediction report HTML output
-- `simulation_output/` — seed documents and scenario JSONs saved per analysis run
+- `simulation_bridge/` — MiroFish bridge: `orchestrator.py` (pipeline + HTTP client), `seed_builder.py` (7 agent roles seed doc)
+- `prediction_report/report_generator.py` — Merges analysis + simulation into HTML reports
+- `qlib-zh/` — Qlib inference: `infer_runner.py` (dynamic importlib load), `DATA/`, `models/`, `scripts/`
+- `sxsc_tushare/` — Vendored Tushare Pro SDK (dataapi.py, upass.py)
+- `MiroFish/backend/` — MiroFish Flask app (see MiroFish Backend section above)
+- `static/index.html` — Single-file SPA frontend (~1665 lines)
+- `backend/` — Empty reserved directory (no active code)
+- `document/` — Documentation screenshots (1-4.png, label.png)
+- `reports/` — Generated prediction report HTML output (gitignored)
+- `simulation_output/` — Seed documents and scenario JSONs saved per analysis run (gitignored)
+- `batch_results/` — Batch analysis result cache (gitignored)
+- `TODO.md` — Full project roadmap with P0-P3 priorities, tech debt, and work estimates
+
+## Slash Commands
+
+### `/release-model`
+Compress a Qlib model directory into `csi300-alpha158.tar.gz` and push it to `github.com/freenowill/stock-fish/releases`.
+
+**Usage:** `/release-model <模型目录路径>`
+
+**Example:**
+```
+/release-model qlib-zh/models/2026-06-07-csi300-alpha158
+```
+
+**Steps:**
+1. Check existing release — if `csi300-alpha158.tar.gz` asset exists, skip entirely
+2. Delete only releases **missing** the tar.gz asset (empty drafts)
+3. `tar -czf /tmp/csi300-alpha158-model.tar.gz` the model directory
+4. `gh release create csi300-alpha158` with the tar.gz to `freenowill/stock-fish`
+5. Verify the uploaded asset
+
+**Note:** Always uses `TMPDIR=/Users/apple/github/stock_predict/StockFish` for `gh` commands to avoid `/private/tmp` disk-full issues.

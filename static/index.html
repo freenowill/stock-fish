@@ -388,6 +388,61 @@
 const API = '';
 let isBatchMode = false;
 
+// 下载当前页面分析结果为 HTML 报告
+function downloadAnalysisReport(symbol, cardId) {
+  const resultDiv = document.getElementById('result');
+  const reportLinkDiv = document.getElementById('reportLink');
+
+  // 批量模式：只下载指定卡片的内容
+  let contentHTML = '';
+  let titleSymbol = symbol || 'StockFish';
+  if (cardId) {
+    const card = document.getElementById(cardId);
+    if (!card || !card.innerHTML.trim()) {
+      alert('暂无分析结果');
+      return;
+    }
+    contentHTML = card.outerHTML;
+  } else {
+    // 单股模式：下载全部结果 + 报告链接
+    if (reportLinkDiv && reportLinkDiv.style.display !== 'none') {
+      contentHTML += `<div style="margin-bottom:16px;">${reportLinkDiv.innerHTML}</div>`;
+    }
+    if (!resultDiv || !resultDiv.innerHTML.trim()) {
+      alert('暂无分析结果，请先执行分析');
+      return;
+    }
+    contentHTML += resultDiv.innerHTML;
+  }
+
+  const styles = document.querySelector('style').outerHTML;
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${titleSymbol} 分析报告 - ${new Date().toLocaleDateString('zh-CN')}</title>
+  ${styles}
+</head>
+<body style="background:#0f1923;color:#e0e6ed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:20px;max-width:1200px;margin:0 auto;">
+  ${contentHTML}
+  <div style="text-align:center;color:#6b8db5;font-size:12px;margin-top:40px;padding-top:16px;border-top:1px solid #1e3a5f;">
+    StockFish AI Analysis · ${new Date().toLocaleString('zh-CN')}<br/>
+    <span style="font-size:11px;">本报告仅供参考，不构成投资建议</span>
+  </div>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${titleSymbol}_analysis_${new Date().toISOString().slice(0,10)}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function toggleBatchMode() {
   isBatchMode = !isBatchMode;
   const toggleBar = document.getElementById('batchModeToggle');
@@ -941,6 +996,7 @@ async function pollBatchResult(taskId, symbols, startTime) {
 }
 
 function renderBatchStockResult(index, total, symbol, data) {
+
   const q = data.quote || {};
   const price = q.price;
   const signalKey = (data.signals || {}).overall || 'neutral';
@@ -1039,7 +1095,12 @@ function renderBatchStockResult(index, total, symbol, data) {
   <div class="batch-stock-result" id="batch-${symbol}">
     <div class="batch-stock-header">
       <span class="batch-stock-symbol">${data.stock_name || symbol} (${symbol})</span>
-      <span class="batch-stock-badge">${index} / ${total}</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button onclick="downloadAnalysisReport('${symbol}', 'batch-${symbol}')"
+          style="padding:5px 14px;background:linear-gradient(135deg,#ff4757,#ff6348);color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:500;">
+          📥 下载报告</button>
+        <span class="batch-stock-badge">${index} / ${total}</span>
+      </div>
     </div>
     <div class="batch-stock-body">${innerHtml}</div>
   </div>`;
@@ -1647,6 +1708,15 @@ function renderAnalysis(data) {
     html += '<div class="section-title">AI 分析详情</div>';
     html += `<div style="padding:16px;background:#152436;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap;">${data.llm_analysis}</div>`;
   }
+
+  // Download report button
+  html += `<div style="margin-top:20px;text-align:center;">
+    <button onclick="downloadAnalysisReport('${data.symbol}')"
+      style="padding:12px 28px;background:linear-gradient(135deg,#ff4757,#ff6348);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">
+      📥 分析报告下载
+    </button>
+    <div style="font-size:11px;color:#6b8db5;margin-top:6px;">下载完整分析报告 (HTML)</div>
+  </div>`;
 
   document.getElementById('result').innerHTML = html;
 

@@ -688,6 +688,32 @@ def qlib_index_stocks():
 
 
 # ==========================================
+#  API: 分析报告下载
+# ==========================================
+
+@app.route('/api/report/download', methods=['POST'])
+def download_analysis_report():
+    """接收分析结果 JSON，生成 HTML 报告并返回下载"""
+    data = request.get_json(silent=True) or {}
+    if not data or not data.get('symbol'):
+        return jsonify({'error': '请提供分析结果数据'}), 400
+
+    symbol = data.get('symbol', 'unknown')
+    try:
+        report = report_gen.generate(data, simulation_result=None)
+        html = report_gen.to_html(report)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        response = Response(html, mimetype='text/html')
+        response.headers['Content-Disposition'] = (
+            f'attachment; filename="{symbol}_analysis_{timestamp}.html"'
+        )
+        return response
+    except Exception as e:
+        logger.error(f"生成分析报告失败 [{symbol}]: {e}")
+        return jsonify({'error': f'报告生成失败: {str(e)}'}), 500
+
+
+# ==========================================
 #  API: 系统
 # ==========================================
 
