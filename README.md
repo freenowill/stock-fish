@@ -161,23 +161,24 @@ docker compose pull                 # 更新到最新镜像
 
 ### CSI300 Alpha158（沪深 300）
 
-预训练 LightGBM 模型，walk-forward 训练（8 folds，覆盖 2016~2023），适用于 `--predict-only` 增量推理。
+**发布网页：** [github.com/freenowill/stock-fish/releases](https://github.com/freenowill/stock-fish/releases)
 
-**命令行下载：**
+下载 `csi300-alpha158.tar.gz`，解压到 `qlib-zh/DATA/analysis_outputs/` 目录，即可用于「启用 Qlib 推理」或「近 6 年数据微调」。
+
 ```bash
 wget https://github.com/freenowill/stock-fish/releases/latest/download/csi300-alpha158.tar.gz
-tar -xzf csi300-alpha158.tar.gz -C qlib-zh/models/
+tar -xzf csi300-alpha158.tar.gz -C qlib-zh/DATA/analysis_outputs/
 ```
-
-**发布网页：** [github.com/freenowill/stock-fish/releases](https://github.com/freenowill/stock-fish/releases)
 
 解压后目录结构：
 ```
-qlib-zh/models/2026-05-27-csi300-alpha158/model_predict/walk_forward/
-├── 2016-05-26/          # fold 1 checkpoint
-├── ...
-├── 2023-05-26/          # fold 8 checkpoint
-└── segments/            # fold 索引（推理时用于定位最新 fold）
+qlib-zh/DATA/analysis_outputs/2026-06-12-csi300-alpha158/
+└── model_predict/
+    ├── scores.csv          # 模型预测分数
+    ├── all_scores.csv      # 全周期预测序列
+    ├── metrics.csv         # 回测指标摘要
+    ├── report_of_backtest.txt  # 回测详细报告
+    └── walk_forward/       # 3 折 walk-forward checkpoint（微调 warm-start 用）
 ```
 
 ---

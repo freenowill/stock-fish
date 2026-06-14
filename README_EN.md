@@ -163,23 +163,24 @@ docker compose pull                 # Update to latest images
 
 ### CSI300 Alpha158
 
-Pre-trained LightGBM model, walk-forward trained (8 folds, covering 2016~2023), designed for `--predict-only` incremental inference.
+**Release page:** [github.com/freenowill/stock-fish/releases](https://github.com/freenowill/stock-fish/releases)
 
-**Download:**
+Download `csi300-alpha158.tar.gz` and extract to `qlib-zh/DATA/analysis_outputs/` for use with Qlib inference or 6-year data fine-tuning.
+
 ```bash
 wget https://github.com/freenowill/stock-fish/releases/latest/download/csi300-alpha158.tar.gz
-tar -xzf csi300-alpha158.tar.gz -C qlib-zh/models/
+tar -xzf csi300-alpha158.tar.gz -C qlib-zh/DATA/analysis_outputs/
 ```
-
-**Release page:** [github.com/freenowill/stock-fish/releases](https://github.com/freenowill/stock-fish/releases)
 
 Directory structure after extraction:
 ```
-qlib-zh/models/2026-05-27-csi300-alpha158/model_predict/walk_forward/
-├── 2016-05-26/          # fold 1 checkpoint
-├── ...
-├── 2023-05-26/          # fold 8 checkpoint
-└── segments/            # fold index (used by inference to locate the latest fold)
+qlib-zh/DATA/analysis_outputs/2026-06-12-csi300-alpha158/
+└── model_predict/
+    ├── scores.csv          # Model prediction scores
+    ├── all_scores.csv      # Full-period prediction series
+    ├── metrics.csv         # Backtest metrics summary
+    ├── report_of_backtest.txt  # Detailed backtest report
+    └── walk_forward/       # 3-fold walk-forward checkpoints (warm-start for fine-tuning)
 ```
 
 ---
