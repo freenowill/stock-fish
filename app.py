@@ -34,11 +34,10 @@ from prediction_report.report_generator import PredictionReportGenerator
 _qlib_zh_dir = Path(__file__).resolve().parent / "qlib-zh"
 
 def _resolve_qlib_dir() -> Path:
-    """返回 qlib-zh 的 models/DATA 目录所在位置（git worktree 时回退到主仓库）"""
-    models_dir = _qlib_zh_dir / "models"
+    """返回 qlib-zh 的 DATA 目录所在位置（git worktree 时回退到主仓库）"""
     data_dir = _qlib_zh_dir / "DATA"
-    # 如果 models 或 DATA 目录存在，说明不是 worktree（或已有内容），直接使用
-    if models_dir.exists() or data_dir.exists():
+    # 如果 DATA 目录存在，直接使用
+    if data_dir.exists():
         return _qlib_zh_dir
     # worktree: 解析主仓库路径
     gitfile = _qlib_zh_dir.parent / ".git"
@@ -592,7 +591,7 @@ def qlib_infer():
     if not model:
         return jsonify({'error': '请选择模型'}), 400
 
-    models_dir = _qlib_base_dir / "models"
+    models_dir = _qlib_base_dir / "DATA" / "analysis_outputs"
     if not (models_dir / model).exists():
         return jsonify({'error': f'模型不存在: {model}'}), 400
 
@@ -1043,15 +1042,9 @@ def qlib_finetune():
         return jsonify({'error': '请选择基础模型'}), 400
 
     # 验证基础模型存在
-    model_locations = [
-        _qlib_base_dir / "models" / base_model,
-        _qlib_base_dir / "DATA" / "analysis_outputs" / base_model,
-    ]
-    base_model_dir = None
-    for loc in model_locations:
-        if loc.exists():
-            base_model_dir = loc
-            break
+    base_model_dir = _qlib_base_dir / "DATA" / "analysis_outputs" / base_model
+    if not base_model_dir.exists():
+        base_model_dir = None
 
     if not base_model_dir:
         return jsonify({'error': f'基础模型不存在: {base_model}'}), 400
@@ -1076,13 +1069,7 @@ def qlib_finetune():
 
     def _run():
         try:
-            # 构建 Docker 内路径
-            # base_model_dir 的 Docker 内路径
-            if "models" in str(base_model_dir):
-                docker_base_dir = f"/work/models/{base_model}"
-            else:
-                docker_base_dir = f"/work/DATA/analysis_outputs/{base_model}"
-
+            docker_base_dir = f"/work/DATA/analysis_outputs/{base_model}"
             cfg = _resolve_model_config(base_model)
             template_docker = cfg["template"]
             benchmark = cfg["benchmark"]
@@ -1171,18 +1158,6 @@ def qlib_finetune():
                     bt_metrics = summary.get("backtest", {})
                 except Exception:
                     pass
-
-            # 复制到 models/ 目录
-            src_predict = _qlib_base_dir / "DATA" / "analysis_outputs" / model_name / "model_predict"
-            dst_models = _qlib_base_dir / "models" / model_name / "model_predict"
-            if src_predict.exists():
-                import shutil as _shutil
-                dst_models.mkdir(parents=True, exist_ok=True)
-                for item in src_predict.iterdir():
-                    if item.is_dir():
-                        _shutil.copytree(item, dst_models / item.name, dirs_exist_ok=True)
-                    elif item.suffix in (".csv", ".pkl", ".json", ".html"):
-                        _shutil.copy2(item, dst_models / item.name)
 
             msg = f"微调完成: {model_name}"
             if bt_metrics.get("sharpe_ratio") is not None:
