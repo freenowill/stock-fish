@@ -30,12 +30,50 @@ from analysis.batch_analyzer import BatchAnalyzer
 from simulation_bridge.orchestrator import SimulationOrchestrator
 from prediction_report.report_generator import PredictionReportGenerator
 
-# ---- Qlib 推理模块 (目录名含连字符，使用 importlib 加载) ----
+# ---- 解析 qlib-zh 目录（兼容 git worktree，models/DATA 在主仓库中） ----
 _qlib_zh_dir = Path(__file__).resolve().parent / "qlib-zh"
+
+def _resolve_qlib_dir() -> Path:
+    """返回 qlib-zh 的 models/DATA 目录所在位置（git worktree 时回退到主仓库）"""
+    models_dir = _qlib_zh_dir / "models"
+    data_dir = _qlib_zh_dir / "DATA"
+    # 如果 models 或 DATA 目录存在，说明不是 worktree（或已有内容），直接使用
+    if models_dir.exists() or data_dir.exists():
+        return _qlib_zh_dir
+    # worktree: 解析主仓库路径
+    gitfile = _qlib_zh_dir.parent / ".git"
+    if gitfile.is_file():
+        content = gitfile.read_text().strip()
+        if content.startswith("gitdir:"):
+            # gitdir: /path/to/main/.git/worktrees/name
+            git_dir = Path(content.split(":", 1)[1].strip())
+            # .git/worktrees/name → parent 3× 回到主仓库根目录
+            main_repo = git_dir.parent.parent.parent if "worktrees" in str(git_dir) else git_dir.parent
+            candidate = main_repo / "qlib-zh"
+            if candidate.exists():
+                return candidate
+    return _qlib_zh_dir
+
+_qlib_base_dir = _resolve_qlib_dir()
+logger.info(f"Qlib 基础目录: {_qlib_base_dir}")
+
+# ---- Qlib 推理模块 (目录名含连字符，使用 importlib 加载) ----
 _spec = importlib.util.spec_from_file_location("infer_runner", _qlib_zh_dir / "infer_runner.py")
 _infer_runner_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_infer_runner_mod)
 run_qlib_inference = _infer_runner_mod.run_inference
+
+# ---- Qlib 数据更新模块 ----
+_spec_data = importlib.util.spec_from_file_location("data_runner", _qlib_zh_dir / "data_runner.py")
+_data_runner_mod = importlib.util.module_from_spec(_spec_data)
+_spec_data.loader.exec_module(_data_runner_mod)
+run_qlib_data_update = _data_runner_mod.run_data_update
+
+# ---- Qlib 训练模块 ----
+_spec_train = importlib.util.spec_from_file_location("train_runner", _qlib_zh_dir / "train_runner.py")
+_train_runner_mod = importlib.util.module_from_spec(_spec_train)
+_spec_train.loader.exec_module(_train_runner_mod)
+run_qlib_training = _train_runner_mod.run_training
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
@@ -51,6 +89,12 @@ batch_tasks = {}
 _batch_lock = threading.Lock()
 qlib_tasks = {}
 _qlib_lock = threading.Lock()
+qlib_data_tasks = {}
+_qlib_data_lock = threading.Lock()
+qlib_train_tasks = {}
+_qlib_train_lock = threading.Lock()
+qlib_finetune_tasks = {}
+_qlib_finetune_lock = threading.Lock()
 
 
 # ==========================================
@@ -476,29 +520,66 @@ def _update_qlib(task_id, progress, status, message, **kwargs):
 
 @app.route('/api/qlib/models', methods=['GET'])
 def qlib_models():
-    """列出 StockFish/qlib-zh/models/ 下的可用模型"""
-    models_dir = Path(__file__).resolve().parent / "qlib-zh" / "models"
+    """列出所有可用模型（扫描 models/ 和 DATA/analysis_outputs/）"""
+    scan_dirs = [_qlib_base_dir / "models", _qlib_base_dir / "DATA" / "analysis_outputs"]
+    seen = set()
     models = []
-    if models_dir.exists():
-        for d in sorted(models_dir.iterdir()):
-            if d.is_dir():
-                name = d.name
-                # 从目录名解析 market 和 date
-                market = "unknown"
-                if "csi300" in name.lower():
-                    market = "csi300"
-                elif "csi1000" in name.lower():
-                    market = "csi1000"
-                # 提取日期 (YYYY-MM-DD 格式)
-                date_part = name[:10] if len(name) >= 10 and name[4] == "-" else ""
-                has_scores = (d / "model_predict" / "scores.csv").exists()
-                models.append({
-                    "name": name,
-                    "market": market,
-                    "date": date_part,
-                    "has_scores": has_scores,
-                })
+
+    for scan_dir in scan_dirs:
+        if not scan_dir.exists():
+            continue
+        for d in sorted(scan_dir.iterdir()):
+            if not d.is_dir():
+                continue
+            name = d.name
+            if name in seen:
+                continue
+            seen.add(name)
+
+            # 从目录名解析 market 和 date
+            market = "unknown"
+            if "csi300" in name.lower():
+                market = "csi300"
+            elif "csi1000" in name.lower():
+                market = "csi1000"
+
+            date_part = name[:10] if len(name) >= 10 and name[4] == "-" else ""
+            has_scores = (d / "model_predict" / "scores.csv").exists()
+
+            # 标记是否为微调模型
+            is_finetune = "fintune" in name.lower()
+
+            models.append({
+                "name": name,
+                "market": market,
+                "date": date_part,
+                "has_scores": has_scores,
+                "is_finetune": is_finetune,
+            })
+
     return jsonify(models)
+
+
+@app.route('/api/qlib/train-targets', methods=['GET'])
+def qlib_train_targets():
+    """返回可用的训练目标配置（用于训练面板的模型选择器）"""
+    targets = [
+        {
+            "value": "csi300-alpha158",
+            "label": "沪深300 Alpha158",
+            "market": "csi300",
+            "benchmark": "SH000300",
+            "description": "沪深300成分股 + Alpha158因子 + LightGBM walk-forward全量训练（约30-90分钟）"
+        },
+        {
+            "value": "csi1000-alpha158",
+            "label": "中证1000 Alpha158",
+            "market": "csi1000",
+            "benchmark": "SH000852",
+            "description": "中证1000成分股 + Alpha158因子 + LightGBM walk-forward全量训练（约60-120分钟）"
+        },
+    ]
+    return jsonify(targets)
 
 
 @app.route('/api/qlib/infer', methods=['POST'])
@@ -510,7 +591,7 @@ def qlib_infer():
     if not model:
         return jsonify({'error': '请选择模型'}), 400
 
-    models_dir = Path(__file__).resolve().parent / "qlib-zh" / "models"
+    models_dir = _qlib_base_dir / "models"
     if not (models_dir / model).exists():
         return jsonify({'error': f'模型不存在: {model}'}), 400
 
@@ -685,6 +766,486 @@ def qlib_index_stocks():
     _index_stocks_cache_time[cache_key] = now
 
     return jsonify(result)
+
+
+# ==========================================
+#  API: Qlib 数据更新
+# ==========================================
+
+@app.route('/api/qlib/data/update', methods=['POST'])
+def qlib_data_update():
+    """启动 qlib 数据下载更新任务"""
+    task_id = f"qdata_{uuid.uuid4().hex[:12]}"
+    task_data = {
+        'task_id': task_id,
+        'status': 'pending',
+        'message': '',
+        'progress': 0.0,
+        'error': '',
+        'created_at': datetime.now().isoformat(),
+        'completed_at': None,
+    }
+    with _qlib_data_lock:
+        qlib_data_tasks[task_id] = task_data
+
+    logger.info(f"Qlib 数据更新启动 task_id={task_id}")
+
+    def _run():
+        try:
+            def _progress(event_data):
+                with _qlib_data_lock:
+                    qt = qlib_data_tasks.get(task_id)
+                    if not qt:
+                        return
+                    status = event_data.get('status', 'running')
+                    msg = event_data.get('message', '')
+                    progress = event_data.get('progress')
+                    if progress is not None:
+                        qt['progress'] = progress
+                    qt['status'] = status
+                    qt['message'] = msg
+                    if status in ('completed', 'failed'):
+                        qt['completed_at'] = datetime.now().isoformat()
+
+            result = run_qlib_data_update(progress_callback=_progress)
+
+            with _qlib_data_lock:
+                qt = qlib_data_tasks.get(task_id)
+                if qt and qt['status'] not in ('completed', 'failed'):
+                    qt['status'] = 'completed'
+                    qt['progress'] = 1.0
+                    qt['message'] = result.get('message', '数据更新完成')
+
+        except Exception as e:
+            logger.error(f"Qlib 数据更新失败 task_id={task_id}: {e}")
+            with _qlib_data_lock:
+                qt = qlib_data_tasks.get(task_id)
+                if qt:
+                    qt['status'] = 'failed'
+                    qt['error'] = str(e)
+                    qt['message'] = f'数据更新失败: {e}'
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    return jsonify({'task_id': task_id, 'status': 'pending'})
+
+
+@app.route('/api/qlib/data/update/<task_id>/stream', methods=['GET'])
+def qlib_data_update_stream(task_id):
+    """SSE 流 — qlib 数据更新进度"""
+    def generate():
+        last_progress = -1
+        while True:
+            with _qlib_data_lock:
+                qt = qlib_data_tasks.get(task_id)
+            if not qt:
+                yield f"data: {json.dumps({'status': 'not_found'})}\n\n"
+                break
+
+            data = {
+                'status': qt.get('status'),
+                'progress': qt.get('progress', 0),
+                'message': qt.get('message', ''),
+            }
+            current_progress = qt.get('progress', 0)
+
+            if qt.get('status') == 'completed':
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if qt.get('status') == 'failed':
+                data['error'] = qt.get('error', '未知错误')
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if current_progress != last_progress:
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                last_progress = current_progress
+
+            time.sleep(1)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
+
+
+# ==========================================
+#  API: Qlib 模型训练
+# ==========================================
+
+@app.route('/api/qlib/train', methods=['POST'])
+def qlib_train():
+    """启动 qlib 模型训练任务"""
+    data = request.get_json(silent=True) or {}
+    market = data.get('market', 'csi300')
+    target = data.get('target', '').strip()
+    # 如果前端传了 target，从 target 解析 market（如 csi300-alpha158 → csi300）
+    if target:
+        target_lower = target.lower()
+        if 'csi300' in target_lower:
+            market = 'csi300'
+        elif 'csi1000' in target_lower:
+            market = 'csi1000'
+    model_mode = data.get('model_mode', 'robust')
+    hold_num = int(data.get('hold_num', 20))
+
+    if market not in ('csi300', 'csi1000'):
+        return jsonify({'error': f'不支持的市场: {market}'}), 400
+    if model_mode not in ('default', 'robust'):
+        return jsonify({'error': f'不支持的模型模式: {model_mode}'}), 400
+
+    task_id = f"qtrain_{uuid.uuid4().hex[:12]}"
+    task_data = {
+        'task_id': task_id,
+        'status': 'pending',
+        'message': '',
+        'progress': 0.0,
+        'model_name': '',
+        'error': '',
+        'backtest_metrics': {},
+        'created_at': datetime.now().isoformat(),
+        'completed_at': None,
+    }
+    with _qlib_train_lock:
+        qlib_train_tasks[task_id] = task_data
+
+    logger.info(f"Qlib 训练启动 task_id={task_id}, market={market}")
+
+    def _run():
+        try:
+            def _progress(event_data):
+                with _qlib_train_lock:
+                    qt = qlib_train_tasks.get(task_id)
+                    if not qt:
+                        return
+                    status = event_data.get('status', 'running')
+                    msg = event_data.get('message', '')
+                    progress = event_data.get('progress')
+                    if progress is not None:
+                        qt['progress'] = progress
+                    qt['status'] = status
+                    qt['message'] = msg
+                    if status in ('completed', 'failed'):
+                        qt['completed_at'] = datetime.now().isoformat()
+
+            result = run_qlib_training(
+                market=market,
+                model_mode=model_mode,
+                hold_num=hold_num,
+                lightgbm_only=True,
+                progress_callback=_progress,
+            )
+
+            with _qlib_train_lock:
+                qt = qlib_train_tasks.get(task_id)
+                if qt and qt['status'] not in ('completed', 'failed'):
+                    qt['status'] = 'completed'
+                    qt['progress'] = 1.0
+                    qt['model_name'] = result.get('model_name', '')
+                    qt['message'] = result.get('message', '训练完成')
+                    qt['backtest_metrics'] = result.get('backtest_metrics', {})
+
+        except Exception as e:
+            logger.error(f"Qlib 训练失败 task_id={task_id}: {e}")
+            with _qlib_train_lock:
+                qt = qlib_train_tasks.get(task_id)
+                if qt:
+                    qt['status'] = 'failed'
+                    qt['error'] = str(e)
+                    qt['message'] = f'训练失败: {e}'
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
+    return jsonify({'task_id': task_id, 'status': 'pending'})
+
+
+@app.route('/api/qlib/train/<task_id>/stream', methods=['GET'])
+def qlib_train_stream(task_id):
+    """SSE 流 — qlib 训练进度"""
+    def generate():
+        last_progress = -1
+        while True:
+            with _qlib_train_lock:
+                qt = qlib_train_tasks.get(task_id)
+            if not qt:
+                yield f"data: {json.dumps({'status': 'not_found'})}\n\n"
+                break
+
+            data = {
+                'status': qt.get('status'),
+                'progress': qt.get('progress', 0),
+                'message': qt.get('message', ''),
+            }
+            current_progress = qt.get('progress', 0)
+
+            if qt.get('status') == 'completed':
+                data['model_name'] = qt.get('model_name', '')
+                data['backtest_metrics'] = qt.get('backtest_metrics', {})
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if qt.get('status') == 'failed':
+                data['error'] = qt.get('error', '未知错误')
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if current_progress != last_progress:
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                last_progress = current_progress
+
+            time.sleep(1)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
+
+
+# ==========================================
+#  API: Qlib 模型微调
+# ==========================================
+
+@app.route('/api/qlib/finetune', methods=['POST'])
+def qlib_finetune():
+    """启动 qlib 模型微调任务"""
+    data = request.get_json(silent=True) or {}
+    base_model = data.get('base_model', '').strip()
+
+    if not base_model:
+        return jsonify({'error': '请选择基础模型'}), 400
+
+    # 验证基础模型存在
+    model_locations = [
+        _qlib_base_dir / "models" / base_model,
+        _qlib_base_dir / "DATA" / "analysis_outputs" / base_model,
+    ]
+    base_model_dir = None
+    for loc in model_locations:
+        if loc.exists():
+            base_model_dir = loc
+            break
+
+    if not base_model_dir:
+        return jsonify({'error': f'基础模型不存在: {base_model}'}), 400
+
+    model_name = f"{base_model}-fintune"
+    task_id = f"qft_{uuid.uuid4().hex[:12]}"
+    task_data = {
+        'task_id': task_id,
+        'status': 'pending',
+        'message': '',
+        'progress': 0.0,
+        'model_name': model_name,
+        'error': '',
+        'backtest_metrics': {},
+        'created_at': datetime.now().isoformat(),
+        'completed_at': None,
+    }
+    with _qlib_finetune_lock:
+        qlib_finetune_tasks[task_id] = task_data
+
+    logger.info(f"Qlib 微调启动 task_id={task_id}, base_model={base_model}")
+
+    def _run():
+        try:
+            # 构建 Docker 内路径
+            # base_model_dir 的 Docker 内路径
+            if "models" in str(base_model_dir):
+                docker_base_dir = f"/work/models/{base_model}"
+            else:
+                docker_base_dir = f"/work/DATA/analysis_outputs/{base_model}"
+
+            cfg = _resolve_model_config(base_model)
+            template_docker = cfg["template"]
+            benchmark = cfg["benchmark"]
+
+            def _log(msg: str, **extra):
+                with _qlib_finetune_lock:
+                    qt = qlib_finetune_tasks.get(task_id)
+                    if not qt:
+                        return
+                    status = extra.get('status', 'running')
+                    progress = extra.get('progress')
+                    if progress is not None:
+                        qt['progress'] = progress
+                    qt['status'] = status
+                    qt['message'] = msg
+
+            _log(f"基础模型: {base_model}")
+            _log(f"输出名称: {model_name}")
+            _log(f"开始 Docker 微调...")
+
+            # 构建 Docker 命令
+            host_project_root = Path(__file__).resolve().parent / "qlib-zh"
+            host_qlib_data = Path.home() / ".qlib"
+            host_mlruns = Path.home() / "github" / "qlib-zh" / "mlruns"
+            docker_image = "zhuhai123/qlib-rdagent:v1"
+            workdir = "/work"
+
+            output_root_ctr = f"{workdir}/DATA/analysis_outputs/{model_name}"
+            predict_out_ctr = f"{output_root_ctr}/model_predict"
+
+            cmd = [
+                "docker", "run", "--rm",
+                "-e", "QLIB_DATA_DIR=/root/.qlib/qlib_data/cn_data",
+                "-e", f"TARGET_MARKET={cfg['market']}",
+                "-e", f"TARGET_BENCHMARK={benchmark}",
+                "-e", "CASH_TOTAL=100000",
+                "-v", f"{host_project_root}:{workdir}",
+                "-v", f"{host_qlib_data}:/root/.qlib",
+                "-v", f"{host_mlruns}:{workdir}/mlruns",
+                "-w", workdir,
+                docker_image,
+                "python3", "scripts/finetune_alpha158.py",
+                "--base-model-dir", docker_base_dir,
+                "--output-name", model_name,
+                "--template", template_docker,
+                "--output-root", output_root_ctr,
+                "--experiment-name", model_name,
+                "--train-years", "5",
+                "--valid-years", "1",
+                "--hold-num", "20",
+                "--model-mode", "robust",
+            ]
+
+            import subprocess as _subprocess
+            process = _subprocess.Popen(
+                cmd,
+                stdout=_subprocess.PIPE,
+                stderr=_subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+
+            assert process.stdout is not None
+            import time as _time
+            last_log_time = _time.time()
+            for line in process.stdout:
+                line = line.rstrip()
+                if line:
+                    now = _time.time()
+                    if (now - last_log_time) >= 3.0:
+                        _log(f"[Docker] {line[:200]}")
+                        last_log_time = now
+
+            process.wait(timeout=3600)  # 1小时超时
+            if process.returncode != 0:
+                raise RuntimeError(f"Docker 退出码: {process.returncode}")
+
+            # 提取回测指标
+            summary_path = _qlib_base_dir / "DATA" / "analysis_outputs" / model_name / "finetune_summary.json"
+            bt_metrics = {}
+            if summary_path.exists():
+                try:
+                    import json as _json
+                    summary = _json.loads(summary_path.read_text(encoding="utf-8"))
+                    bt_metrics = summary.get("backtest", {})
+                except Exception:
+                    pass
+
+            # 复制到 models/ 目录
+            src_predict = _qlib_base_dir / "DATA" / "analysis_outputs" / model_name / "model_predict"
+            dst_models = _qlib_base_dir / "models" / model_name / "model_predict"
+            if src_predict.exists():
+                import shutil as _shutil
+                dst_models.mkdir(parents=True, exist_ok=True)
+                for item in src_predict.iterdir():
+                    if item.is_dir():
+                        _shutil.copytree(item, dst_models / item.name, dirs_exist_ok=True)
+                    elif item.suffix in (".csv", ".pkl", ".json", ".html"):
+                        _shutil.copy2(item, dst_models / item.name)
+
+            msg = f"微调完成: {model_name}"
+            if bt_metrics.get("sharpe_ratio") is not None:
+                msg += f" | 夏普比: {bt_metrics['sharpe_ratio']}"
+            _log(msg, progress=1.0, status="completed")
+
+            with _qlib_finetune_lock:
+                qt = qlib_finetune_tasks.get(task_id)
+                if qt and qt['status'] not in ('completed', 'failed'):
+                    qt['status'] = 'completed'
+                    qt['progress'] = 1.0
+                    qt['model_name'] = model_name
+                    qt['message'] = msg
+                    qt['backtest_metrics'] = bt_metrics
+
+        except Exception as e:
+            logger.error(f"Qlib 微调失败 task_id={task_id}: {e}")
+            with _qlib_finetune_lock:
+                qt = qlib_finetune_tasks.get(task_id)
+                if qt:
+                    qt['status'] = 'failed'
+                    qt['error'] = str(e)
+                    qt['message'] = f'微调失败: {e}'
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
+    return jsonify({'task_id': task_id, 'status': 'pending', 'model_name': model_name})
+
+
+@app.route('/api/qlib/finetune/<task_id>/stream', methods=['GET'])
+def qlib_finetune_stream(task_id):
+    """SSE 流 — qlib 微调进度"""
+    def generate():
+        last_progress = -1
+        while True:
+            with _qlib_finetune_lock:
+                qt = qlib_finetune_tasks.get(task_id)
+            if not qt:
+                yield f"data: {json.dumps({'status': 'not_found'})}\n\n"
+                break
+
+            data = {
+                'status': qt.get('status'),
+                'progress': qt.get('progress', 0),
+                'message': qt.get('message', ''),
+            }
+            current_progress = qt.get('progress', 0)
+
+            if qt.get('status') == 'completed':
+                data['model_name'] = qt.get('model_name', '')
+                data['backtest_metrics'] = qt.get('backtest_metrics', {})
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if qt.get('status') == 'failed':
+                data['error'] = qt.get('error', '未知错误')
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                break
+
+            if current_progress != last_progress:
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                last_progress = current_progress
+
+            time.sleep(1)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
+
+
+def _resolve_model_config(model_name: str) -> dict:
+    """解析模型名称对应的市场配置（用于微调）"""
+    name_lower = model_name.lower()
+    if "csi1000" in name_lower:
+        return {
+            "market": "csi1000",
+            "benchmark": "SH000852",
+            "template": "/work/scripts/small/templates/workflow_config_lightgbm_Alpha158_csi1000.yaml",
+        }
+    else:
+        return {
+            "market": "csi300",
+            "benchmark": "SH000300",
+            "template": "/work/examples/benchmarks/LightGBM/workflow_config_lightgbm_Alpha158.yaml",
+        }
 
 
 # ==========================================
