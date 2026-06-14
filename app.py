@@ -1136,15 +1136,10 @@ def qlib_finetune():
             )
 
             assert process.stdout is not None
-            import time as _time
-            last_log_time = _time.time()
             for line in process.stdout:
                 line = line.rstrip()
                 if line:
-                    now = _time.time()
-                    if (now - last_log_time) >= 3.0:
-                        _log(f"[Docker] {line[:200]}")
-                        last_log_time = now
+                    _log(f"[Docker] {line[:300]}")
 
             process.wait(timeout=3600)  # 1小时超时
             if process.returncode != 0:
