@@ -226,6 +226,7 @@ def run_training(
         "-e", "CASH_TOTAL=100000",
         "-e", "TX_FEE_RATE=0.0001",
         "-e", "STAMP_DUTY_RATE=0.0005",
+        "-e", "PYTHONUNBUFFERED=1",     # 实时输出训练日志
     ]
 
     if lightgbm_only:

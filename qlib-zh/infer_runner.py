@@ -131,6 +131,7 @@ def run_inference(
         "-e", "CASH_TOTAL=100000",
         "-e", "TX_FEE_RATE=0.0001",
         "-e", "STAMP_DUTY_RATE=0.0005",
+        "-e", "PYTHONUNBUFFERED=1",
         # mounts
         "-v", f"{_HOST_PROJECT_ROOT}:{WORKDIR}",
         "-v", f"{_HOST_QLIB_DATA}:/root/.qlib",

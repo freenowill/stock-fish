@@ -1097,6 +1097,7 @@ def qlib_finetune():
                 "-e", f"TARGET_MARKET={cfg['market']}",
                 "-e", f"TARGET_BENCHMARK={benchmark}",
                 "-e", "CASH_TOTAL=100000",
+                "-e", "PYTHONUNBUFFERED=1",
                 "-v", f"{host_project_root}:{workdir}",
                 "-v", f"{host_qlib_data}:/root/.qlib",
                 "-v", f"{host_mlruns}:{workdir}/mlruns",
