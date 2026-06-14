@@ -1091,9 +1091,11 @@ def qlib_finetune():
             _log(f"开始 Docker 微调...")
 
             # 构建 Docker 命令
-            host_project_root = Path(__file__).resolve().parent / "qlib-zh"
-            host_qlib_data = Path.home() / ".qlib"
-            host_mlruns = Path.home() / "github" / "qlib-zh" / "mlruns"
+            # 使用 docker-compose 传递的宿主机路径环境变量（兼容 Docker 内运行）
+            _stockfish_root = Path(__file__).resolve().parent
+            host_project_root = os.environ.get("QLIB_HOST_PROJECT_ROOT", str(_stockfish_root / "qlib-zh"))
+            host_qlib_data = os.environ.get("QLIB_HOST_DATA_DIR", str(Path.home() / ".qlib"))
+            host_mlruns = os.environ.get("QLIB_HOST_MLRUNS_DIR", str(Path.home() / "github" / "qlib-zh" / "mlruns"))
             docker_image = "zhuhai123/qlib-rdagent:v1"
             workdir = "/work"
 
