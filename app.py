@@ -661,6 +661,7 @@ def qlib_infer_stream(task_id):
     """SSE 流 — qlib 推理进度"""
     def generate():
         last_progress = -1
+        last_message = ''
         last_result_count = 0
         while True:
             with _qlib_lock:
@@ -688,9 +689,11 @@ def qlib_infer_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 break
 
-            if current_progress != last_progress:
+            current_message = qt.get('message', '')
+            if current_progress != last_progress or current_message != last_message:
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
+                last_message = current_message
 
             time.sleep(1)
 
@@ -835,6 +838,7 @@ def qlib_data_update_stream(task_id):
     """SSE 流 — qlib 数据更新进度"""
     def generate():
         last_progress = -1
+        last_message = ''
         while True:
             with _qlib_data_lock:
                 qt = qlib_data_tasks.get(task_id)
@@ -848,6 +852,7 @@ def qlib_data_update_stream(task_id):
                 'message': qt.get('message', ''),
             }
             current_progress = qt.get('progress', 0)
+            current_message = qt.get('message', '')
 
             if qt.get('status') == 'completed':
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
@@ -858,9 +863,10 @@ def qlib_data_update_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 break
 
-            if current_progress != last_progress:
+            if current_progress != last_progress or current_message != last_message:
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
+                last_message = current_message
 
             time.sleep(1)
 
@@ -967,6 +973,7 @@ def qlib_train_stream(task_id):
     """SSE 流 — qlib 训练进度"""
     def generate():
         last_progress = -1
+        last_message = ''
         while True:
             with _qlib_train_lock:
                 qt = qlib_train_tasks.get(task_id)
@@ -980,6 +987,7 @@ def qlib_train_stream(task_id):
                 'message': qt.get('message', ''),
             }
             current_progress = qt.get('progress', 0)
+            current_message = qt.get('message', '')
 
             if qt.get('status') == 'completed':
                 data['model_name'] = qt.get('model_name', '')
@@ -992,9 +1000,10 @@ def qlib_train_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 break
 
-            if current_progress != last_progress:
+            if current_progress != last_progress or current_message != last_message:
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
+                last_message = current_message
 
             time.sleep(1)
 
@@ -1193,6 +1202,7 @@ def qlib_finetune_stream(task_id):
     """SSE 流 — qlib 微调进度"""
     def generate():
         last_progress = -1
+        last_message = ''
         while True:
             with _qlib_finetune_lock:
                 qt = qlib_finetune_tasks.get(task_id)
@@ -1206,6 +1216,7 @@ def qlib_finetune_stream(task_id):
                 'message': qt.get('message', ''),
             }
             current_progress = qt.get('progress', 0)
+            current_message = qt.get('message', '')
 
             if qt.get('status') == 'completed':
                 data['model_name'] = qt.get('model_name', '')
@@ -1218,9 +1229,10 @@ def qlib_finetune_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 break
 
-            if current_progress != last_progress:
+            if current_progress != last_progress or current_message != last_message:
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
+                last_message = current_message
 
             time.sleep(1)
 
