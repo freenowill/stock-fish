@@ -30,11 +30,10 @@
 - [x] Front-end master selector + multi-master comparison
 - [x] Macro/industry analyst integration
 
-**🤖 Qlib Inference** (completed)
-- [x] `--predict-only` inference integrated with batch analysis mode
-- [x] CSI300 / CSI1000 model selection
-- [x] Docker container orchestration (`zhuhai123/qlib-rdagent:v1`)
-- [x] Auto-fill Top 20 stock codes after inference
+**🤖 Qlib Inference** (in progress)
+- [x] One-click data update
+- [ ] One-click training & fine-tuning (in progress)
+- [x] Inference-only mode
 
 **📊 Batch Stock Analysis** (completed)
 - [x] `POST /api/batch/analyze` sequential multi-symbol analysis
