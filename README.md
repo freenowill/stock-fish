@@ -77,6 +77,8 @@
 - **乔治·索罗斯**：全球宏观策略的代表人物，以做空英镑、狙击泰铢等事件闻名于世。他的投资理念深受其老师、哲学家卡尔·波普影响，强调市场参与者的认知偏差和对市场的反身性影响
 - **瑞·达利欧**：桥水基金创始人，他将经济比作一台机器的观点与索罗斯不同，其投资系统更强调根据历史周期和逻辑分析，来预测不同经济环境下各类资产的表现
 
+> **使用方式**：在 `/api/analyze` 或 `/api/predict` 请求中传入 `"master"` 参数（`graham` / `buffett` / `fisher` / `lynch` / `templeton` / `soros` / `dalio`），前端选择器可通过 `GET /api/masters` 获取可用大师列表。
+
 ## 🎬 Demo 演示
 
 <table>
@@ -230,31 +232,38 @@ cp .env.example .env
 pip install -r requirements.txt
 ```
 
-### 3. 启动
-
-```bash
-# Docker 模式（默认）
-bash run.sh
-
-# 本地模式
-bash run.sh --local
-
-# Docker（跳过 MiroFish）
-bash run.sh --no-mirofish
-```
-
-### 4. API 示例
+### 3. API 示例
 
 ```bash
 # 多因子分析
 curl -X POST http://localhost:8000/api/analyze \
   -H 'Content-Type: application/json' \
-  -d '{"symbol":"600519"}'
+  -d '{"symbol":"600519","cost_price":150}'
+
+# 大师决策分析（7 位大师可选）
+curl -X POST http://localhost:8000/api/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"symbol":"600519","master":"buffett"}'
+
+# 批量分析
+curl -X POST http://localhost:8000/api/batch/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"symbols":["600519","000858","300750"]}'
 
 # 股价推演（异步，约15分钟）
 curl -X POST http://localhost:8000/api/predict \
   -H 'Content-Type: application/json' \
-  -d '{"symbol":"600519","scenario":"base"}'
+  -d '{"symbol":"600519","scenario":"base","master":"graham"}'
+
+# Qlib 模型推理
+curl -X POST http://localhost:8000/api/qlib/infer \
+  -H 'Content-Type: application/json' \
+  -d '{"symbol":"600519","model":"2026-06-12-csi300-alpha158"}'
+
+# Qlib 模型训练
+curl -X POST http://localhost:8000/api/qlib/train \
+  -H 'Content-Type: application/json' \
+  -d '{"target":"csi300-alpha158","market":"csi300"}'
 ```
 
 ---
@@ -264,7 +273,7 @@ curl -X POST http://localhost:8000/api/predict \
 ```
 POST /api/analyze
   │
-  ├─ Step 1: 数据采集（多源策略，6 Fetcher 自动切换 + 熔断保护）
+  ├─ Step 1: 数据采集（多源策略，8 Fetcher 自动切换 + 熔断保护）
   │   ├─ Tushare Pro (sxsc)   → 行情 / 历史K线 / 历史PE / 基本面
   │   ├─ 东方财富 (efinance)  → 实时行情 / 板块排名
   │   ├─ 腾讯财经/新浪/东财  → 实时行情多源优先 (akshare)
@@ -287,7 +296,8 @@ POST /api/analyze
   │   └─ 加权评分 ← RSI/MACD/KDJ/均线/布林/估值/舆情
   │
   ├─ Step 4: LLM 综合预测
-  │   └─ 3 Agent 并行辩论 + Moderator 综合裁决 → JSON 预测
+  │   ├─ 大师模式（推荐）: 8 Agent + Overseer + CIO 大师裁决 → CIODecision JSON
+  │   └─ 经典模式: 3 Agent 并行辩论 + Moderator 综合裁决
   │
   └─ Step 5: 前端渲染
       └─ 6卡片 + 技术/基本面 + 新闻/股吧摘要（A股红涨绿跌）
@@ -431,16 +441,28 @@ StockFish/
 │   ├── provider_adapter.py    # AdvancedBackend 适配器
 │   ├── news_sources.py        # 插件式新闻源
 │   ├── sentiment_collector.py # 情感分析器
-│   ├── data_fetchers/         # 11 个多源数据 Fetcher
+│   ├── data_fetchers/         # 8 个多源数据 Fetcher
 │   ├── search/                # 7 引擎搜索服务
 │   ├── social_sentiment/      # 社交情感（Reddit/X/Polymarket）
 │   └── stock_index/           # 股票名称索引
 │
 ├── analysis/                  # 分析引擎
-│   ├── agent.py               # 4 步管线主控
+│   ├── agent.py               # 5 步管线主控
 │   ├── scoring.py             # -5~+5 评分引擎
 │   ├── state/state.py         # 分析状态定义
-│   └── nodes/prediction_node.py # LLM 多Agent辩论预测
+│   ├── agents/                # 8 员工 Agent + CIO 大师决策
+│   │   ├── base.py            # BaseAgent / EmployeeReport / CIODecision
+│   │   ├── cio.py             # CIO 大师裁决
+│   │   └── cio_prompts.py     # 7 位大师投资哲学定义
+│   └── nodes/prediction_node.py # LLM 预测节点
+│
+├── qlib-zh/                   # Qlib 量化模型
+│   ├── train_runner.py        # 训练编排（Docker）
+│   ├── infer_runner.py        # 推理运行
+│   ├── scripts/practice/      # Walk-Forward 训练回测脚本
+│   │   └── stage2_master_strategy.py  # 大师分析回测策略
+│   ├── DATA/analysis_outputs/ # 模型产出目录
+│   └── models/                # 预训练模型（可选）
 │
 ├── simulation_bridge/         # MiroFish 桥接层
 │   ├── orchestrator.py        # 模拟编排器
@@ -449,7 +471,11 @@ StockFish/
 ├── prediction_report/         # 报告生成
 │   └── report_generator.py    # HTML/JSON 报告
 │
-├── reports/                   # 输出预测报告
+├── MiroFish/backend/          # MiroFish 群体智能模拟引擎
+│   └── app/                   # Flask 后端 / OASIS / GraphRAG
+│
+├── batch_results/             # 批量分析缓存
+├── reports/                   # 预测报告输出
 └── sxsc_tushare/              # 山西证券 Tushare 封装
 ```
 

@@ -77,6 +77,8 @@
 - **George Soros**: Leading figure in global macro strategy, famous for shorting the British pound and attacking the Thai baht. His philosophy, deeply influenced by his teacher Karl Popper, emphasizes cognitive biases of market participants and the reflexivity effect on markets
 - **Ray Dalio**: Founder of Bridgewater Associates. Unlike Soros's view of the economy as a machine, Dalio's investment system emphasizes historical cycles and logical analysis to predict asset performance under different economic environments
 
+> **Usage**: Pass `"master"` param in `/api/analyze` or `/api/predict` requests (`graham` / `buffett` / `fisher` / `lynch` / `templeton` / `soros` / `dalio`). The frontend selector fetches available masters via `GET /api/masters`.
+
 ---
 
 ## 🎬 Demo
@@ -232,31 +234,38 @@ cp .env.example .env
 pip install -r requirements.txt
 ```
 
-### 3. Start
-
-```bash
-# Docker mode (default)
-bash run.sh
-
-# Local mode
-bash run.sh --local
-
-# Docker (skip MiroFish)
-bash run.sh --no-mirofish
-```
-
-### 4. API Examples
+### 3. API Examples
 
 ```bash
 # Multi-factor analysis
 curl -X POST http://localhost:8000/api/analyze \
   -H 'Content-Type: application/json' \
-  -d '{"symbol":"600519"}'
+  -d '{"symbol":"600519","cost_price":150}'
+
+# Master decision analysis (7 masters available)
+curl -X POST http://localhost:8000/api/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"symbol":"600519","master":"buffett"}'
+
+# Batch analysis
+curl -X POST http://localhost:8000/api/batch/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"symbols":["600519","000858","300750"]}'
 
 # Price simulation (async, ~15 min)
 curl -X POST http://localhost:8000/api/predict \
   -H 'Content-Type: application/json' \
-  -d '{"symbol":"600519","scenario":"base"}'
+  -d '{"symbol":"600519","scenario":"base","master":"graham"}'
+
+# Qlib model inference
+curl -X POST http://localhost:8000/api/qlib/infer \
+  -H 'Content-Type: application/json' \
+  -d '{"symbol":"600519","model":"2026-06-12-csi300-alpha158"}'
+
+# Qlib model training
+curl -X POST http://localhost:8000/api/qlib/train \
+  -H 'Content-Type: application/json' \
+  -d '{"target":"csi300-alpha158","market":"csi300"}'
 ```
 
 ---
@@ -266,7 +275,7 @@ curl -X POST http://localhost:8000/api/predict \
 ```
 POST /api/analyze
   │
-  ├─ Step 1: Data Collection (multi-source strategy, 6 fetchers auto-failover + circuit breaker)
+  ├─ Step 1: Data Collection (multi-source strategy, 8 fetchers auto-failover + circuit breaker)
   │   ├─ Tushare Pro (sxsc)   → Quote / Historical K-line / Historical PE / Fundamentals
   │   ├─ Eastmoney (efinance)  → Real-time quote / Sector rankings
   │   ├─ Tencent/Sina/Eastmoney → Multi-source real-time quote priority (akshare)
@@ -289,7 +298,8 @@ POST /api/analyze
   │   └─ Weighted score ← RSI/MACD/KDJ/MA/Bollinger/Valuation/Sentiment
   │
   ├─ Step 4: LLM Prediction
-  │   └─ 3 parallel Agent debate + Moderator synthesis → JSON prediction
+  │   ├─ Master mode (recommended): 8 Agent + Overseer + CIO master verdict → CIODecision JSON
+  │   └─ Classic mode: 3 Agent debate + Moderator synthesis
   │
   └─ Step 5: Frontend Rendering
       └─ 6 cards + technical/fundamental + news/guba summary (A-stock: red=up, green=down)
@@ -433,24 +443,40 @@ StockFish/
 │   ├── provider_adapter.py    # AdvancedBackend adapter
 │   ├── news_sources.py        # Plugin-based news sources
 │   ├── sentiment_collector.py # Sentiment analyzer
-│   ├── data_fetchers/         # 11 multi-source data fetchers
+│   ├── data_fetchers/         # 8 multi-source data fetchers
 │   ├── search/                # 7 search engine services
 │   ├── social_sentiment/      # Social sentiment (Reddit/X/Polymarket)
 │   └── stock_index/           # Stock name index
 │
 ├── analysis/                  # Analysis engine
-│   ├── agent.py               # 4-step pipeline controller
+│   ├── agent.py               # 5-step pipeline controller
 │   ├── scoring.py             # -5~+5 scoring engine
 │   ├── state/state.py         # Analysis state definition
-│   └── nodes/prediction_node.py # LLM multi-agent debate prediction
+│   ├── agents/                # 8 employee agents + CIO master decision
+│   │   ├── base.py            # BaseAgent / EmployeeReport / CIODecision
+│   │   ├── cio.py             # CIO master verdict
+│   │   └── cio_prompts.py     # 7 master philosophy definitions
+│   └── nodes/prediction_node.py # LLM prediction node
+│
+├── qlib-zh/                   # Qlib quantitative models
+│   ├── train_runner.py        # Training orchestrator (Docker)
+│   ├── infer_runner.py        # Inference runner
+│   ├── scripts/practice/      # Walk-forward training & backtest scripts
+│   │   └── stage2_master_strategy.py  # Master analysis backtest strategy
+│   ├── DATA/analysis_outputs/ # Model output directory
+│   └── models/                # Pre-trained models (optional)
 │
 ├── simulation_bridge/         # MiroFish bridge layer
 │   ├── orchestrator.py        # Simulation orchestrator
 │   └── seed_builder.py        # Seed document builder
 │
 ├── prediction_report/         # Report generation
-│   └── report_generator.py    # HTML/JSON report
+│   └── report_generator.py    # HTML/JSON reports
 │
+├── MiroFish/backend/          # MiroFish swarm intelligence engine
+│   └── app/                   # Flask backend / OASIS / GraphRAG
+│
+├── batch_results/             # Batch analysis cache
 ├── reports/                   # Prediction report output
 └── sxsc_tushare/              # Shanxi Securities Tushare wrapper
 ```
