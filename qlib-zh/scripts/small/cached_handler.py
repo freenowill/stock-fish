@@ -23,8 +23,12 @@ from pathlib import Path
 import pandas as pd
 
 from qlib.contrib.data.handler import Alpha158
-from qlib.contrib.data.handler_extra import AlphaExtra
 from qlib.data.dataset.handler import DataHandlerLP
+
+try:
+    from qlib.contrib.data.handler_extra import AlphaExtra
+except ImportError:
+    AlphaExtra = object  # 兜底：模块不存在时用 object 代替，只影响 CachedAlphaExtra 类定义
 from qlib.log import TimeInspector
 
 _PARQUET_OK: bool = False
@@ -136,7 +140,7 @@ class CachedAlpha158(Alpha158):
             print(f"  [Cache] Saved {len(self._data)} rows → {cache_file}")
 
 
-class CachedAlphaExtra(AlphaExtra):
+class CachedAlphaExtra(AlphaExtra):  # type: ignore[name-defined]
     """AlphaExtra variant that loads precomputed _data from cache in setup_data().
 
     Same caching logic as CachedAlpha158, but works with AlphaExtra's factor_config
