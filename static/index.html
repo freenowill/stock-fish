@@ -597,6 +597,48 @@ async function toggleQlibInfer() {
   }
 }
 
+// ---- SSE 自动重连 ----
+function _connectSSE(url, onMessage, onStateChange, maxRetries = 10) {
+  let retries = 0;
+  let es = null;
+  let stopped = false;
+
+  function connect() {
+    if (stopped) return;
+    es = new EventSource(url);
+    es.onmessage = function(event) {
+      retries = 0;
+      const data = JSON.parse(event.data);
+      onMessage(data, es);
+      if (data.status === 'completed' || data.status === 'failed' || data.type === 'error') {
+        stopped = true;
+        es.close();
+        if (onStateChange) onStateChange('terminal', data.status);
+      } else if (onStateChange) {
+        onStateChange('connected');
+      }
+    };
+    es.onerror = function() {
+      es.close();
+      if (stopped) return;
+      retries++;
+      if (retries > maxRetries) {
+        stopped = true;
+        if (onStateChange) onStateChange('failed', `重试${maxRetries}次后放弃`);
+        return;
+      }
+      const delay = Math.min(2000 * Math.pow(2, retries - 1), 30000);
+      if (onStateChange) onStateChange('reconnecting', `${retries}/${maxRetries}`, delay);
+      setTimeout(connect, delay);
+    };
+  }
+  connect();
+  return {
+    close: function() { stopped = true; if (es) es.close(); },
+    isStopped: function() { return stopped; }
+  };
+}
+
 async function startQlibInfer() {
   const model = document.getElementById('qlibModelSelect').value;
   if (!model) { alert('请选择模型'); return; }
@@ -624,10 +666,7 @@ async function startQlibInfer() {
     const { task_id } = await resp.json();
 
     const startTime = Date.now();
-    const evtSource = new EventSource(`${API}/api/qlib/infer/${task_id}/stream`);
-
-    evtSource.onmessage = function(event) {
-      const data = JSON.parse(event.data);
+    _connectSSE(`${API}/api/qlib/infer/${task_id}/stream`, function(data, es) {
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       simLogDiv.textContent += `[${elapsed}s] ${data.message || ''}\n`;
       simLogDiv.scrollTop = simLogDiv.scrollHeight;
@@ -637,22 +676,21 @@ async function startQlibInfer() {
         document.getElementById('symbolInput').value = data.stocks;
         statusEl.textContent = `✅ 完成 — 已填入 ${data.count || 20} 只股票 (预测日: ${data.pred_date || '-'})`;
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
       if (data.status === 'failed') {
         statusEl.textContent = `❌ ${data.error || '推理失败'}`;
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
-    };
-
-    evtSource.onerror = function() {
-      evtSource.close();
-      btn.disabled = false;
-      if (statusEl.textContent === '启动中...') {
-        statusEl.textContent = '❌ SSE 连接失败';
+    }, function(state, detail, delay) {
+      if (state === 'reconnecting') {
+        statusEl.textContent = `⚠ 连接断开，${Math.round(delay/1000)}s 后重连 (${detail})...`;
+      } else if (state === 'failed') {
+        statusEl.textContent = `❌ SSE 连接失败 (${detail})`;
+        btn.disabled = false;
       }
-    };
+    });
   } catch (e) {
     statusEl.textContent = `❌ ${e.message}`;
     btn.disabled = false;
@@ -699,10 +737,7 @@ async function executeQlibDataUpdate() {
     const { task_id } = await resp.json();
 
     const startTime = Date.now();
-    const evtSource = new EventSource(`${API}/api/qlib/data/update/${task_id}/stream`);
-
-    evtSource.onmessage = function(event) {
-      const data = JSON.parse(event.data);
+    _connectSSE(`${API}/api/qlib/data/update/${task_id}/stream`, function(data, es) {
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       if (data.message) {
         simLogDiv.textContent += `[${elapsed}s] ${data.message}\n`;
@@ -713,19 +748,21 @@ async function executeQlibDataUpdate() {
       if (data.status === 'completed') {
         statusEl.textContent = '✅ qlib 数据更新完成';
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
       if (data.status === 'failed') {
         statusEl.textContent = `❌ ${data.error || '更新失败'}`;
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
-    };
-    evtSource.onerror = function() {
-      evtSource.close();
-      btn.disabled = false;
-      if (statusEl.textContent === '启动中...') statusEl.textContent = '❌ SSE 连接失败';
-    };
+    }, function(state, detail, delay) {
+      if (state === 'reconnecting') {
+        statusEl.textContent = `⚠ 连接断开，${Math.round(delay/1000)}s 后重连 (${detail})...`;
+      } else if (state === 'failed') {
+        statusEl.textContent = `❌ SSE 连接失败 (${detail})`;
+        btn.disabled = false;
+      }
+    });
   } catch (e) {
     statusEl.textContent = `❌ ${e.message}`;
     btn.disabled = false;
@@ -799,10 +836,7 @@ async function startQlibTrain() {
     const { task_id } = await resp.json();
 
     const startTime = Date.now();
-    const evtSource = new EventSource(`${API}/api/qlib/train/${task_id}/stream`);
-
-    evtSource.onmessage = function(event) {
-      const data = JSON.parse(event.data);
+    _connectSSE(`${API}/api/qlib/train/${task_id}/stream`, function(data, es) {
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       if (data.message) {
         simLogDiv.textContent += `[${elapsed}s] ${data.message}\n`;
@@ -823,20 +857,23 @@ async function startQlibTrain() {
         statusEl.textContent = msg;
         statusEl.style.color = '#00b894';
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
       if (data.status === 'failed') {
         statusEl.textContent = `❌ ${data.error || '训练失败'}`;
         statusEl.style.color = '#d63031';
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
-    };
-    evtSource.onerror = function() {
-      evtSource.close();
-      btn.disabled = false;
-      if (statusEl.textContent === '启动训练...') statusEl.textContent = '❌ SSE 连接失败';
-    };
+    }, function(state, detail, delay) {
+      if (state === 'reconnecting') {
+        statusEl.textContent = `⚠ 连接断开，${Math.round(delay/1000)}s 后重连 (${detail})...`;
+      } else if (state === 'failed') {
+        statusEl.textContent = `❌ SSE 连接失败 (${detail})`;
+        statusEl.style.color = '#d63031';
+        btn.disabled = false;
+      }
+    });
   } catch (e) {
     statusEl.textContent = `❌ ${e.message}`;
     btn.disabled = false;
@@ -857,15 +894,16 @@ async function loadFinetuneModels() {
   try {
     const resp = await fetch(`${API}/api/qlib/models`);
     const models = await resp.json();
-    models.forEach(m => {
-      if (!m.has_scores) return;
+    // 微调需要 analysis_outputs 下的完整训练产物（walk_forward/、params.pkl 等）
+    const finetuneModels = models.filter(m => m.in_analysis_outputs && m.has_scores);
+    finetuneModels.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.name;
       opt.textContent = `${m.name} (${m.market.toUpperCase()})${m.is_finetune ? ' 🔧' : ''}`;
       sel.appendChild(opt);
     });
-    if (models.length === 0) {
-      sel.innerHTML = '<option value="">无可用模型</option>';
+    if (finetuneModels.length === 0) {
+      sel.innerHTML = '<option value="">无可用模型（需先完成基础训练）</option>';
     }
   } catch (e) {
     sel.innerHTML = '<option value="">加载失败</option>';
@@ -896,10 +934,7 @@ async function startQlibFinetune() {
     const { task_id } = await resp.json();
 
     const startTime = Date.now();
-    const evtSource = new EventSource(`${API}/api/qlib/finetune/${task_id}/stream`);
-
-    evtSource.onmessage = function(event) {
-      const data = JSON.parse(event.data);
+    _connectSSE(`${API}/api/qlib/finetune/${task_id}/stream`, function(data, es) {
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       if (data.message) {
         simLogDiv.textContent += `[${elapsed}s] ${data.message}\n`;
@@ -917,20 +952,23 @@ async function startQlibFinetune() {
         statusEl.textContent = msg;
         statusEl.style.color = '#a29bfe';
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
       if (data.status === 'failed') {
         statusEl.textContent = `❌ ${data.error || '微调失败'}`;
         statusEl.style.color = '#d63031';
         btn.disabled = false;
-        evtSource.close();
+        es.close();
       }
-    };
-    evtSource.onerror = function() {
-      evtSource.close();
-      btn.disabled = false;
-      if (statusEl.textContent === '启动微调...') statusEl.textContent = '❌ SSE 连接失败';
-    };
+    }, function(state, detail, delay) {
+      if (state === 'reconnecting') {
+        statusEl.textContent = `⚠ 连接断开，${Math.round(delay/1000)}s 后重连 (${detail})...`;
+      } else if (state === 'failed') {
+        statusEl.textContent = `❌ SSE 连接失败 (${detail})`;
+        statusEl.style.color = '#d63031';
+        btn.disabled = false;
+      }
+    });
   } catch (e) {
     statusEl.textContent = `❌ ${e.message}`;
     btn.disabled = false;
