@@ -309,7 +309,61 @@
 
   <!-- Qlib inference panel (batch mode only) -->
   <div id="qlibInferPanel" style="display:none;">
+    <!-- [1] 获取最新qlib数据 -->
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+      <input type="checkbox" id="qlibDataCheck" onchange="toggleQlibDataUpdate()"
+             style="width:16px;height:16px;cursor:pointer;" />
+      <span style="font-size:13px;color:#8ab4f8;">📥 获取最新qlib数据</span>
+      <span style="font-size:11px;color:#6b8db5;">从GitHub下载最新qlib bin数据，约3-8分钟</span>
+    </label>
+    <div id="qlibDataControls" style="display:none;margin-top:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;gap:10px;">
+      <button id="qlibDataExecuteBtn" onclick="executeQlibDataUpdate()"
+              style="padding:5px 14px;background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">执行</button>
+      <span id="qlibDataStatus" style="font-size:11px;color:#6b8db5;"></span>
+    </div>
+
+    <!-- [2] 启用qlib训练及回测 -->
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding-top:10px;border-top:1px solid #1e3a5f;">
+      <input type="checkbox" id="qlibTrainCheck" onchange="toggleQlibTrain()"
+             style="width:16px;height:16px;cursor:pointer;" />
+      <span style="font-size:13px;color:#f0a500;">🎯 启用qlib训练及回测</span>
+      <span style="font-size:11px;color:#6b8db5;">训练新模型或微调已有模型</span>
+    </label>
+    <div id="qlibTrainPanel" style="display:none;margin-top:8px;padding:10px 12px;background:#0f1a2b;border:1px solid #1e3a5f;border-radius:8px;">
+      <!-- 基础模型训练 -->
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+        <input type="checkbox" id="baseTrainCheck" onchange="toggleBaseTrain()"
+               style="width:16px;height:16px;cursor:pointer;" />
+        <span style="font-size:12px;color:#e0e0e0;">基础模型训练</span>
+        <span style="font-size:11px;color:#6b8db5;">全量 walk-forward 训练 + 回测（约30-120分钟）</span>
+      </label>
+      <div id="baseTrainControls" style="display:none;margin-top:8px;flex-wrap:wrap;align-items:center;gap:10px;">
+        <select id="trainTargetSelect"
+                style="background:#1a2d42;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:6px;padding:4px 8px;font-size:12px;min-width:240px;">
+          <option value="">选择训练目标...</option>
+        </select>
+        <button id="qlibTrainBtn" onclick="startQlibTrain()" style="padding:5px 14px;background:linear-gradient(135deg,#e17055,#d63031);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">开始训练</button>
+        <span id="qlibTrainStatus" style="font-size:11px;color:#6b8db5;"></span>
+      </div>
+
+      <!-- 近6年数据微调 -->
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-top:10px;">
+        <input type="checkbox" id="finetuneCheck" onchange="toggleFinetune()"
+               style="width:16px;height:16px;cursor:pointer;" />
+        <span style="font-size:12px;color:#e0e0e0;">近6年数据微调</span>
+        <span style="font-size:11px;color:#6b8db5;">选取模型 + 近5年/1年数据微调一个fold（约5-15分钟）</span>
+      </label>
+      <div id="finetuneControls" style="display:none;margin-top:8px;flex-wrap:wrap;align-items:center;gap:10px;">
+        <select id="finetuneModelSelect" style="background:#1a2d42;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:6px;padding:4px 8px;font-size:12px;min-width:280px;">
+          <option value="">选择基础模型...</option>
+        </select>
+        <button id="qlibFinetuneBtn" onclick="startQlibFinetune()" style="padding:5px 14px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">开始微调</button>
+        <span id="qlibFinetuneStatus" style="font-size:11px;color:#6b8db5;"></span>
+      </div>
+    </div>
+
+    <!-- [3] 启用qlib推理 -->
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding-top:10px;border-top:1px solid #1e3a5f;">
       <input type="checkbox" id="qlibCheck" onchange="toggleQlibInfer()"
              style="width:16px;height:16px;cursor:pointer;" />
       <span style="font-size:13px;color:#8ab4f8;">启用qlib推理</span>
@@ -492,6 +546,27 @@ function toggleBatchMode() {
     document.getElementById('fullMarketCheck').checked = false;
     document.getElementById('fullMarketControls').style.display = 'none';
     document.getElementById('fullMarketStatus').textContent = '';
+    document.getElementById('qlibDataStatus').textContent = '';
+    document.getElementById('qlibDataCheck').checked = false;
+    document.getElementById('qlibDataControls').style.display = 'none';
+    // 重置训练和微调
+    document.getElementById('qlibTrainCheck').checked = false;
+    document.getElementById('qlibTrainPanel').style.display = 'none';
+    document.getElementById('baseTrainCheck').checked = false;
+    document.getElementById('baseTrainControls').style.display = 'none';
+    document.getElementById('finetuneCheck').checked = false;
+    document.getElementById('finetuneControls').style.display = 'none';
+    document.getElementById('qlibTrainStatus').textContent = '';
+    document.getElementById('qlibFinetuneStatus').textContent = '';
+  }
+}
+
+function toggleQlibDataUpdate() {
+  const checked = document.getElementById('qlibDataCheck').checked;
+  const controls = document.getElementById('qlibDataControls');
+  controls.style.display = checked ? 'flex' : 'none';
+  if (!checked) {
+    document.getElementById('qlibDataStatus').textContent = '';
   }
 }
 
@@ -605,6 +680,260 @@ async function fillIndexStocks(indexName) {
     statusEl.textContent = `✅ 已填入 ${data.count} 只 (${indexName.toUpperCase()} ${data.date})`;
   } catch (e) {
     statusEl.textContent = `❌ ${e.message}`;
+  }
+}
+
+// ---- Qlib 数据更新 ----
+async function executeQlibDataUpdate() {
+  const btn = document.getElementById('qlibDataExecuteBtn');
+  const statusEl = document.getElementById('qlibDataStatus');
+  const simLogDiv = document.getElementById('simLog');
+  btn.disabled = true;
+  statusEl.textContent = '启动中...';
+  simLogDiv.style.display = 'block';
+  simLogDiv.textContent = '';
+
+  try {
+    const resp = await fetch(`${API}/api/qlib/data/update`, { method: 'POST' });
+    if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || '请求失败'); }
+    const { task_id } = await resp.json();
+
+    const startTime = Date.now();
+    const evtSource = new EventSource(`${API}/api/qlib/data/update/${task_id}/stream`);
+
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      if (data.message) {
+        simLogDiv.textContent += `[${elapsed}s] ${data.message}\n`;
+        simLogDiv.scrollTop = simLogDiv.scrollHeight;
+      }
+      statusEl.textContent = data.message || '';
+
+      if (data.status === 'completed') {
+        statusEl.textContent = '✅ qlib 数据更新完成';
+        btn.disabled = false;
+        evtSource.close();
+      }
+      if (data.status === 'failed') {
+        statusEl.textContent = `❌ ${data.error || '更新失败'}`;
+        btn.disabled = false;
+        evtSource.close();
+      }
+    };
+    evtSource.onerror = function() {
+      evtSource.close();
+      btn.disabled = false;
+      if (statusEl.textContent === '启动中...') statusEl.textContent = '❌ SSE 连接失败';
+    };
+  } catch (e) {
+    statusEl.textContent = `❌ ${e.message}`;
+    btn.disabled = false;
+  }
+}
+
+// ---- Qlib 训练 ----
+function toggleQlibTrain() {
+  const checked = document.getElementById('qlibTrainCheck').checked;
+  const panel = document.getElementById('qlibTrainPanel');
+  panel.style.display = checked ? 'block' : 'none';
+  if (!checked) {
+    document.getElementById('baseTrainCheck').checked = false;
+    document.getElementById('baseTrainControls').style.display = 'none';
+    document.getElementById('finetuneCheck').checked = false;
+    document.getElementById('finetuneControls').style.display = 'none';
+  }
+}
+
+async function loadTrainTargets() {
+  const sel = document.getElementById('trainTargetSelect');
+  if (sel.options.length > 1) return;
+  try {
+    const resp = await fetch(`${API}/api/qlib/train-targets`);
+    const targets = await resp.json();
+    targets.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.value;
+      opt.textContent = t.label;
+      opt.title = t.description;
+      sel.appendChild(opt);
+    });
+    if (targets.length === 0) {
+      sel.innerHTML = '<option value="">无可用训练目标</option>';
+    }
+  } catch (e) {
+    sel.innerHTML = '<option value="">加载失败</option>';
+    console.error('加载训练目标失败:', e);
+  }
+}
+
+function toggleBaseTrain() {
+  const checked = document.getElementById('baseTrainCheck').checked;
+  const controls = document.getElementById('baseTrainControls');
+  controls.style.display = checked ? 'flex' : 'none';
+  if (checked) loadTrainTargets();
+}
+
+async function startQlibTrain() {
+  const btn = document.getElementById('qlibTrainBtn');
+  const statusEl = document.getElementById('qlibTrainStatus');
+  const simLogDiv = document.getElementById('simLog');
+  const target = document.getElementById('trainTargetSelect').value;
+  if (!target) { alert('请选择训练目标'); return; }
+  // 从 target 解析 market（如 csi300-alpha158 → csi300）
+  let market = 'csi300';
+  if (target.toLowerCase().includes('csi1000')) market = 'csi1000';
+  btn.disabled = true;
+  statusEl.textContent = '启动训练...';
+  simLogDiv.style.display = 'block';
+  simLogDiv.textContent = '';
+  statusEl.style.color = '#6b8db5';
+
+  try {
+    const resp = await fetch(`${API}/api/qlib/train`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target, market, model_mode: 'robust', hold_num: 20 })
+    });
+    if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || '请求失败'); }
+    const { task_id } = await resp.json();
+
+    const startTime = Date.now();
+    const evtSource = new EventSource(`${API}/api/qlib/train/${task_id}/stream`);
+
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      if (data.message) {
+        simLogDiv.textContent += `[${elapsed}s] ${data.message}\n`;
+        simLogDiv.scrollTop = simLogDiv.scrollHeight;
+      }
+      statusEl.textContent = data.message || '';
+
+      if (data.status === 'completed') {
+        let msg = '✅ 训练完成';
+        if (data.model_name) msg += `: ${data.model_name}`;
+        if (data.backtest_metrics) {
+          const m = data.backtest_metrics;
+          if (m.sharpe_ratio != null) msg += ` | 夏普: ${m.sharpe_ratio}`;
+          if (m.annualized_return != null) msg += ` | 年化: ${(m.annualized_return*100).toFixed(2)}%`;
+          if (m.max_drawdown != null) msg += ` | 回撤: ${(m.max_drawdown*100).toFixed(2)}%`;
+          if (m.ic_mean != null) msg += ` | IC: ${m.ic_mean}`;
+        }
+        statusEl.textContent = msg;
+        statusEl.style.color = '#00b894';
+        btn.disabled = false;
+        evtSource.close();
+      }
+      if (data.status === 'failed') {
+        statusEl.textContent = `❌ ${data.error || '训练失败'}`;
+        statusEl.style.color = '#d63031';
+        btn.disabled = false;
+        evtSource.close();
+      }
+    };
+    evtSource.onerror = function() {
+      evtSource.close();
+      btn.disabled = false;
+      if (statusEl.textContent === '启动训练...') statusEl.textContent = '❌ SSE 连接失败';
+    };
+  } catch (e) {
+    statusEl.textContent = `❌ ${e.message}`;
+    btn.disabled = false;
+  }
+}
+
+// ---- Qlib 微调 ----
+function toggleFinetune() {
+  const checked = document.getElementById('finetuneCheck').checked;
+  const controls = document.getElementById('finetuneControls');
+  controls.style.display = checked ? 'flex' : 'none';
+  if (checked) loadFinetuneModels();
+}
+
+async function loadFinetuneModels() {
+  const sel = document.getElementById('finetuneModelSelect');
+  if (sel.options.length > 1) return;
+  try {
+    const resp = await fetch(`${API}/api/qlib/models`);
+    const models = await resp.json();
+    models.forEach(m => {
+      if (!m.has_scores) return;
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = `${m.name} (${m.market.toUpperCase()})${m.is_finetune ? ' 🔧' : ''}`;
+      sel.appendChild(opt);
+    });
+    if (models.length === 0) {
+      sel.innerHTML = '<option value="">无可用模型</option>';
+    }
+  } catch (e) {
+    sel.innerHTML = '<option value="">加载失败</option>';
+    console.error('加载模型列表失败:', e);
+  }
+}
+
+async function startQlibFinetune() {
+  const model = document.getElementById('finetuneModelSelect').value;
+  if (!model) { alert('请选择基础模型'); return; }
+
+  const btn = document.getElementById('qlibFinetuneBtn');
+  const statusEl = document.getElementById('qlibFinetuneStatus');
+  const simLogDiv = document.getElementById('simLog');
+  btn.disabled = true;
+  statusEl.textContent = '启动微调...';
+  simLogDiv.style.display = 'block';
+  simLogDiv.textContent = '';
+  statusEl.style.color = '#6b8db5';
+
+  try {
+    const resp = await fetch(`${API}/api/qlib/finetune`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base_model: model })
+    });
+    if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || '请求失败'); }
+    const { task_id } = await resp.json();
+
+    const startTime = Date.now();
+    const evtSource = new EventSource(`${API}/api/qlib/finetune/${task_id}/stream`);
+
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      if (data.message) {
+        simLogDiv.textContent += `[${elapsed}s] ${data.message}\n`;
+        simLogDiv.scrollTop = simLogDiv.scrollHeight;
+      }
+      statusEl.textContent = data.message || '';
+
+      if (data.status === 'completed') {
+        let msg = '✅ 微调完成';
+        if (data.model_name) msg += `: ${data.model_name}`;
+        if (data.backtest_metrics) {
+          const m = data.backtest_metrics;
+          if (m.sharpe_ratio != null) msg += ` | 夏普: ${m.sharpe_ratio}`;
+        }
+        statusEl.textContent = msg;
+        statusEl.style.color = '#a29bfe';
+        btn.disabled = false;
+        evtSource.close();
+      }
+      if (data.status === 'failed') {
+        statusEl.textContent = `❌ ${data.error || '微调失败'}`;
+        statusEl.style.color = '#d63031';
+        btn.disabled = false;
+        evtSource.close();
+      }
+    };
+    evtSource.onerror = function() {
+      evtSource.close();
+      btn.disabled = false;
+      if (statusEl.textContent === '启动微调...') statusEl.textContent = '❌ SSE 连接失败';
+    };
+  } catch (e) {
+    statusEl.textContent = `❌ ${e.message}`;
+    btn.disabled = false;
   }
 }
 
