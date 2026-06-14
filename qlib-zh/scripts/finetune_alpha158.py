@@ -174,8 +174,8 @@ def _export_scores(artifacts_dir: Path, output_dir: Path, pred_date: str):
     print(f"[finetune] scores.csv → {len(result_df)} 行")
 
     # all_scores.csv
+    result_df["datetime"] = pd.Timestamp(pred_date)
     all_df = result_df[["datetime", "instrument", "score"]].copy()
-    all_df["datetime"] = pd.Timestamp(pred_date)
     all_df.to_csv(output_dir / "all_scores.csv", index=False, encoding="utf-8-sig")
 
     # metrics.csv
