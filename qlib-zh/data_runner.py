@@ -198,7 +198,29 @@ def _extract_tar_gz(
                 )
                 last_log_time = now
 
-    _log(progress_callback, "解压完成")
+    _log(progress_callback, "解压完成，正在整理目录结构...")
+
+    # 修复：如果数据被解压到了一个子目录中（如 qlib_bin/ 或 cn_data/），
+    # 把内容移到 extract_to 顶层
+    for _ in range(3):  # 最多处理 3 层嵌套
+        subdirs = [d for d in extract_to.iterdir() if d.is_dir()]
+        files = [f for f in extract_to.iterdir() if f.is_file()]
+        # 如果只有一个子目录且没有文件，把子目录内容移到顶层
+        if len(subdirs) == 1 and len(files) == 0:
+            nested = subdirs[0]
+            _log(progress_callback, f"检测到嵌套目录 {nested.name}，上移内容...")
+            for item in nested.iterdir():
+                target = extract_to / item.name
+                if target.exists():
+                    if target.is_dir():
+                        shutil.rmtree(target)
+                    else:
+                        target.unlink()
+                shutil.move(str(item), str(target))
+            nested.rmdir()
+        else:
+            break
+    _log(progress_callback, "目录整理完成")
 
 
 def _verify_data_dir(progress_callback: Callable | None = None) -> list[str]:
