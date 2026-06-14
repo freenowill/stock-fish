@@ -536,28 +536,16 @@ def _update_qlib(task_id, progress, status, message, **kwargs):
 
 @app.route('/api/qlib/models', methods=['GET'])
 def qlib_models():
-    """列出所有可用模型（扫描 models/ 和 DATA/analysis_outputs/）"""
-    models_dir = _qlib_base_dir / "models"
-    analysis_dir = _qlib_base_dir / "DATA" / "analysis_outputs"
-    seen = set()
+    """列出所有可用模型（扫描 DATA/analysis_outputs/）"""
+    scan_dir = _qlib_base_dir / "DATA" / "analysis_outputs"
     models = []
 
-    for scan_dir in [models_dir, analysis_dir]:
-        if not scan_dir.exists():
-            continue
+    if scan_dir.exists():
         for d in sorted(scan_dir.iterdir()):
             if not d.is_dir():
                 continue
             name = d.name
-            if name in seen:
-                # 模型在两个目录都存在，更新 in_analysis_outputs 标记
-                existing = next((m for m in models if m["name"] == name), None)
-                if existing and scan_dir == analysis_dir:
-                    existing["in_analysis_outputs"] = True
-                continue
-            seen.add(name)
 
-            # 从目录名解析 market 和 date
             market = "unknown"
             if "csi300" in name.lower():
                 market = "csi300"
@@ -566,12 +554,7 @@ def qlib_models():
 
             date_part = name[:10] if len(name) >= 10 and name[4] == "-" else ""
             has_scores = (d / "model_predict" / "scores.csv").exists()
-
-            # 标记是否为微调模型
             is_finetune = "fintune" in name.lower()
-
-            # 标记是否在 analysis_outputs 中有完整训练产物（微调需要）
-            in_analysis_outputs = (scan_dir == analysis_dir)
 
             models.append({
                 "name": name,
@@ -579,7 +562,7 @@ def qlib_models():
                 "date": date_part,
                 "has_scores": has_scores,
                 "is_finetune": is_finetune,
-                "in_analysis_outputs": in_analysis_outputs,
+                "in_analysis_outputs": True,  # 始终为 True
             })
 
     return jsonify(models)

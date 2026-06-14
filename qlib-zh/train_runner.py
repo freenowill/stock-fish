@@ -13,7 +13,6 @@ import csv
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -46,7 +45,6 @@ def _resolve_config(market: str) -> dict:
                 "workflow_config_lightgbm_Alpha158_csi1000.yaml"
             ),
             "qlib_data_dir": "/root/.qlib/qlib_data/cn_data",
-            "use_models_dir": True,
         }
     else:
         # 默认 CSI300
@@ -59,7 +57,6 @@ def _resolve_config(market: str) -> dict:
                 "workflow_config_lightgbm_Alpha158.yaml"
             ),
             "qlib_data_dir": "/root/.qlib/qlib_data/cn_data",
-            "use_models_dir": False,
         }
 
 
@@ -140,25 +137,6 @@ def _parse_backtest_metrics(analysis_root: Path, model_name: str) -> dict:
     return metrics
 
 
-def _copy_to_models_dir(model_name: str, analysis_root: Path):
-    """将训练好的模型复制到 models/ 目录，使其对推理端点可见."""
-    models_dir = _LOCAL_PROJECT_ROOT / "models"
-    target_dir = models_dir / model_name
-
-    # 复制 model_predict 子目录（关键是 scores.csv 和模型检查点）
-    src_predict = analysis_root / "model_predict"
-    if src_predict.exists():
-        target_predict = target_dir / "model_predict"
-        target_predict.mkdir(parents=True, exist_ok=True)
-        for item in src_predict.iterdir():
-            if item.is_dir():
-                shutil.copytree(item, target_predict / item.name, dirs_exist_ok=True)
-            elif item.suffix in (".csv", ".pkl", ".json", ".html"):
-                shutil.copy2(item, target_predict / item.name)
-        return True
-    return False
-
-
 def run_training(
     market: str = "csi300",
     model_mode: str = "robust",
@@ -213,7 +191,7 @@ def run_training(
     _log(f"LightGBM only: {lightgbm_only}")
     _log(f"镜像: {DOCKER_IMAGE}")
 
-    base_dir = f"{WORKDIR}/models" if cfg.get("use_models_dir") else f"{WORKDIR}/DATA/analysis_outputs"
+    base_dir = f"{WORKDIR}/DATA/analysis_outputs"
     output_root_ctr = f"{base_dir}/{model_name}/model_predict"
     analysis_root_ctr = f"{base_dir}/{model_name}"
 
@@ -296,18 +274,8 @@ def run_training(
         raise RuntimeError(f"训练超时 ({TRAIN_TIMEOUT}s)")
 
     # 提取结果
-    _base_local = _LOCAL_PROJECT_ROOT / "models" if cfg.get("use_models_dir") else _LOCAL_PROJECT_ROOT / "DATA" / "analysis_outputs"
-    analysis_root = _base_local / model_name
-
+    analysis_root = _LOCAL_PROJECT_ROOT / "DATA" / "analysis_outputs" / model_name
     backtest_metrics = _parse_backtest_metrics(analysis_root, model_name)
-
-    # 复制到 models/ 目录（使推理端点可见）
-    if not cfg.get("use_models_dir"):
-        copied = _copy_to_models_dir(model_name, analysis_root)
-        if copied:
-            _log(f"模型已复制到: models/{model_name}")
-        else:
-            _log("警告: 模型复制到 models/ 失败（但训练结果仍在 DATA/analysis_outputs/ 中）")
 
     # 构建结果消息
     msg_parts = [f"训练完成: {model_name}"]
