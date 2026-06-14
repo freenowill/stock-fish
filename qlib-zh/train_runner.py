@@ -192,6 +192,19 @@ def run_training(
     # 确保 mlruns 目录存在
     _ensure_mlruns_dir()
 
+    # 检查 qlib 数据是否就绪
+    qlib_data = Path.home() / ".qlib" / "qlib_data" / "cn_data"
+    calendar_file = qlib_data / "calendars" / "day.txt"
+    features_dir = qlib_data / "features"
+    if not calendar_file.exists() and not features_dir.exists():
+        _log("❌ qlib 数据未下载！请先在网页勾选「获取最新qlib数据」→ 点击「执行」下载数据", status="failed")
+        return {
+            "success": False,
+            "model_name": model_name,
+            "message": "qlib 数据未下载，请先使用「获取最新qlib数据」功能下载数据",
+            "backtest_metrics": {},
+        }
+
     _log(f"市场: {cfg['market']}")
     _log(f"基准: {cfg['benchmark']}")
     _log(f"模型名称: {model_name}")
