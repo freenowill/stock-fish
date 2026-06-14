@@ -310,7 +310,7 @@ class ScoringEngine:
 
     def _score_fundamental(self, fin: dict, state, available: dict) -> float:
         pe = self._pe_score(state, fin)
-        roe = self._roe_score(fin)
+        roe = self._roe_score(state, fin)
         growth = self._growth_score(fin)
         div = self._dividend_score(fin)
 
@@ -364,10 +364,11 @@ class ScoringEngine:
 
         return clamp(base + adjustment, -3.0, 3.0)
 
-    def _roe_score(self, fin: dict) -> float:
+    def _roe_score(self, state, fin: dict) -> float:
         """ROE + 现金流验证 [-1.5, +1.5]"""
         roe = safe_float(fin.get('roe', 0))
         debt_ratio = safe_float(fin.get('debt_ratio', 0))
+        is_financial = _is_financial_industry(state) if hasattr(state, 'get') else False
 
         if roe > 25:
             base = +1.5
@@ -382,8 +383,8 @@ class ScoringEngine:
         else:
             base = -1.5
 
-        # 高负债扣分
-        if debt_ratio > 70:
+        # 高负债扣分（金融行业除外：银行/保险高负债是结构性特征）
+        if debt_ratio > 70 and not is_financial:
             base -= 0.3
 
         return clamp(base, -1.5, 1.5)
@@ -538,7 +539,7 @@ class ScoringEngine:
         ))
 
         roe = safe_float(fin.get('roe', 0))
-        roe_contrib = self._roe_score(fin)
+        roe_contrib = self._roe_score(state, fin)
         details.append(FactorDetail(
             factor=f'ROE({roe:.1f}%)', raw_value=roe,
             impact='positive' if roe_contrib > 0 else 'negative' if roe_contrib < 0 else 'neutral',
@@ -588,3 +589,18 @@ class ScoringEngine:
         if hasattr(obj, '__dict__'):
             return {k: v for k, v in obj.__dict__.items() if not k.startswith('_')}
         return {}
+
+def _is_financial_industry(state) -> bool:
+    """判断行业是否金融业（银行/保险/证券），高负债是结构性特征"""
+    try:
+        names = ''
+        stock_name = ''
+        if hasattr(state, 'industry_context') and state.industry_context:
+            ctx = state.industry_context
+            if isinstance(ctx, dict):
+                names = str(ctx.get('industry_names', ''))
+        if hasattr(state, 'stock_name') and state.stock_name:
+            stock_name = str(state.stock_name)
+        return any(k in names or k in stock_name for k in ('银行', '保险', '证券', '金融', '券商'))
+    except Exception:
+        return False

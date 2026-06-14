@@ -1,0 +1,222 @@
+{
+  "symbol": "600519",
+  "history": [
+    {
+      "date": "2026-05-15",
+      "news_avg": 0.1115,
+      "guba_avg": -0.475,
+      "news_count": 5,
+      "guba_count": 10
+    },
+    {
+      "date": "2026-05-16",
+      "news_avg": -0.2214,
+      "guba_avg": 0.2365,
+      "news_count": 9,
+      "guba_count": 5
+    },
+    {
+      "date": "2026-05-17",
+      "news_avg": 0.0724,
+      "guba_avg": -0.4682,
+      "news_count": 2,
+      "guba_count": 9
+    },
+    {
+      "date": "2026-05-18",
+      "news_avg": -0.2139,
+      "guba_avg": 0.102,
+      "news_count": 9,
+      "guba_count": 9
+    },
+    {
+      "date": "2026-05-19",
+      "news_avg": 0.1728,
+      "guba_avg": 0.2013,
+      "news_count": 7,
+      "guba_count": 10
+    },
+    {
+      "date": "2026-05-20",
+      "news_avg": -0.0406,
+      "guba_avg": -0.2218,
+      "news_count": 1,
+      "guba_count": 8
+    },
+    {
+      "date": "2026-05-21",
+      "news_avg": 0.1585,
+      "guba_avg": -0.1597,
+      "news_count": 3,
+      "guba_count": 9
+    },
+    {
+      "date": "2026-05-22",
+      "news_avg": 0.3658,
+      "guba_avg": -0.1634,
+      "news_count": 2,
+      "guba_count": 15
+    },
+    {
+      "date": "2026-05-23",
+      "news_avg": -0.3226,
+      "guba_avg": 0.3475,
+      "news_count": 10,
+      "guba_count": 11
+    },
+    {
+      "date": "2026-05-24",
+      "news_avg": 0.2457,
+      "guba_avg": 0.2297,
+      "news_count": 9,
+      "guba_count": 6
+    },
+    {
+      "date": "2026-05-25",
+      "news_avg": 0.3785,
+      "guba_avg": -0.1215,
+      "news_count": 9,
+      "guba_count": 12
+    },
+    {
+      "date": "2026-05-26",
+      "news_avg": 0.2635,
+      "guba_avg": 0.1185,
+      "news_count": 6,
+      "guba_count": 9
+    },
+    {
+      "date": "2026-05-27",
+      "news_avg": 0.1637,
+      "guba_avg": -0.4542,
+      "news_count": 4,
+      "guba_count": 12
+    },
+    {
+      "date": "2026-05-28",
+      "news_avg": 0.3882,
+      "guba_avg": 0.3553,
+      "news_count": 2,
+      "guba_count": 15
+    },
+    {
+      "date": "2026-05-29",
+      "news_avg": -0.1776,
+      "guba_avg": 0.1357,
+      "news_count": 6,
+      "guba_count": 8
+    },
+    {
+      "date": "2026-05-30",
+      "news_avg": -0.1039,
+      "guba_avg": -0.2905,
+      "news_count": 5,
+      "guba_count": 5
+    },
+    {
+      "date": "2026-05-31",
+      "news_avg": 0.0873,
+      "guba_avg": -0.3289,
+      "news_count": 4,
+      "guba_count": 8
+    },
+    {
+      "date": "2026-06-01",
+      "news_avg": -0.0302,
+      "guba_avg": -0.2301,
+      "news_count": 9,
+      "guba_count": 10
+    },
+    {
+      "date": "2026-06-02",
+      "news_avg": 0.1477,
+      "guba_avg": 0.3429,
+      "news_count": 1,
+      "guba_count": 10
+    },
+    {
+      "date": "2026-06-03",
+      "news_avg": 0.2574,
+      "guba_avg": 0.305,
+      "news_count": 7,
+      "guba_count": 11
+    },
+    {
+      "date": "2026-06-04",
+      "news_avg": -0.347,
+      "guba_avg": 0.4131,
+      "news_count": 10,
+      "guba_count": 13
+    },
+    {
+      "date": "2026-06-05",
+      "news_avg": -0.2299,
+      "guba_avg": -0.0008,
+      "news_count": 8,
+      "guba_count": 7
+    },
+    {
+      "date": "2026-06-06",
+      "news_avg": -0.1881,
+      "guba_avg": -0.2534,
+      "news_count": 9,
+      "guba_count": 20
+    },
+    {
+      "date": "2026-06-07",
+      "news_avg": -0.1898,
+      "guba_avg": 0.0846,
+      "news_count": 10,
+      "guba_count": 15
+    },
+    {
+      "date": "2026-06-08",
+      "news_avg": -0.1104,
+      "guba_avg": 0.4973,
+      "news_count": 3,
+      "guba_count": 19
+    },
+    {
+      "date": "2026-06-09",
+      "news_avg": -0.0052,
+      "guba_avg": 0.2558,
+      "news_count": 2,
+      "guba_count": 7
+    },
+    {
+      "date": "2026-06-10",
+      "news_avg": 0.102,
+      "guba_avg": 0.2921,
+      "news_count": 7,
+      "guba_count": 5
+    },
+    {
+      "date": "2026-06-11",
+      "news_avg": -0.0922,
+      "guba_avg": 0.0959,
+      "news_count": 8,
+      "guba_count": 19
+    },
+    {
+      "date": "2026-06-12",
+      "news_avg": -0.1989,
+      "guba_avg": 0.0532,
+      "news_count": 1,
+      "guba_count": 6
+    },
+    {
+      "date": "2026-06-13",
+      "news_avg": 0.1454,
+      "guba_avg": 0.037,
+      "news_count": 5,
+      "guba_count": 13
+    },
+    {
+      "date": "2026-06-14",
+      "news_avg": 0.3333,
+      "guba_avg": 0.1,
+      "news_count": 3,
+      "guba_count": 5
+    }
+  ]
+}

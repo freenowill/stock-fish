@@ -13,11 +13,14 @@ import pandas as pd
 import yaml
 
 
-def validate_date_order(dates: dict) -> None:
+def validate_date_order(dates: dict, practice_mode: bool = False) -> None:
     """Ensure train/valid/test windows are ordered and non-overlapping.
 
     train/valid boundaries are strictly ordered; test_start <= test_end is
     allowed so that a single-day prediction window works in predict_only mode.
+
+    When practice_mode=True (finetune/practice), test window may share the
+    same period as valid window.
     """
     keys = ["train_start", "train_end", "valid_start", "valid_end", "test_start", "test_end"]
     missing = [k for k in keys if k not in dates]
@@ -26,6 +29,9 @@ def validate_date_order(dates: dict) -> None:
 
     parsed = {k: pd.Timestamp(dates[k]) for k in keys}
     for left, right in zip(keys, keys[1:]):
+        # Allow valid_end == test_start in practice mode (same window)
+        if practice_mode and left == "valid_end" and right == "test_start":
+            continue
         # Allow test_start == test_end for single-day prediction windows
         if left == "test_start" and right == "test_end":
             if parsed[left] > parsed[right]:
@@ -71,8 +77,9 @@ def patch_yaml(
     data_start: str | None = None,
     sample_weight_half_life: int | None = None,
     handler_cache: str | None = None,
+    practice_mode: bool = False,
 ) -> None:
-    validate_date_order(dates)
+    validate_date_order(dates, practice_mode=practice_mode)
 
     with open(template_path, "r", encoding="utf-8") as f:
         content = f.read()

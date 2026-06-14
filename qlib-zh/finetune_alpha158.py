@@ -313,7 +313,6 @@ def main():
         output_path=str(config_path),
         dates=dates,
         model_mode=args.model_mode,
-        practice_mode=True,  # finetune 模式：valid 和 test 可用同一窗口
     )
     print(f"[finetune] 配置已生成: {config_path}")
 
