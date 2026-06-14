@@ -16,6 +16,12 @@
   <img src="document/stockfish_flow.png" alt="StockFish Multi-Factor Analysis Engine" width="960">
 </p>
 
+## 📰 News
+
+- 2026.06.14: Integrated Qlib one-click data download, base model training, fine-tuning, and backtesting
+- 2026.06.07: Completed master decision batch stock analysis
+- 2026.05.31: Completed stock analysis and MiroFish integration
+
 ## 📋 Todo List
 
 **🚀 Core Architecture** (done)
