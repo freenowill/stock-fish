@@ -249,24 +249,25 @@ def run_training(
 
         assert process.stdout is not None
         import time as _time
-        last_log_time = _time.time()
-        line_buffer = []
+        line_buffer: list[str] = []
 
         for line in process.stdout:
             line = line.rstrip()
-            line_buffer.append(line)
             if line:
-                now = _time.time()
-                if (now - last_log_time) >= 3.0:
-                    # 优先显示关键信息（训练进度、回测指标）
-                    display_line = line[:200]
-                    _log(f"[Docker] {display_line}")
-                    last_log_time = now
+                line_buffer.append(line)
+                # 每行都推送到日志（截断过长行）
+                _log(f"[Docker] {line[:200]}")
 
         process.wait(timeout=TRAIN_TIMEOUT)
 
         if process.returncode != 0:
-            raise RuntimeError(f"Docker 退出码: {process.returncode}")
+            # 输出最后 30 行用于诊断
+            for err_line in line_buffer[-30:]:
+                _log(f"[Docker ERR] {err_line[:300]}")
+            raise RuntimeError(
+                f"Docker 退出码: {process.returncode}，"
+                f"请检查上方 Docker 日志定位具体错误"
+            )
 
         _log("Docker 训练完成，正在提取结果...")
 

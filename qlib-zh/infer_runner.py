@@ -166,20 +166,22 @@ def run_inference(
         )
 
         assert process.stdout is not None
-        last_log_time = datetime.now()
+        line_buffer: list[str] = []
         for line in process.stdout:
             line = line.rstrip()
             if line:
-                # 每隔 5 秒推送一次最新日志行
-                now = datetime.now()
-                if (now - last_log_time).total_seconds() >= 5:
-                    _log(f"[Docker] {line[:120]}")
-                    last_log_time = now
+                line_buffer.append(line)
+                _log(f"[Docker] {line[:200]}")
 
         process.wait(timeout=900)  # 15 分钟超时
 
         if process.returncode != 0:
-            raise RuntimeError(f"Docker 退出码: {process.returncode}")
+            for err_line in line_buffer[-30:]:
+                _log(f"[Docker ERR] {err_line[:300]}")
+            raise RuntimeError(
+                f"Docker 退出码: {process.returncode}，"
+                f"请检查上方 Docker 日志定位具体错误"
+            )
 
         _log("Docker 推理完成，读取结果...")
 
