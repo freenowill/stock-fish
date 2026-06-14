@@ -245,8 +245,9 @@ def run_training(
         "--uri-folder", "mlruns",
         "--walk-forward-end", last_trade_date,
         "--step-years", "3",           # 3折 walk-forward
-        "--train-years", "5",          # 训练窗口5年（dev用）
-        "--valid-years", "1",          # 验证窗口1年（test用）
+        "--train-years", "5",          # 训练窗口
+        "--valid-years", "1",          # 验证窗口（dev，用于early stopping）
+        "--test-years", "2",           # 测试窗口（回测评估）
         "--model-mode", model_mode,
         "--hold-num", str(hold_num),
     ]
