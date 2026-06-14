@@ -244,6 +244,7 @@ def predict_stream(task_id: str):
     """SSE 推演进度流"""
     def generate():
         last_progress = -1
+        last_yield_time = time.time()
         while True:
             with _predictions_lock:
                 pred = predictions.get(task_id)
@@ -267,6 +268,10 @@ def predict_stream(task_id: str):
             if current_progress != last_progress:
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
+                last_yield_time = time.time()
+            elif time.time() - last_yield_time > 15:
+                yield ": heartbeat\n\n"
+                last_yield_time = time.time()
 
             time.sleep(1)
 
@@ -437,6 +442,7 @@ def batch_stream(task_id: str):
     def generate():
         last_progress = -1
         last_result_count = 0
+        last_yield_time = time.time()
         while True:
             with _batch_lock:
                 bt = batch_tasks.get(task_id)
@@ -448,11 +454,14 @@ def batch_stream(task_id: str):
             results = bt.get('results', [])
             current_result_count = len(results)
 
+            yielded = False
+
             # 推送新完成的 stock_result
             if current_result_count > last_result_count:
                 for r in results[last_result_count:]:
                     yield f"data: {json.dumps({'type': 'stock_result', 'symbol': r['symbol'], 'data': r['data']}, ensure_ascii=False)}\n\n"
                 last_result_count = current_result_count
+                yielded = True
 
             # 推送 progress
             if current_progress != last_progress:
@@ -460,6 +469,7 @@ def batch_stream(task_id: str):
                 current_stock = bt.get('current_stock', '')
                 yield f"data: {json.dumps({'type': 'progress', 'progress': current_progress, 'message': msg, 'current_stock': current_stock}, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
+                yielded = True
 
             # 终端状态推送 summary + quality_pick
             if bt['status'] in ('completed', 'failed'):
@@ -470,6 +480,12 @@ def batch_stream(task_id: str):
                         yield f"data: {json.dumps({'type': 'batch_summary', 'summary': summary, 'quality_pick': quality_pick}, ensure_ascii=False)}\n\n"
                 yield f"data: {json.dumps({'type': bt['status'], 'message': bt.get('message', '')})}\n\n"
                 break
+
+            if yielded:
+                last_yield_time = time.time()
+            elif time.time() - last_yield_time > 15:
+                yield ": heartbeat\n\n"
+                last_yield_time = time.time()
 
             time.sleep(1)
 
@@ -521,11 +537,12 @@ def _update_qlib(task_id, progress, status, message, **kwargs):
 @app.route('/api/qlib/models', methods=['GET'])
 def qlib_models():
     """列出所有可用模型（扫描 models/ 和 DATA/analysis_outputs/）"""
-    scan_dirs = [_qlib_base_dir / "models", _qlib_base_dir / "DATA" / "analysis_outputs"]
+    models_dir = _qlib_base_dir / "models"
+    analysis_dir = _qlib_base_dir / "DATA" / "analysis_outputs"
     seen = set()
     models = []
 
-    for scan_dir in scan_dirs:
+    for scan_dir in [models_dir, analysis_dir]:
         if not scan_dir.exists():
             continue
         for d in sorted(scan_dir.iterdir()):
@@ -533,6 +550,10 @@ def qlib_models():
                 continue
             name = d.name
             if name in seen:
+                # 模型在两个目录都存在，更新 in_analysis_outputs 标记
+                existing = next((m for m in models if m["name"] == name), None)
+                if existing and scan_dir == analysis_dir:
+                    existing["in_analysis_outputs"] = True
                 continue
             seen.add(name)
 
@@ -549,12 +570,16 @@ def qlib_models():
             # 标记是否为微调模型
             is_finetune = "fintune" in name.lower()
 
+            # 标记是否在 analysis_outputs 中有完整训练产物（微调需要）
+            in_analysis_outputs = (scan_dir == analysis_dir)
+
             models.append({
                 "name": name,
                 "market": market,
                 "date": date_part,
                 "has_scores": has_scores,
                 "is_finetune": is_finetune,
+                "in_analysis_outputs": in_analysis_outputs,
             })
 
     return jsonify(models)
@@ -655,7 +680,7 @@ def qlib_infer_stream(task_id):
     def generate():
         last_progress = -1
         last_message = ''
-        last_result_count = 0
+        last_yield_time = time.time()
         while True:
             with _qlib_lock:
                 qt = qlib_tasks.get(task_id)
@@ -687,6 +712,10 @@ def qlib_infer_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
                 last_message = current_message
+                last_yield_time = time.time()
+            elif time.time() - last_yield_time > 15:
+                yield ": heartbeat\n\n"
+                last_yield_time = time.time()
 
             time.sleep(1)
 
@@ -832,6 +861,7 @@ def qlib_data_update_stream(task_id):
     def generate():
         last_progress = -1
         last_message = ''
+        last_yield_time = time.time()
         while True:
             with _qlib_data_lock:
                 qt = qlib_data_tasks.get(task_id)
@@ -860,6 +890,10 @@ def qlib_data_update_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
                 last_message = current_message
+                last_yield_time = time.time()
+            elif time.time() - last_yield_time > 15:
+                yield ": heartbeat\n\n"
+                last_yield_time = time.time()
 
             time.sleep(1)
 
@@ -967,6 +1001,7 @@ def qlib_train_stream(task_id):
     def generate():
         last_progress = -1
         last_message = ''
+        last_yield_time = time.time()
         while True:
             with _qlib_train_lock:
                 qt = qlib_train_tasks.get(task_id)
@@ -997,6 +1032,10 @@ def qlib_train_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
                 last_message = current_message
+                last_yield_time = time.time()
+            elif time.time() - last_yield_time > 15:
+                yield ": heartbeat\n\n"
+                last_yield_time = time.time()
 
             time.sleep(1)
 
@@ -1197,6 +1236,7 @@ def qlib_finetune_stream(task_id):
     def generate():
         last_progress = -1
         last_message = ''
+        last_yield_time = time.time()
         while True:
             with _qlib_finetune_lock:
                 qt = qlib_finetune_tasks.get(task_id)
@@ -1227,6 +1267,10 @@ def qlib_finetune_stream(task_id):
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 last_progress = current_progress
                 last_message = current_message
+                last_yield_time = time.time()
+            elif time.time() - last_yield_time > 15:
+                yield ": heartbeat\n\n"
+                last_yield_time = time.time()
 
             time.sleep(1)
 

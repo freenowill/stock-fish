@@ -2119,6 +2119,16 @@ def _shift_signal_to_next_trade_dates(
         # Keep every ~4th week = roughly monthly
         monthly_dates = monthly_dates.iloc[::4]
         df = df[df["datetime"].isin(set(pd.to_datetime(monthly_dates)))]
+    elif freq == "yearly":
+        # yearly: first trading day of each year (annual rebalance)
+        yearly_dates = (
+            df[["datetime"]]
+            .drop_duplicates()
+            .assign(year=lambda x: pd.to_datetime(x["datetime"]).dt.year)
+            .groupby("year", as_index=False)["datetime"]
+            .min()["datetime"]
+        )
+        df = df[df["datetime"].isin(set(pd.to_datetime(yearly_dates)))]
     else:
         # weekly (default): one signal per ISO week
         weekly_dates = (
@@ -2652,7 +2662,7 @@ def _write_full_backtest_report(
             hold_num=hold_num,
             price_cap=price_cap,
             dropout_buffer_pct=float(os.environ.get("FULL_BACKTEST_BUFFER_PCT", "0.5") or 0.5),
-            freq=_rebalance_freq if _rebalance_freq in ("daily", "weekly", "monthly") else "weekly",
+            freq=_rebalance_freq if _rebalance_freq in ("daily", "weekly", "monthly", "yearly") else "weekly",
         )
         signal_source = "raw_stage2_score_buffered_topk"
         portfolio_construction = (
@@ -2713,6 +2723,57 @@ def _write_full_backtest_report(
             _weekly_report_txt.write_text("\n".join(_weekly_report_lines), encoding="utf-8")
             print(f"  Last Year Weekly Holdings Log: {_weekly_log_csv}")
             print(f"  Last Year Weekly Report: {_weekly_report_txt}")
+    elif full_backtest_strategy == "master_analysis":
+        # ── Master Analysis Mode: top-K model candidates → master scoring → top-N ──
+        _rebalance_freq = os.environ.get("FULL_BACKTEST_REBALANCE_FREQ", "yearly").strip().lower()
+        if _rebalance_freq not in ("daily", "weekly", "monthly", "yearly"):
+            _rebalance_freq = "yearly"
+
+        _top_k_candidates = int(os.environ.get("MASTER_TOP_K", "20") or 20)
+        _master_selection = os.environ.get("MASTER_SELECTION", "").strip()
+        _master_keys = (
+            [k.strip() for k in _master_selection.split(",") if k.strip()]
+            if _master_selection else None
+        )
+        _ensemble_method = os.environ.get("MASTER_ENSEMBLE", "mean").strip().lower()
+
+        # Lazy-import master strategy module from sibling directory
+        _master_path = str((Path(__file__).resolve().parent / "stage2_master_strategy.py").resolve())
+        import importlib.util as _importlib_util
+        _master_spec = _importlib_util.spec_from_file_location("stage2_master_strategy", _master_path)
+        _master_module = _importlib_util.module_from_spec(_master_spec)
+        _master_spec.loader.exec_module(_master_module)
+        sys.modules["stage2_master_strategy"] = _master_module
+
+        print(f"[master_analysis] top-K candidates={_top_k_candidates}, hold_num={hold_num}, "
+              f"masters={_master_keys or 'all_7_ensemble'}, ensemble={_ensemble_method}, freq={_rebalance_freq}")
+
+        master_signal = _master_module.build_master_signal(
+            raw_signal_df=raw_signal_df,
+            cal=cal,
+            hold_num=hold_num,
+            top_k_candidates=_top_k_candidates,
+            master_keys=_master_keys,
+            ensemble_method=_ensemble_method,
+            freq=_rebalance_freq,
+            price_cap=price_cap,
+            industry_cap_ratio=float(os.environ.get("MASTER_INDUSTRY_CAP", "0.40")),
+        )
+
+        shifted_signal = _shift_signal_to_next_trade_dates(master_signal, cal, freq=_rebalance_freq)
+        shifted_signal = _apply_price_cap_to_trade_signal(shifted_signal, price_cap=price_cap)
+        if not shifted_signal.empty and "weight" not in shifted_signal.columns:
+            shifted_signal = shifted_signal.copy()
+            shifted_signal["weight"] = shifted_signal["score"]
+
+        signal_source = f"master_analysis_{_rebalance_freq}"
+        _mk_label = ",".join(_master_keys) if _master_keys else "all_7_ensemble"
+        portfolio_construction = (
+            f"Master analysis: top {_top_k_candidates} model candidates → "
+            f"{_mk_label} {_ensemble_method}-ensemble → top{hold_num} equal-weight"
+        )
+        risk_degree = 1.0
+
     else:
         replay_signal_df = _build_stage36_full_signal(fold_outputs, output_root, hold_num, target_market)
         portfolio_signal_df = replay_signal_df if not replay_signal_df.empty else _build_risk_parity_signal_from_raw_signal(raw_signal_df, hold_num=hold_num)
