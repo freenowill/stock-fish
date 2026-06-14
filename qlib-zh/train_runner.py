@@ -254,7 +254,7 @@ def run_training(
             if line:
                 line_buffer.append(line)
                 # 每行都推送到日志（截断过长行）
-                _log(f"[Docker] {line[:200]}")
+                _log(f"[Docker] {line[:300]}")
 
         process.wait(timeout=TRAIN_TIMEOUT)
 
