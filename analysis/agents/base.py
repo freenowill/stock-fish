@@ -196,6 +196,14 @@ class BaseAgent:
         return default
 
     @staticmethod
+    def _is_financial_industry(state: dict) -> bool:
+        """判断行业是否金融业（银行/保险/证券），这些行业高负债是结构性的"""
+        ctx = state.get('industry_context') or {}
+        names = str(ctx.get('industry_names', ''))
+        stock_name = str(state.get('stock_name', ''))
+        return any(k in names or k in stock_name for k in ('银行', '保险', '证券', '金融', '券商'))
+
+    @staticmethod
     def build_tech_context(state: dict) -> str:
         """提取技术面数据 (复用自 PredictionNode._build_tech_data)"""
         ti = state.get('technical_indicators', {}) or {}
@@ -218,6 +226,8 @@ class BaseAgent:
         q = state.get('quote', {}) or {}
         vp = state.get('valuation_percentile')
         vp_str = f"{vp:.1f}%" if vp is not None else "N/A"
+        ft = state.get('financial_trends') or {}
+
         lines = [
             f"PE: {q.get('pe', '?')}  PB: {q.get('pb', '?')}  市值: {q.get('market_cap', '?')}亿",
             f"估值等级: {state.get('valuation_level', '?')} (PE分位: {vp_str})",
@@ -228,9 +238,41 @@ class BaseAgent:
             f"营收: {fs.get('revenue', '?')}亿  净利: {fs.get('net_profit', '?')}亿",
             f"毛利率: {fs.get('gross_margin', '?')}%  负债率: {fs.get('debt_ratio', '?')}%  "
             f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield', 'N/A')}%",
-            f"毛利率: {fs.get('gross_margin', '?')}%  负债率: {fs.get('debt_ratio', '?')}%",
             f"营收同比: {fs.get('revenue_yoy', '?')}%  净利同比: {fs.get('net_profit_yoy', '?')}%",
         ]
+
+        # ROIC (投入资本回报率) — 巴菲特核心指标
+        roic = state.get('roic')
+        if roic is not None:
+            lines.append(f"ROIC: {roic:.2f}% (衡量护城河的核心指标)")
+
+        # FCF per share
+        fcf_ps = state.get('fcf_per_share')
+        if fcf_ps is not None:
+            lines.append(f"每股自由现金流: {fcf_ps:.2f}元")
+
+        # 多期财务趋势
+        if ft:
+            roe_vals = ft.get('roe')
+            if roe_vals and isinstance(roe_vals, list) and len(roe_vals) >= 3:
+                lines.append(f"近5年ROE趋势: {' → '.join(f'{v:.1f}%' for v in roe_vals[-5:])}")
+            eps_cagr = ft.get('eps_cagr_5y')
+            if eps_cagr is not None:
+                lines.append(f"EPS 5年CAGR: {eps_cagr*100:.1f}%")
+            roe_stab = ft.get('roe_stability')
+            if roe_stab is not None:
+                lines.append(f"ROE稳定性(越低越稳): {roe_stab:.3f}")
+            gm_trend = ft.get('gross_margin_trend')
+            if gm_trend:
+                lines.append(f"毛利率趋势: {gm_trend}")
+
+        # 护城河评估（巴菲特）
+        moat = state.get('moat_assessment')
+        if moat and moat.get('moat_level'):
+            sources = moat.get('moat_sources', [])
+            lines.append(f"护城河判断: {moat['moat_level']}" +
+                        (f" — 来源: {', '.join(sources[:3])}" if sources else ""))
+
         return "\n".join(lines)
 
     @staticmethod
@@ -251,6 +293,23 @@ class BaseAgent:
             f"EPS: {fs.get('eps', '?')}  ROE: {fs.get('roe', '?')}%",
             f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield', 'N/A')}%",
         ]
+
+        # 长期PE分位
+        pe_5y = state.get('valuation_percentile_5y')
+        if pe_5y is not None:
+            lines.append(f"5年PE分位: {pe_5y:.1f}%")
+        pe_10y = state.get('valuation_percentile_10y')
+        if pe_10y is not None:
+            lines.append(f"10年PE分位: {pe_10y:.1f}%")
+
+        # 股票收益率 vs 债券
+        ey = state.get('earnings_yield')
+        bond = state.get('bond_yield_10y')
+        if ey is not None and bond is not None:
+            lines.append(f"E/P收益率: {ey:.1f}% vs 10年国债: {bond:.1f}% (风险溢价: {ey-bond:.1f}%)")
+        elif ey is not None:
+            lines.append(f"E/P收益率: {ey:.1f}%")
+
         return "\n".join(lines)
 
     @staticmethod
@@ -287,6 +346,24 @@ class BaseAgent:
         # 追加 Web 搜索结果
         lines.append("")
         lines.append(BaseAgent.build_search_context(state))
+
+        # 情感百分位 (邓普顿: 极端情绪信号)
+        sp = state.get('sentiment_percentile')
+        if sp is not None:
+            days = state.get('sentiment_history_days', 0)
+            if sp < 5:
+                lines.append(f"⚠️ 当前情感处于近{days}天最低{sp:.0f}%分位 — 极端悲观(潜在反向信号)")
+            elif sp < 15:
+                lines.append(f"当前情感处于近{days}天第{sp:.0f}%分位 — 偏悲观")
+            elif sp > 90:
+                lines.append(f"⚠️ 当前情感处于近{days}天最高{sp:.0f}%分位 — 极端乐观(需警惕)")
+            else:
+                lines.append(f"当前情感处于近{days}天第{sp:.0f}%分位 — 正常范围")
+
+        # 关注热度
+        ap = state.get('attention_news_percentile')
+        if ap is not None and ap < 10:
+            lines.append("📰 新闻关注度处于历史低位 — 该股可能被市场遗忘(邓普顿信号)")
         return "\n".join(lines)
 
     @staticmethod
@@ -305,6 +382,18 @@ class BaseAgent:
         if score_breakdown:
             lines.append(f"评分置信度: {score_breakdown.get('confidence', 'N/A')}")
             lines.append(f"市场状态: {score_breakdown.get('regime', 'N/A')}")
+
+        # VaR / 最大回撤 (新增风险量化指标)
+        var_95 = state.get('var_95')
+        if var_95 is not None:
+            lines.append(f"VaR(95%): 日最大亏损{var_95:.1f}%")
+        max_dd = state.get('max_drawdown')
+        if max_dd is not None:
+            lines.append(f"近1年最大回撤: {max_dd:.1f}%")
+        ann_vol = state.get('annualized_volatility')
+        if ann_vol is not None:
+            lines.append(f"年化波动率: {ann_vol:.1f}%")
+
         return "\n".join(lines)
 
     @staticmethod

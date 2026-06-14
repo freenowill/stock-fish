@@ -4,6 +4,7 @@
 """
 import os
 import sys
+import json
 import importlib.util
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -258,7 +259,78 @@ class SentimentCollector:
         )
 
 
-if __name__ == '__main__':
+# ========== 情感历史缓存（用于计算百分位）==========
+
+class SentimentHistory:
+    """
+    情感历史缓存 — 记录每日情感分值，用于计算当前情感在历史中的百分位。
+
+    数据存储: data/sentiment_history/{symbol}.json
+    """
+    HISTORY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sentiment_history')
+
+    def __init__(self, symbol: str):
+        self.symbol = symbol
+        self._ensure_dir()
+        self.history = self._load()
+
+    def _ensure_dir(self):
+        os.makedirs(self.HISTORY_DIR, exist_ok=True)
+
+    def _path(self) -> str:
+        return os.path.join(self.HISTORY_DIR, f'{self.symbol}.json')
+
+    def _load(self) -> list:
+        try:
+            if os.path.exists(self._path()):
+                with open(self._path(), 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('history', [])
+        except Exception as e:
+            logger.debug(f"情感历史加载失败 [{self.symbol}]: {e}")
+        return []
+
+    def _save(self, history: list):
+        try:
+            with open(self._path(), 'w', encoding='utf-8') as f:
+                json.dump({'symbol': self.symbol, 'history': history}, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.debug(f"情感历史保存失败 [{self.symbol}]: {e}")
+
+    def record(self, date_str: str, news_avg: float = 0.0, guba_avg: float = 0.0,
+               news_count: int = 0, guba_count: int = 0):
+        """记录当日情感数据，同日期覆盖"""
+        # 移除同日期旧记录
+        self.history = [h for h in self.history if h.get('date') != date_str]
+        self.history.append({
+            'date': date_str,
+            'news_avg': news_avg,
+            'guba_avg': guba_avg,
+            'news_count': news_count,
+            'guba_count': guba_count,
+        })
+        # 仅保留最近365天
+        self.history = sorted(self.history, key=lambda x: x['date'])[-365:]
+        self._save(self.history)
+
+    def get_percentile(self, current_news_avg: float = 0.0, current_guba_avg: float = 0.0) -> dict:
+        """计算当前情感在历史中的百分位"""
+        if len(self.history) < 5:
+            return {'news_percentile': None, 'guba_percentile': None, 'total_days': len(self.history)}
+
+        news_scores = sorted([h.get('news_avg', 0) for h in self.history if h.get('news_avg') is not None])
+        guba_scores = sorted([h.get('guba_avg', 0) for h in self.history if h.get('guba_avg') is not None])
+
+        def _pct(val, arr):
+            if not arr:
+                return None
+            return round(sum(1 for v in arr if v <= val) / len(arr) * 100, 1)
+
+        return {
+            'news_percentile': _pct(current_news_avg, news_scores),
+            'guba_percentile': _pct(current_guba_avg, guba_scores),
+            'total_days': len(self.history),
+        }
     collector = SentimentCollector()
 
     texts = [

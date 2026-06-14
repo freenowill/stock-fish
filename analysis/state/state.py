@@ -66,6 +66,46 @@ class AnalysisState:
     # Web 搜索结果 (Phase 4 新增)
     search_results: Optional[Dict] = None  # {query, results: [{title, url, snippet, source}], summary}
 
+    # ── 数据补充新字段 (Phase 1-4) ──
+
+    # 风险指标 (从get_historical计算)
+    var_95: Optional[float] = None           # 95% VaR (%)
+    max_drawdown: Optional[float] = None     # 最大回撤 (%)
+    beta: Optional[float] = None             # Beta (相对沪深300)
+    annualized_volatility: Optional[float] = None  # 年化波动率 (%)
+
+    # 收益率对比
+    earnings_yield: Optional[float] = None   # E/P = EPS / Price (%)
+    bond_yield_10y: Optional[float] = None   # 10年期国债收益率 (%)
+    equity_risk_premium: Optional[float] = None  # earnings_yield - bond_yield
+
+    # 长期PE分位
+    valuation_percentile_5y: Optional[float] = None
+    valuation_percentile_10y: Optional[float] = None
+    pe_avg_5y: Optional[float] = None
+    pe_avg_10y: Optional[float] = None
+
+    # ROIC / FCF (从financial_abstract提取)
+    roic: Optional[float] = None             # 投入资本回报率 (%)
+    fcf_per_share: Optional[float] = None    # 每股企业自由现金流量
+    operating_cash_flow_per_share: Optional[float] = None  # 每股经营现金流
+    owner_earnings_per_share: Optional[float] = None       # 每股所有者收益
+
+    # 多期财务趋势
+    financial_trends: Optional[Dict] = None  # {roe_5y:[], eps_cagr_5y, revenue_cagr_5y,
+                                             #  roe_stability, gross_margin_trend, ...}
+
+    # 情绪历史 (Phase 3)
+    sentiment_percentile: Optional[float] = None     # 0~100
+    sentiment_history_days: Optional[int] = None     # 历史天数
+    attention_news_percentile: Optional[float] = None
+    attention_guba_percentile: Optional[float] = None
+
+    # Web搜索补充 (Phase 4)
+    peer_valuation: Optional[Dict] = None     # {peers:[], conclusion}
+    moat_assessment: Optional[Dict] = None    # {moat_level, moat_sources, evidence}
+    management_quality: Optional[Dict] = None # {insider_net_flow, quality_score}
+
     def to_dict(self) -> dict:
         d = asdict(self)
         d['created_at'] = self.created_at or datetime.now().isoformat()

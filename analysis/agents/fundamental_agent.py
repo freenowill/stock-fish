@@ -23,23 +23,24 @@ class FundamentalAgent(BaseAgent):
     def _llm_analyze(self, data: str) -> EmployeeReport:
         prompt = """你是A股基本面分析专家。分析财务数据给出独立判断。
 
-输出JSON:
-{
-  "outlook": "看多/看空/中性",
-  "confidence": "高/中/低",
-  "score": 3,
-  "key_points": ["ROE=26%远高于15%门槛，盈利能力卓越", "自由现金流连续5年为正，利润质量高"],
-  "risks": ["营收增速放缓，需关注成长瓶颈", "资产负债率上升"]
-}
+    输出JSON:
+    {
+      "outlook": "看多/看空/中性",
+      "confidence": "高/中/低",
+      "score": 3,
+      "key_points": ["ROE=26%远高于15%门槛，盈利能力卓越", "ROIC=18%显示强韧护城河", "自由现金流连续5年为正，利润质量高"],
+      "risks": ["营收增速放缓，需关注成长瓶颈", "资产负债率上升"]
+    }
 
-评分规则:
-- ROE>20%: +3分; >15%: +2分; >10%: +1分; <5%: -1分; <0%: -2分
-- 营收同比正增长>20%: +2分; >10%: +1分; 负增长: -2分
-- 净利润同比正增长>20%: +2分; >10%: +1分; 负增长: -2分
-- 毛利率>行业均值: +1分; 毛利率趋势下跌: -1分
-- 负债率<40%: +1分; 负债率>70%: -1分
-- 最终score范围为-10到10
-- outlook: score>2→看多, score<-2→看空, 否则中性"""
+    评分规则:
+    - ROE>20%: +3分; >15%: +2分; >10%: +1分; <5%: -1分; <0%: -2分
+    - ROIC>15%: +2分 (强护城河信号); ROIC>10%: +1分; ROIC<5%: -1分
+    - 营收同比正增长>20%: +2分; >10%: +1分; 负增长: -2分
+    - 净利润同比正增长>20%: +2分; >10%: +1分; 负增长: -2分
+    - 毛利率>行业均值: +1分; 毛利率趋势下跌: -1分
+    - 负债率<40%: +1分; 负债率>70%: -1分
+    - 最终score范围为-10到10
+    - outlook: score>2→看多, score<-2→看空, 否则中性"""
 
         result = self._call_llm(
             f"你是{self.role}。请仅基于提供的数据给出独立判断。输出严格JSON。",
@@ -54,6 +55,7 @@ class FundamentalAgent(BaseAgent):
         profit_yoy = fs.get('net_profit_yoy', 0) or 0
         gross_margin = fs.get('gross_margin', 0) or 0
         debt_ratio = fs.get('debt_ratio', 0) or 0
+        is_financial = BaseAgent._is_financial_industry(state)
 
         score = 0.0
         points, risks = [], []
@@ -66,6 +68,27 @@ class FundamentalAgent(BaseAgent):
             score += 1; points.append(f"ROE={roe:.1f}%，盈利尚可")
         elif roe < 5:
             score -= 1; risks.append(f"ROE={roe:.1f}%偏低")
+
+        # ROIC 评估 (巴菲特护城河指标)
+        roic = state.get('roic')
+        if roic is not None:
+            if roic > 15:
+                score += 2; points.append(f"ROIC={roic:.1f}%，护城河强劲")
+            elif roic > 10:
+                score += 1; points.append(f"ROIC={roic:.1f}%，护城河稳固")
+            elif roic < 5:
+                score -= 1; risks.append(f"ROIC={roic:.1f}%，资本回报效率偏低")
+
+        # 多期趋势
+        ft = state.get('financial_trends') or {}
+        gm_trend = ft.get('gross_margin_trend')
+        if gm_trend == '下降':
+            risks.append("毛利率呈下降趋势，需关注竞争恶化")
+        elif gm_trend == '上升':
+            points.append("毛利率持续改善，定价权增强")
+        eps_cagr = ft.get('eps_cagr_5y')
+        if eps_cagr is not None and eps_cagr < -0.05:
+            risks.append(f"EPS 5年CAGR={eps_cagr*100:.1f}%，盈利增长乏力")
 
         if rev_yoy > 20:
             score += 2; points.append(f"营收同比+{rev_yoy:.1f}%，高速增长")
@@ -83,10 +106,12 @@ class FundamentalAgent(BaseAgent):
 
         if gross_margin > 40:
             score += 1; points.append(f"毛利率{gross_margin:.1f}%，护城河体现")
-        if debt_ratio < 40:
+        if debt_ratio < 40 and not is_financial:
             score += 1; points.append(f"负债率{debt_ratio:.1f}%，财务稳健")
-        elif debt_ratio > 70:
+        elif debt_ratio > 70 and not is_financial:
             score -= 1; risks.append(f"负债率{debt_ratio:.1f}%，财务杠杆偏高")
+        elif is_financial:
+            points.append(f"负债率{debt_ratio:.1f}%（金融行业，高负债为结构性特征）")
 
         outlook = "看多" if score >= 2 else "看空" if score <= -2 else "中性"
         conf = "高" if abs(score) > 4 else "中" if abs(score) > 2 else "低"

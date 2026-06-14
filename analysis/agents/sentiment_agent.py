@@ -82,6 +82,26 @@ class SentimentAgent(BaseAgent):
             score -= 1  # 极度乐观可能是卖出信号
             risks.append("⚠️ 市场情绪处于极端乐观区域，谨防逆转")
 
+        # 情感百分位 — 历史对比信号（邓普顿核心）
+        sp = state.get('sentiment_percentile')
+        if sp is not None:
+            if sp < 5:
+                score += 2  # 极端悲观是强烈反向买入信号
+                points.append(f"🔥 情感处于历史最低{sp:.0f}%分位 — 邓普顿式'最大悲观点'信号")
+            elif sp < 15:
+                score += 1  # 偏悲观是温和反向信号
+                points.append(f"情感处于历史第{sp:.0f}%分位 — 偏悲观，关注反向机会")
+            elif sp > 95:
+                score -= 2  # 极端乐观
+                risks.append(f"情感处于历史最高{sp:.0f}%分位 — 过度乐观，警惕反转")
+            elif sp > 85:
+                score -= 1
+
+        # 关注热度 — 低关注可能意味着被遗忘
+        ap = state.get('attention_news_percentile')
+        if ap is not None and ap < 10:
+            points.append(f"📰 新闻关注度处于历史最低{ap:.0f}%分位 — 该股被市场遗忘(邓普顿青睐)")
+
         if abs(news_avg - guba_avg) > 0.4:
             points.append("新闻与股吧情绪严重背离，市场信息不对称")
 

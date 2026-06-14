@@ -164,6 +164,39 @@ class CIOAgent(BaseAgent):
         lines.append(f"RSI(14): {ti.get('rsi_14', 'N/A')}  MACD柱: {ti.get('macd_hist', 'N/A')}")
         lines.append(f"PE 分位: {pe_pct_str}")
 
+        # 新增数据字段
+        roic = state.get('roic')
+        if roic is not None:
+            lines.append(f"ROIC: {roic:.2f}% (投入资本回报率)")
+        fcf_ps = state.get('fcf_per_share')
+        if fcf_ps is not None:
+            lines.append(f"每股自由现金流: {fcf_ps:.2f}元")
+        pe_5y = state.get('valuation_percentile_5y')
+        if pe_5y is not None:
+            lines.append(f"5年PE分位: {pe_5y:.1f}%")
+        ey = state.get('earnings_yield')
+        bond = state.get('bond_yield_10y')
+        if ey is not None:
+            lines.append(f"E/P收益率: {ey:.1f}%" + (f" (vs 国债{bond:.1f}%)" if bond is not None else ""))
+        var_95 = state.get('var_95')
+        if var_95 is not None:
+            lines.append(f"VaR(95%): {var_95:.1f}%  最大回撤: {state.get('max_drawdown', 'N/A')}%")
+
+        # 护城河评估（巴菲特关注）
+        moat = state.get('moat_assessment')
+        if moat and moat.get('moat_level'):
+            lines.append(f"护城河评估: {moat['moat_level']}" +
+                        (f" (来源: {', '.join(moat['moat_sources'][:3])})" if moat.get('moat_sources') else ""))
+
+        # 同行估值对比（邓普顿关注）
+        peer = state.get('peer_valuation')
+        if peer and peer.get('peers'):
+            lines.append(f"同行搜索: {len(peer['peers'])}家同业公司信息")
+            if peer.get('global_pe_data'):
+                for t, d in peer['global_pe_data'].items():
+                    if d.get('pe'):
+                        lines.append(f"  {d['name']} PE={d['pe']:.1f}")
+
         return "\n".join(lines)
 
     # ── 结果解析 ──

@@ -97,6 +97,20 @@ class RiskManager(BaseAgent):
         elif val_level == '很高':
             risk_score += 2; risks.append("估值很高，回调风险加大")
 
+        # VaR 量化风险
+        var_95 = state.get('var_95')
+        if var_95 is not None:
+            if abs(var_95) > 5:
+                risk_score += 2; risks.append(f"VaR(95%)={var_95:.1f}%，日风险较高")
+            elif abs(var_95) > 3:
+                risk_score += 1; risks.append(f"VaR(95%)={var_95:.1f}%，日风险中等")
+        max_dd = state.get('max_drawdown')
+        if max_dd is not None:
+            if max_dd > 40:
+                risk_score += 2; risks.append(f"近1年最大回撤{max_dd:.0f}%，下行极深")
+            elif max_dd > 25:
+                risk_score += 1
+
         risk_score = max(1, min(10, risk_score))
 
         if risk_score >= self.veto_threshold:

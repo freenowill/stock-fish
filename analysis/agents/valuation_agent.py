@@ -28,12 +28,14 @@ class ValuationAgent(BaseAgent):
   "outlook": "看多/看空/中性",
   "confidence": "高/中/低",
   "score": -5,
-  "key_points": ["PE处于历史1%分位，远低于均值，估值极低"],
+  "key_points": ["PE处于历史1%分位，远低于均值，估值极低", "长期PE分位同样偏低，估值有安全边际"],
   "risks": ["低估值可能反映基本面恶化，需警惕价值陷阱"]
 }
 
 评分规则:
 - PE分位<10%: +3分; <30%: +2分; <50%: +1分; >70%: -1分; >90%: -3分
+- 5年PE分位<10%: +2分(长期低估信号); 10年PE分位<10%: +3分(极端低估)
+- 股票收益率(E/P) > 国债收益率+3%: +2分(高权益溢价); <国债收益率: -2分(股票偏贵)
 - PB<1(破净): +2分; PB<1.5: +1分
 - ROE>15%且PE<行业均值: +2分 (低估值+高质量=双击机会)
 - PE分位>90%且ROE<5%: -2分 (高估值+低质量=风险)
@@ -66,6 +68,24 @@ class ValuationAgent(BaseAgent):
             score -= 1; points.append(f"PE处于历史{pe_pct:.0f}%分位，估值偏高"); risks.append("高估值回调风险")
         else:
             score -= 3; points.append(f"PE处于历史{pe_pct:.0f}%分位，估值极高"); risks.append("估值泡沫风险")
+
+        # 长期PE分位 (5年)
+        pe_5y = state.get('valuation_percentile_5y')
+        if pe_5y is not None:
+            if pe_5y < 10:
+                score += 2; points.append(f"5年PE分位={pe_5y:.0f}%，长期低估")
+            elif pe_5y > 80:
+                score -= 1; risks.append(f"5年PE分位={pe_5y:.0f}%，长期偏高")
+
+        # 股票收益率 vs 国债收益率 (巴菲特指标)
+        eq = state.get('equity_risk_premium')
+        if eq is not None:
+            yield_val = state.get('earnings_yield')
+            bond = state.get('bond_yield_10y')
+            if eq > 3:
+                score += 2; points.append(f"E/P={yield_val:.1f}% > 国债{bond:.1f}%+3%，权益溢价显著")
+            elif eq < 0:
+                score -= 2; risks.append(f"E/P={yield_val:.1f}% < 国债{bond:.1f}%，股票相对债券偏贵")
 
         if pb < 1:
             score += 2; points.append("PB<1，低于净资产(破净)")
