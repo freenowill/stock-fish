@@ -569,14 +569,7 @@ def qlib_train_targets():
             "label": "沪深300 Alpha158",
             "market": "csi300",
             "benchmark": "SH000300",
-            "description": "沪深300成分股 + Alpha158因子 + LightGBM walk-forward全量训练（约30-90分钟）"
-        },
-        {
-            "value": "csi1000-alpha158",
-            "label": "中证1000 Alpha158",
-            "market": "csi1000",
-            "benchmark": "SH000852",
-            "description": "中证1000成分股 + Alpha158因子 + LightGBM walk-forward全量训练（约60-120分钟）"
+            "description": "沪深300成分股 + Alpha158因子 + LightGBM walk-forward全量训练（约20-40分钟）"
         },
     ]
     return jsonify(targets)
