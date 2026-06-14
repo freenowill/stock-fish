@@ -30,9 +30,9 @@
 - [x] Front-end master selector + multi-master comparison
 - [x] Macro/industry analyst integration
 
-**🤖 Qlib Inference** (in progress)
+**🤖 Qlib Inference** (completed)
 - [x] One-click data update
-- [ ] One-click training & fine-tuning (in progress)
+- [x] One-click training & fine-tuning
 - [x] Inference-only mode
 
 **📊 Batch Stock Analysis** (completed)
@@ -41,10 +41,11 @@
 - [x] Batch summary (ranking/common themes/divergences) + quality pick
 - [x] Per-stock result cached in batch_results/
 
-**⏪ Backtesting System** (scoring-engine based, no LLM)
-- [ ] Historical window traversal + look-ahead bias free
-- [ ] IC / IR / Win Rate / Cumulative Return
-- [ ] Adaptive weight module standalone evaluation
+**⏪ Backtesting System** (Qlib Walk-Forward + Master Analysis Strategy)
+- [x] 3-fold rolling window + zero look-ahead bias
+- [x] IC / IR / Sharpe / Annual Return / Max Drawdown / Monthly Win Rate
+- [x] 7-master factor scoring (top 20 → 6-dimension scoring → top 5)
+- [x] Yearly/weekly/monthly/daily rebalance options
 
 **💬 Feishu Integration**
 - [ ] `/analyze` `/batch` `/backtest` `/watch` commands
