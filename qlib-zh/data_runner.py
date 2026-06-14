@@ -33,6 +33,18 @@ DOWNLOAD_TIMEOUT = 600
 # 每下载 chunk 后推送间隔（秒）
 PROGRESS_INTERVAL = 1.0
 
+# ---- 代理配置 ----
+_PROXY_URL = os.environ.get("QLIB_DATA_PROXY", "")
+_PROXIES = {"http": _PROXY_URL, "https": _PROXY_URL} if _PROXY_URL else None
+
+
+def _make_session() -> requests.Session:
+    """创建带代理配置的 requests Session."""
+    session = requests.Session()
+    if _PROXIES:
+        session.proxies.update(_PROXIES)
+    return session
+
 
 def _log(progress_callback: Callable | None, message: str, **extra):
     """统一日志推送."""
@@ -42,7 +54,8 @@ def _log(progress_callback: Callable | None, message: str, **extra):
 
 def _get_latest_release_info() -> dict:
     """获取最新 release 的下载 URL 和 tag."""
-    resp = requests.get(
+    session = _make_session()
+    resp = session.get(
         RELEASE_API_URL,
         headers={"User-Agent": "StockFish/1.0"},
         timeout=30,
@@ -77,7 +90,8 @@ def _download_file(
     if total_size > 0:
         _log(progress_callback, f"文件大小: {total_size / 1024 / 1024:.1f} MB")
 
-    resp = requests.get(
+    session = _make_session()
+    resp = session.get(
         url,
         headers={
             "Accept": "application/octet-stream",

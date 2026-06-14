@@ -11,6 +11,8 @@ services:
       - QLIB_HOST_PROJECT_ROOT=${PWD}/qlib-zh
       - QLIB_HOST_DATA_DIR=${HOME}/.qlib
       - QLIB_HOST_MLRUNS_DIR=${HOME}/github/qlib-zh/mlruns
+      # qlib 数据下载代理（socks5 代理加速 GitHub 下载）
+      - QLIB_DATA_PROXY=${QLIB_DATA_PROXY:-}
     ports:
       - "8000:8000"
     depends_on:
