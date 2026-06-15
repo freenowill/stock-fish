@@ -379,6 +379,27 @@ def main():
         print(f"[finetune] 未找到 MLflow artifacts")
         metrics = {}
 
+    # ---- Step 6b: 创建 segments 目录（推理时 _find_latest_fold_checkpoint 需要） ----
+    seg_key = f"{valid_start[:4]}-{valid_end[:4]}"
+    seg_dir = output_predict / "walk_forward" / "segments" / seg_key
+    seg_dir.mkdir(parents=True, exist_ok=True)
+    seg_csv = seg_dir / "segment_folds.csv"
+    import pandas as pd
+    seg_df = pd.DataFrame([{
+        "fold_tag": valid_start,
+        "signal_date": valid_start,
+        "train_start": train_start,
+        "train_end": train_end,
+        "valid_start": valid_start,
+        "valid_end": valid_end,
+        "test_start": valid_start,
+        "test_end": valid_end,
+    }])
+    seg_df.to_csv(seg_csv, index=False, encoding="utf-8-sig")
+    print(f"[finetune] segments 已创建: segments/{seg_key}/segment_folds.csv")
+
+    # workflow_config_practice.yaml 已由 gen_practice_yaml.py 写入 fold 目录，无需复制
+
     # ---- Step 7: 回测 ----
     scores_csv = output_predict / "scores.csv"
     backtest_report = {}
