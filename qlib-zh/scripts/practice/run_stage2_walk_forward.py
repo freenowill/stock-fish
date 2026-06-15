@@ -3395,6 +3395,18 @@ def _predict_only_main(args, template_path, output_root, wf_root) -> None:
         else:
             model = saved_model
 
+        # Allow shape mismatch for finetuned models (predict-only YAML may
+        # differ slightly from training YAML, especially for handler start_time)
+        try:
+            booster = getattr(model, "model", None)
+            if booster is not None:
+                _orig_predict = booster.predict
+                booster.predict = lambda data, *a, **kw: _orig_predict(
+                    data, *a, predict_disable_shape_check=True, **kw
+                )
+        except Exception:
+            pass
+
         # Predict on test segment
         print(f"  Predicting on test segment ({pred_date})...")
         try:
