@@ -106,6 +106,11 @@ def patch_yaml(
 
     _apply_model_mode(doc, model_mode, sample_weight_half_life=sample_weight_half_life)
 
+    # Ensure LightGBM model can predict even if feature count differs
+    # (e.g. predict-only regenerates YAML from template, which may differ from training)
+    model_kwargs = doc.setdefault("task", {}).setdefault("model", {}).setdefault("kwargs", {})
+    model_kwargs.setdefault("predict_disable_shape_check", True)
+
     # ──────────────────────────────────────────
     # 2. 更新 dataset segments
     # ──────────────────────────────────────────
