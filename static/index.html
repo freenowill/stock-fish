@@ -894,8 +894,8 @@ async function loadFinetuneModels() {
   try {
     const resp = await fetch(`${API}/api/qlib/models`);
     const models = await resp.json();
-    // 微调需要 analysis_outputs 下的完整训练产物（walk_forward/、params.pkl 等）
-    const finetuneModels = models.filter(m => m.in_analysis_outputs && m.has_scores);
+    // 微调需要 analysis_outputs 下的完整训练产物（walk_forward/、params.pkl 等），排除已微调的模型
+    const finetuneModels = models.filter(m => m.in_analysis_outputs && m.has_scores && !m.is_finetune);
     finetuneModels.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.name;
