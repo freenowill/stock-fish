@@ -1104,11 +1104,14 @@ def qlib_finetune():
 
             cmd = [
                 "docker", "run", "--rm",
+                "--memory", "12g",
+                "--memory-swap", "12g",
                 "-e", "QLIB_DATA_DIR=/root/.qlib/qlib_data/cn_data",
                 "-e", f"TARGET_MARKET={cfg['market']}",
                 "-e", f"TARGET_BENCHMARK={benchmark}",
                 "-e", "CASH_TOTAL=100000",
                 "-e", "PYTHONUNBUFFERED=1",
+                "-e", "OMP_NUM_THREADS=8",
                 "-v", f"{host_project_root}:{workdir}",
                 "-v", f"{host_qlib_data}:/root/.qlib",
                 "-v", f"{host_mlruns}:{workdir}/mlruns",

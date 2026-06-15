@@ -53,6 +53,7 @@ def _apply_model_mode(doc: dict, model_mode: str, sample_weight_half_life: int |
     if model_mode == "robust":
         # Based on stage2 analysis: positive IC but low IR / high drawdown.
         # Use stronger regularization and lower tree complexity to improve stability.
+        # num_threads=8 avoids OOM during warm-start finetune (default 20 threads).
         model.update(
             {
                 "learning_rate": 0.05,
@@ -63,6 +64,7 @@ def _apply_model_mode(doc: dict, model_mode: str, sample_weight_half_life: int |
                 "lambda_l1": 500.0,
                 "lambda_l2": 1000.0,
                 "min_data_in_leaf": 64,
+                "num_threads": 8,
             }
         )
     else:
