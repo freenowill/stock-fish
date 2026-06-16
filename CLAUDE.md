@@ -12,6 +12,7 @@ python app.py
 bash run.sh              # Docker: pulls zhuhai123/stockfish-* images, starts StockFish + MiroFish
 bash run.sh --local      # Local Python (no Docker, port 8000)
 bash run.sh --no-mirofish # Docker: StockFish only, skip MiroFish
+bash run.sh --debug      # Debug mode: OASIS_DEBUG=true (2 agents, 2 rounds)
 
 # Install dependencies
 pip install -r requirements.txt
@@ -66,6 +67,34 @@ curl http://localhost:8000/api/qlib/models
 
 # System config
 curl http://localhost:8000/api/config
+
+# API: Qlib training (walk-forward, Docker-in-Docker, ~2hr)
+curl -X POST http://localhost:8000/api/qlib/train \
+  -H 'Content-Type: application/json' \
+  -d '{"target":"csi300-alpha158"}'
+
+# API: Qlib finetuning (existing model + recent data)
+curl -X POST http://localhost:8000/api/qlib/finetune \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"2026-06-12-csi300-alpha158"}'
+
+# API: Qlib data update (download qlib_bin.tar.gz)
+curl -X POST http://localhost:8000/api/qlib/data/update
+
+# API: List Qlib training targets
+curl http://localhost:8000/api/qlib/train-targets
+
+# API: List Qlib index stocks
+curl "http://localhost:8000/api/qlib/index-stocks?index=csi300&exclude_star=true"
+
+# API: Batch analysis status + stream
+curl http://localhost:8000/api/batch/analyze/<task_id>
+curl -N http://localhost:8000/api/batch/analyze/<task_id>/stream
+
+# API: Download report HTML (POST with analysis results JSON)
+curl -X POST http://localhost:8000/api/report/download \
+  -H 'Content-Type: application/json' \
+  -d '{"symbol":"600519","results":{...}}'
 ```
 
 No test framework exists (`tests/__init__.py` is empty). No linting/formatting config.
@@ -81,7 +110,7 @@ No test framework exists (`tests/__init__.py` is empty). No linting/formatting c
    - **Multi-agent (master) mode** (when `master` param set): 8 employee agents → CIO master decision (see Multi-Agent System below)
    - **Legacy multi-agent mode** (no master, `LLM_API_KEY` set): 3 parallel agents (tech/fundamental/sentiment) → Moderator synthesis
    - **Rule mode** (no `LLM_API_KEY`): threshold-based scoring with price range
-5. **Frontend rendering** — `static/index.html`: dark-theme single-page SPA (~1665 lines, no build step).
+5. **Frontend rendering** — `static/index.html`: dark-theme single-page SPA (~2100 lines, no build step).
 
 ### Multi-Agent Investment Decision System (`analysis/agents/`)
 
@@ -114,7 +143,7 @@ When a `master` parameter is passed to `POST /api/analyze`, the system activates
 | `soros` | 乔治·索罗斯 | 反身性宏观交易 | 1970s-2010s |
 | `dalio` | 瑞·达利欧 | 风险平价/全天候策略 | 1975-至今 |
 
-Each master has a distinct `system_prompt` encoding 6 investment principles + per-employee weight guidance. All use the same `CIO_OUTPUT_SCHEMA` (JSON with multi-scenario analysis, multi-cycle prediction, order instructions, risk monitoring, decision quality self-assessment). Defined in `analysis/agents/cio_prompts.py`.
+Each master has a distinct `system_prompt` encoding 6 investment principles + per-employee weight guidance. All use the same `CIO_OUTPUT_SCHEMA` (JSON with multi-scenario analysis, multi-cycle prediction, order instructions, risk monitoring, decision quality self-assessment). A separate `PORTFOLIO_OUTPUT_SCHEMA` is used for batch analysis cross-stock portfolio summaries. Defined in `analysis/agents/cio_prompts.py`.
 
 **CIO decision output** (`CIODecision` dataclass in `analysis/agents/base.py`): decision_summary, evidence_chain (per-employee), 3-scenario analysis (base/bull/bear), order (action/position_size/stop_loss/take_profit), multi-cycle predictions, risk_monitoring triggers, decision_quality self-assessment.
 
@@ -122,18 +151,54 @@ Each master has a distinct `system_prompt` encoding 6 investment principles + pe
 
 ### Batch Analysis (`POST /api/batch/analyze`)
 
-Serial multi-stock analysis with SSE progress streaming. Accepts `symbols` list + optional `cost_prices` dict. Each stock runs through the full 5-step pipeline. Results cached in `batch_results/` directory. Frontend supports comma/newline-separated symbol input (max 20).
+Serial multi-stock analysis with SSE progress streaming. Accepts `symbols` list + optional `cost_prices`, `shares`, `total_assets`, `available_cash` for portfolio context. Each stock runs through the full 5-step pipeline.
 
-### Qlib Model Inference (`POST /api/qlib/infer`, `qlib-zh/`)
+After all stocks complete, the system generates:
+- **Portfolio Summary** — LLM-driven cross-stock analysis using `PORTFOLIO_OUTPUT_SCHEMA` (from `analysis/agents/cio_prompts.py`), ranked by investment value, with capital allocation suggestions and common themes
+- **Quality Picks** — best buy recommendations guided by master investment philosophy, with rule-based fallback (composite score + valuation percentile)
 
-Microsoft Qlib integration for deep learning price prediction. Docker-based: `app.py` shells out to `docker run` with the Qlib image, mounting `qlib-zh/DATA/` for data and `qlib-zh/models/` for pre-trained models. `infer_runner.py` is loaded dynamically via importlib inside the container.
+Results cached in `batch_results/` directory. SSE stream (`GET /api/batch/analyze/<task_id>/stream`) pushes incremental `stock_result`, `progress`, and `batch_summary` events. Frontend supports comma/newline-separated symbol input (max 20).
 
-Key files:
-- `qlib-zh/infer_runner.py` — Qlib inference script (Alpha360/LSTM/GRU/Transformer models)
-- `qlib-zh/DATA/` — Qlib-format market data (gitignored)
-- `qlib-zh/models/` — Pre-trained model checkpoints (gitignored)
-- `GET /api/qlib/models` — Lists available pre-trained models
-- `GET /api/qlib/index-stocks` — Lists index constituent stocks for batch Qlib inference
+### Qlib Model Training, Finetuning & Inference (`qlib-zh/`)
+
+Docker-in-Docker Microsoft Qlib integration. StockFish containers shell out to `docker run` with the `zhuhai123/qlib-rdagent:v1` image, mounting `/var/run/docker.sock`, `~/.qlib` (Qlib data), and `~/github/qlib-zh/mlruns` (MLflow models). `QLIB_HOST_PROJECT_ROOT`, `QLIB_HOST_DATA_DIR`, `QLIB_HOST_MLRUNS_DIR` env vars control mount paths.
+
+**Inference** (`POST /api/qlib/infer`):
+- `qlib-zh/infer_runner.py` — supports Alpha360/LSTM/GRU/Transformer models
+- Models loaded from `qlib-zh/DATA/analysis_outputs/<model_name>/`
+- `GET /api/qlib/models` — lists available pre-trained models
+- `GET /api/qlib/index-stocks?index=csi300&exclude_star=true` — lists index constituent stocks (csi300/csi500/csi1000)
+
+**Training** (`POST /api/qlib/train`):
+- `qlib-zh/train_runner.py` — walk-forward training, 3-fold (5yr train / 1yr val / 2yr test)
+- Supports csi300 and csi1000 indices with LightGBM/XGBoost
+- Warm-start checkpoint chain: each fold loads `params.pkl` from previous fold
+- `GET /api/qlib/train-targets` — lists available training configs
+- `GET /api/qlib/train/<task_id>/stream` — SSE progress stream (2hr timeout)
+
+**Finetuning** (`POST /api/qlib/finetune`):
+- `qlib-zh/finetune_alpha158.py` — single-fold finetuning on existing model checkpoints
+- Uses recent data to continue training from the last fold's checkpoint
+- YAML config adds `predict_disable_shape_check` for feature dimension compatibility
+- `GET /api/qlib/finetune/<task_id>/stream` — SSE progress stream
+
+**Data Update** (`POST /api/qlib/data/update`):
+- `qlib-zh/data_runner.py` — downloads `qlib_bin.tar.gz` from GitHub releases (`chenditc/investment_data`)
+- Extracts to `~/.qlib/qlib_data/cn_data`
+- Supports SOCKS5 proxy via `QLIB_DATA_PROXY` env var
+- `GET /api/qlib/data/update/<task_id>/stream` — SSE progress stream
+
+**Practice Pipeline** (`qlib-zh/scripts/practice/`):
+6-stage stock selection pipeline: `stage1_data_health.py` → `stage2_master_strategy.py` → `stage3_first_screen.py` → `stage4_risk_eval.py` → `stage5_second_screen.py` → `stage6_final_result.py`. Also includes `gen_deepseek_selections.py` (top-N + rebalancing), `time_decay_reweighter.py`, `gen_practice_yaml.py` (YAML config generation with warm-start params), and `rerun_full_backtest.py`.
+
+**Key files:**
+- `qlib-zh/infer_runner.py` — inference entry point
+- `qlib-zh/train_runner.py` — training entry point (Docker-in-Docker)
+- `qlib-zh/finetune_alpha158.py` — finetuning entry point
+- `qlib-zh/data_runner.py` — data download entry point
+- `qlib-zh/DATA/` — Qlib-format market data + trained models in `DATA/analysis_outputs/` (gitignored)
+- `qlib-zh/scripts/practice/run_stage2_walk_forward.py` — core training engine (165KB)
+- `qlib-zh/scripts/small/` — CSI1000-specific variants + cached_handler
 
 ### Simulation Bridge (`POST /api/predict`, background thread)
 
@@ -167,7 +232,7 @@ Plugin architecture: each source extends `BaseNewsSource` or `BaseGubaSource`, r
 
 ## Frontend (`static/index.html`)
 
-Single-file dark-theme SPA (~1665 lines, no build step). Features:
+Single-file dark-theme SPA (~2100 lines, no build step). Features:
 - Stock symbol + cost price input, optional "智能推演" checkbox (toggles between `/api/analyze` and `/api/predict`)
 - **Master selection dropdown** — choose from 7 investment masters (格雷厄姆/巴菲特/费雪/林奇/邓普顿/索罗斯/达利欧), populates via `GET /api/masters`. When selected, activates the multi-agent CIO pipeline; when unselected, falls back to legacy 3-agent debate
 - **Batch mode toggle** — multi-symbol input (comma/newline-separated, max 20), per-stock progress bars
@@ -235,19 +300,24 @@ pydantic-settings `Settings` loaded from `.env`. Adds MiroFish to Python path fo
 
 Key env vars:
 - `LLM_API_KEY/BASE_URL/MODEL_NAME` — LLM config (OpenAI-compatible)
-- `STOCK_BACKEND` — data source: `mock|akshare|tushare|advanced|auto`
+- `STOCK_BACKEND` — data source: `mock|akshare|tushare|advanced|auto` (default: `mock`)
 - `TUSHARE_TOKEN` — Tushare Pro (via sxsc_tushare SDK)
-- Search API keys: `TAVILY_API_KEY`, `BOCHA_API_KEY`, `BRAVE_API_KEY`, `SERPAPI_API_KEY`, `ANSPIRE_API_KEY`, `MINIMAX_API_KEYS`, `SEARXNG_BASE_URL`
-- `SOCIAL_SENTIMENT_API_KEY` — Reddit/X/Polymarket (US stocks only)
+- Search API keys: `TAVILY_API_KEY`, `BOCHA_API_KEY`, `BRAVE_API_KEY`, `SERPAPI_API_KEY`, `ANSPIRE_API_KEY`, `MINIMAX_API_KEYS`, `SEARXNG_BASE_URL` + comma-separated multi-key variants (`TAVILY_API_KEYS`, etc.)
+- `SOCIAL_SENTIMENT_API_KEY`/`SOCIAL_SENTIMENT_API_URL` — Reddit/X/Polymarket (US stocks only)
 - `MIROFISH_HOST/PORT` — MiroFish address (Docker: `mirofish:5001`, local: `localhost:5001`)
-- `REALTIME_SOURCE_PRIORITY` — quote source order (default: `tencent,akshare_sina,efinance,akshare_em`)
+- `REALTIME_SOURCE_PRIORITY` — quote source order (default: `tencent,tushare,efinance,akshare_em`)
 - `EFINANCE_CALL_TIMEOUT` — Eastmoney timeout (default 30s, set 5s outside China)
-- Feature flags: `ENABLE_REALTIME_QUOTE`, `ENABLE_FUNDAMENTAL_PIPELINE`, `ENABLE_CHIP_DISTRIBUTION`, `ENABLE_EASTMONEY_PATCH`, `ENABLE_LONGBRIDGE`, `ENABLE_MACRO`, `ENABLE_US_STOCKS`, `ENABLE_HK_STOCKS`
+- Feature flags: `ENABLE_REALTIME_QUOTE`, `ENABLE_FUNDAMENTAL_PIPELINE`, `ENABLE_CHIP_DISTRIBUTION`, `ENABLE_EASTMONEY_PATCH`, `ENABLE_LONGBRIDGE`, `ENABLE_MACRO`, `ENABLE_US_STOCKS`, `ENABLE_HK_STOCKS`, `ENABLE_REALTIME_TECHNICAL_INDICATORS`, `PREFETCH_REALTIME_QUOTES`, `STOCK_INDEX_REMOTE_UPDATE_ENABLED`
 - Multi-source fetcher priorities: `EFINANCE_PRIORITY`, `YFINANCE_PRIORITY`, `PYTDX_PRIORITY`, `AKSHARE_PRIORITY`, `BAOSTOCK_PRIORITY`
 - Circuit breaker: `CIRCUIT_BREAKER_COOLDOWN` (default 300s), rate limits for each fetcher
-- `OASIS_DEFAULT_MAX_ROUNDS` (20), `OASIS_SIMULATION_AGENT_COUNT` (15)
+- Rate limits/timeouts: `AKSHARE_SLEEP_MIN`/`MAX`, `TUSHARE_RATE_LIMIT_PER_MINUTE` (80), `MAX_RETRIES` (3), `RETRY_BASE_DELAY`/`MAX_DELAY`
+- Fundamental pipeline: `FUNDAMENTAL_STAGE_TIMEOUT_SECONDS` (8s), `FUNDAMENTAL_FETCH_TIMEOUT_SECONDS` (3s), `FUNDAMENTAL_RETRY_MAX` (1), `FUNDAMENTAL_CACHE_TTL_SECONDS` (120s), `FUNDAMENTAL_CACHE_MAX_ENTRIES` (256)
+- News: `NEWS_MAX_AGE_DAYS` (3), `NEWS_STRATEGY_PROFILE` (short), `BIAS_THRESHOLD` (5.0)
+- Cache: `REALTIME_CACHE_TTL` (600s), `CACHE_TTL_SECONDS` (60s)
+- New data source keys: `FINNHUB_API_KEY`, `ALPHAVANTAGE_API_KEY`, `LONGBRIDGE_APP_KEY/APP_SECRET/ACCESS_TOKEN/REGION`, `TICKFLOW_API_KEY`, `AKSHARE_PROXY`
+- `OASIS_DEFAULT_MAX_ROUNDS` (20), `OASIS_SIMULATION_AGENT_COUNT` (15), `OASIS_DEBUG` (2 agents/2 rounds)
 - `ZEP_API_KEY` — Zep Cloud for MiroFish graph memory (optional)
-- `QLIB_ENABLED` — Qlib model inference (default: false)
+- `QLIB_ENABLED` (false), `QLIB_DATA_PROXY` (SOCKS5 for GitHub acceleration)
 - `BATCH_MAX_CONCURRENT` — Batch analysis concurrency limit (default: 5)
 
 ## Key Conventions
@@ -265,7 +335,7 @@ Key env vars:
 - `.env` must exist in project root (checked by `run.sh`); copy from `.env.example`
 - `STOCK_BACKEND=mock` is default for zero-config dev; `advanced` for production
 - All timeouts in the orchestrator are configurable (graph: 300s, simulation: 900s, report: 600s)
-- Flask app global state in thread-safe dicts with locks: `predictions`, `batch_tasks`, `qlib_tasks`
+- Flask app global state in 6 thread-safe dicts with locks: `predictions`, `batch_tasks`, `qlib_tasks`, `qlib_data_tasks`, `qlib_train_tasks`, `qlib_finetune_tasks`
 
 ## Directory Notes
 
@@ -280,15 +350,16 @@ Key env vars:
 - `market_data/compat.py` — Backward-compatibility shims for data fetchers
 - `simulation_bridge/` — MiroFish bridge: `orchestrator.py` (pipeline + HTTP client), `seed_builder.py` (7 agent roles seed doc)
 - `prediction_report/report_generator.py` — Merges analysis + simulation into HTML reports
-- `qlib-zh/` — Qlib inference: `infer_runner.py` (dynamic importlib load), `DATA/`, `models/`, `scripts/`
+- `qlib-zh/` — Qlib inference (`infer_runner.py`), training (`train_runner.py`), finetuning (`finetune_alpha158.py`), data download (`data_runner.py`), models in `DATA/analysis_outputs/`, 6-stage practice pipeline in `scripts/practice/`
 - `sxsc_tushare/` — Vendored Tushare Pro SDK (dataapi.py, upass.py)
 - `MiroFish/backend/` — MiroFish Flask app (see MiroFish Backend section above)
-- `static/index.html` — Single-file SPA frontend (~1665 lines)
+- `static/index.html` — Single-file SPA frontend (~2100 lines)
 - `backend/` — Empty reserved directory (no active code)
 - `document/` — Documentation screenshots (1-4.png, label.png)
 - `reports/` — Generated prediction report HTML output (gitignored)
 - `simulation_output/` — Seed documents and scenario JSONs saved per analysis run (gitignored)
 - `batch_results/` — Batch analysis result cache (gitignored)
+- `data/sentiment_history/` — Per-symbol sentiment analysis JSON cache (persisted across runs)
 - `TODO.md` — Full project roadmap with P0-P3 priorities, tech debt, and work estimates
 
 ## Slash Commands
@@ -300,7 +371,7 @@ Compress a Qlib model directory into `csi300-alpha158.tar.gz` and push it to `gi
 
 **Example:**
 ```
-/release-model qlib-zh/models/2026-06-07-csi300-alpha158
+/release-model qlib-zh/DATA/analysis_outputs/2026-06-07-csi300-alpha158
 ```
 
 **Steps:**
