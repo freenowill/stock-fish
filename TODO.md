@@ -49,32 +49,24 @@
   - 结果面板：对比表格 + 可点击展开单只详情
 - **定时批量分析** — 配合后端 `schedule` 支持（见 P1 Scheduled Tasks）
 
-### □ 飞书集成 (Feishu/Lark Integration)
+### ✓ 飞书集成 (Feishu/Lark Integration)
 
 通过飞书机器人发送股票代码、接收分析结果，实现移动端交互。
 
 - **飞书 Bot 服务** (`integration/lark_bot.py`)
-  - 使用飞书开放平台 [Card & Message API](https://open.feishu.cn/document/uAjLw4CM/ukzMukzMukzM/feishu-cards/card-components)
-  - 事件订阅：`im.message.receive_v1` (含 text/mention)
-  - **命令菜单**：
-    - `/analyze 600519` — 单股分析
-    - `/predict 600519` — 推演分析（含模拟）
-    - `/batch 600519,000858,300750` — 批量分析
-    - `/watch add 600519` / `/watch list` / `/watch remove 600519` — 自选股管理
-  - **消息卡片**：分析结果以飞书 Interactive Card 呈现
-    - 封面：信号标签（大涨/小涨/震荡/小跌/大跌）+ 评分条
-    - 详情：当前价/PE/估值水平/建议买点/风险标签
-    - 多周期预测：Short / Mid / Long 三列
-    - 操作按钮：查看完整 HTML 报告链接、添加到自选、分享
-  - **交互回调**：卡片按钮 `action` 处理（如切换周期、展开详情）
-- **自选股管理** (`data/watchlist.json`)
-  - 用户维度的自选股存储（简单 JSON 文件 / 进阶 SQLite）
-  - 定时推送：每天 9:00 发送开盘简报（订阅自选股的上日信号变化）
-- **配置** — `config.py` 新增：
+  - WebSocket 长连接，无需公网 IP
+  - 直接发送股票代码即可触发分析（`600519` 单股，`600519/000858` 批量）
+  - 大师模式：`/master buffett` 设默认，`600519 --master soros` 单次覆盖
+  - 实时进度反馈（心跳 + 批量逐只完成通知）
+  - **消息卡片**：分析结果以飞书 Interactive Card (v2.0) 呈现
+    - 普通卡片：信号标签 + 行情/估值 + 多周期预测 + 操作建议
+    - 大师卡片：额外包含 CIO 决策摘要 + 三场景分析 + 订单指令
+    - 批量卡片：排序表格 + 最佳推荐 + 共性主题
+- **配置** — `config.py`：
   - `LARK_APP_ID`, `LARK_APP_SECRET`
-  - `LARK_BOT_NAME` (机器人名称，用于 @ 触发)
-  - `LARK_PUSH_ENABLED` (默认 `false`)
-- **Docker 部署** — Bot 服务伴随 StockFish 进程启动（或独立容器）
+  - `LARK_BOT_NAME`, `STOCKFISH_API_URL`
+- **启动方式** — `python app.py --with-bot` 或 `bash run.sh --bot`
+- **Docker 部署** — `docker compose --profile bot up -d stockfish-bot`
 
 ---
 

@@ -9,18 +9,24 @@ set -e
 #   1. Docker 部署（默认）: bash run.sh
 #   2. 本地直接运行:       bash run.sh --local
 #   3. Docker 跳过 MiroFish: bash run.sh --no-mirofish
+#   4. 启动飞书 Bot:       bash run.sh --bot        (配合 --local 或 Docker)
+#   5. Debug 模式:         bash run.sh --debug
 # ==========================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 MODE="${1:-docker}"
 OASIS_DEBUG="false"
+START_BOT="false"
 
 # 解析参数
 for arg in "$@"; do
     case "$arg" in
         --debug)
             OASIS_DEBUG="true"
+            ;;
+        --bot)
+            START_BOT="true"
             ;;
         --local)
             MODE="--local"
@@ -90,8 +96,21 @@ if [ "$MODE" = "--local" ]; then
     echo "  启动完成！"
     echo "  StockFish: http://localhost:8000"
     echo "  PID: $STOCKFISH_PID"
+
+    # ── 飞书 Bot ──
+    if [ "$START_BOT" = "true" ] && [ -n "$LARK_APP_ID" ]; then
+        echo ""
+        echo "[Bot] 启动飞书 Bot..."
+        python integration/lark_bot.py &
+        BOT_PID=$!
+        echo "  Bot PID: $BOT_PID"
+        echo "  飞书 Bot 已启动"
+    elif [ "$START_BOT" = "true" ]; then
+        echo "  ⚠️  未配置 LARK_APP_ID，跳过 Bot 启动"
+    fi
+
     echo ""
-    echo "  停止: kill $STOCKFISH_PID"
+    echo "  停止: kill $STOCKFISH_PID${BOT_PID:+ $BOT_PID}"
     echo "========================================"
 
     # 保持前台等待
@@ -151,6 +170,13 @@ if [ "$MODE" = "--no-mirofish" ]; then
     OASIS_DEBUG="$OASIS_DEBUG" docker compose up -d stockfish
 else
     OASIS_DEBUG="$OASIS_DEBUG" docker compose up -d
+fi
+
+# ── 飞书 Bot ──
+if [ "$START_BOT" = "true" ] && [ -n "$LARK_APP_ID" ]; then
+    echo "  启动飞书 Bot..."
+    docker compose --profile bot up -d stockfish-bot
+    echo "  飞书 Bot 已启动"
 fi
 echo ""
 

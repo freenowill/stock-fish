@@ -104,6 +104,12 @@ class Settings(BaseSettings):
     NEWS_STRATEGY_PROFILE: str = "short"
     BIAS_THRESHOLD: float = 5.0
 
+    # ===== 飞书 / Lark Bot =====
+    LARK_APP_ID: Optional[str] = None
+    LARK_APP_SECRET: Optional[str] = None
+    LARK_BOT_NAME: str = "StockFish"
+    STOCKFISH_API_URL: str = "http://127.0.0.1:8000"  # Bot 调用 Flask API 的地址
+
     # ===== BettaFish 路径（情感分析复用） =====
     BETTAFISH_PATH: str = BETTAFISH_DIR
 

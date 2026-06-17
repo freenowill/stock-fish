@@ -18,6 +18,7 @@
 
 ## 📰 News
 
+- 2026.06.17: 完成飞书 Bot 集成，支持移动端单股/批量分析 + 大师决策
 - 2026.06.14: 集成 Qlib 最新数据一键下载、基础模型一键训练、微调、回测
 - 2026.06.07: 完成大师决策股票批量分析
 - 2026.05.31: 完成股票分析、MiroFish 集成
@@ -53,10 +54,11 @@
 - [x] 7 位大师因子评分选股（top 20 → 6 维度评分 → top 5）
 - [x] 年度/周度/月度/日度调仓可选
 
-**💬 飞书集成**
-- [ ] `/analyze` `/batch` `/backtest` `/watch` 命令
-- [ ] 消息卡片（普通 / 大师 / 批量 / 回测）
-- [ ] 自选股 + 开盘/收盘简报推送
+**💬 飞书集成**（已完成）
+- [x] 飞书 Bot WebSocket 长连接，无需公网 IP
+- [x] 直接发股票代码触发分析（`600519` 单股 / `600519/000858` 批量）
+- [x] 大师模式（`/master buffett` 设默认 / `600519 --master soros` 单次）
+- [x] 消息卡片（普通 / 大师 / 批量）+ 实时进度反馈
 
 ---
 
@@ -155,6 +157,72 @@ docker compose logs -f stockfish    # 查看日志
 docker compose logs -f mirofish     # 查看 MiroFish 日志
 docker compose down                 # 停止服务
 docker compose pull                 # 更新到最新镜像
+```
+
+---
+
+## 💬 飞书 Bot 集成
+
+在飞书中发送股票代码，Bot 自动分析并以富卡片回复。支持单股/批量分析 + 7 位投资大师决策。
+
+### 前置条件
+
+1. [飞书开放平台](https://open.feishu.cn) 创建企业自建应用
+2. 添加「机器人」能力
+3. 开通权限：`im:message` / `im:message:send_as_bot` / `im:message.p2p_msg:readonly` / `im:message.group_at_msg:readonly`
+4. 事件订阅选择「使用长连接（WebSocket）」，订阅 `im.message.receive_v1`
+5. 创建版本并发布
+
+### 配置 `.env`
+
+```bash
+LARK_APP_ID=cli_xxxxxxxx
+LARK_APP_SECRET=xxxxxxxx
+LARK_BOT_NAME=stock-fish
+STOCKFISH_API_URL=http://127.0.0.1:8000   # Docker 内改为 http://stockfish:8000
+```
+
+### 启动 Bot
+
+```bash
+# 本地一站式（Flask + Bot）
+bash run.sh --local --bot
+
+# 单独启动 Bot（Flask 已运行）
+python integration/lark_bot.py
+
+# Docker 部署 + Bot
+bash run.sh --bot
+```
+
+### 使用方式
+
+| 操作 | 示例 | 效果 |
+|------|------|------|
+| 单股分析 | `600519` | 返回分析卡片（信号/行情/估值/预测/操作建议） |
+| 批量分析 | `600519/000858/300750` | 返回批量卡片（排序表格 + 精选推荐 + 共性主题） |
+| 设置大师 | `/master buffett` | 后续分析默认使用巴菲特视角 |
+| 单次大师 | `600519 --master graham` | 本次用格雷厄姆视角，不改变默认 |
+| 查看大师 | `/master list` | 列出 7 位可选大师 |
+| 关闭大师 | `/master off` | 恢复普通分析 |
+| 帮助 | `/help` | 显示使用帮助卡片 |
+
+### 卡片类型
+
+| 卡片 | 触发方式 | 内容 |
+|------|----------|------|
+| 普通分析卡 | 直接发股票代码 | 信号标签 + 行情/估值 + 多周期预测 + 操作建议 |
+| 大师分析卡 | 启用大师后发代码 | 额外：CIO 决策摘要 + 三场景分析 + 订单指令 |
+| 批量分析卡 | 多只股票 `/` 分割 | 排序表格 + 最佳推荐 + 共性主题 |
+
+### Docker 部署
+
+```bash
+# 单独启动 Bot 容器
+docker compose --profile bot up -d stockfish-bot
+
+# 查看日志
+docker compose logs -f stockfish-bot
 ```
 
 ---
@@ -463,6 +531,12 @@ StockFish/
 │   │   └── stage2_master_strategy.py  # 大师分析回测策略
 │   ├── DATA/analysis_outputs/ # 模型产出目录
 │   └── models/                # 预训练模型（可选）
+│
+├── integration/               # 飞书 Bot
+│   ├── lark_bot.py            # WebSocket 长连接 + 消息路由
+│   ├── lark_card.py           # 卡片模板（普通/大师/批量）
+│   ├── lark_client.py         # 异步 HTTP 封装 StockFish API
+│   └── lark_prefs.py          # 用户偏好管理
 │
 ├── simulation_bridge/         # MiroFish 桥接层
 │   ├── orchestrator.py        # 模拟编排器

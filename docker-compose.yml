@@ -43,6 +43,25 @@ services:
     networks:
       - stockfish-net
 
+  # 飞书 Bot（WebSocket 长连接）
+  stockfish-bot:
+    image: zhuhai123/stockfish-stockfish:latest
+    container_name: stockfish-bot
+    env_file:
+      - .env
+    environment:
+      - STOCKFISH_API_URL=http://stockfish:8000
+    command: python integration/lark_bot.py
+    depends_on:
+      stockfish:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - stockfish-net
+    # 开发时可注释掉下面这行以避免启动 bot
+    profiles:
+      - bot
+
 networks:
   stockfish-net:
     driver: bridge

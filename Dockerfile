@@ -24,6 +24,8 @@ RUN pip install /app/sxsc_tushare/ 2>/dev/null || echo "sxsc_tushare 安装跳�
 
 COPY . .
 
-EXPOSE 6000
+EXPOSE 8000
 
+# 默认：仅启动 Flask API
+# 飞书 Bot: 通过 docker-compose 的 command 覆盖 或添加 bot 服务
 CMD ["python", "app.py"]

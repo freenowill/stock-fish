@@ -1358,5 +1358,28 @@ def _update_prediction(task_id, progress, status, message, **kwargs):
 # ==========================================
 
 if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description="StockFish v2")
+    parser.add_argument(
+        "--with-bot",
+        action="store_true",
+        help="在后台线程启动飞书 Bot（需要 LARK_APP_ID/LARK_APP_SECRET）",
+    )
+    args = parser.parse_args()
+
+    if args.with_bot:
+        import threading
+
+        from integration.lark_bot import StockFishBot
+
+        def _run_bot():
+            bot = StockFishBot()
+            bot.start()  # 阻塞，在后台线程运行 WebSocket
+
+        t = threading.Thread(target=_run_bot, daemon=True, name="lark-bot")
+        t.start()
+        logger.info("飞书 Bot 已启动（后台线程）")
+
     logger.info(f"StockFish v2 启动: http://{settings.HOST}:{settings.PORT}")
     app.run(host=settings.HOST, port=settings.PORT, debug=settings.DEBUG, threaded=True)
