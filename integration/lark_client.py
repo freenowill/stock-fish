@@ -83,7 +83,7 @@ class LarkClient:
         session = await self._ensure_session()
 
         # 启动
-        payload: Dict[str, Any] = {"symbols": symbols}
+        payload: Dict[str, Any] = {"symbols": "/".join(symbols)}  # API 要求 / 分隔字符串
         if master:
             payload["master"] = master
         if cost_prices:
@@ -146,7 +146,7 @@ class LarkClient:
         """
         session = await self._ensure_session()
 
-        payload: Dict[str, Any] = {"symbols": symbols}
+        payload: Dict[str, Any] = {"symbols": "/".join(symbols)}
         if master:
             payload["master"] = master
 
