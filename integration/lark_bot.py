@@ -350,30 +350,27 @@ class StockFishBot:
     async def _handle_batch(
         self, chat_id: str, open_id: Optional[str], parsed: ParsedMessage
     ) -> None:
-        """处理批量分析请求，实时汇报每只股票完成进度。"""
+        """批量分析——每完成一只立刻返回卡片，不等待全部。"""
         symbols = parsed.symbols
         master = parsed.inline_master or self._prefs.get_master(open_id)
-
-        master_label = f"（{self._master_label(master)}视角）" if master else ""
         total = len(symbols)
 
         await self._send_text(
             chat_id,
-            f"📊 批量分析启动：**{total}** 只股票{master_label}\n"
+            f"📊 批量分析启动：**{total}** 只股票\n"
             + "、".join(symbols[:6])
-            + (f"等..." if total > 6 else ""),
+            + (f"等..." if total > 6 else "")
+            + "\n\n分析好一支就立刻返回，不用等到全部完成。",
         )
 
-        # 带进度回调的分析
-        last_progress = [0]
-
-        async def on_progress(current: int, sym: str, message: str):
-            if current > last_progress[0]:
-                last_progress[0] = current
-                await self._send_text(
-                    chat_id,
-                    f"📊 进度：**{current}/{total}** — {sym} {message}",
-                )
+        # 回调：每完成一只立刻发卡片
+        async def on_progress(sym: str, data: dict, idx: int, total_count: int):
+            if master:
+                card = self._cards.build_master_card(data)
+            else:
+                card = self._cards.build_analysis_card(data)
+            await self._send_text(chat_id, f"✅ **{idx}/{total_count}** — {sym} 完成")
+            await self._send_card(chat_id, card)
 
         try:
             result = await self._api.batch_analyze_with_progress(
@@ -384,16 +381,13 @@ class StockFishBot:
             await self._send_error(chat_id, "批量分析", str(e))
             return
 
-        if result.get("status") == "timeout":
-            await self._send_text(chat_id, "⚠️ 批量分析超时，请稍后重试。")
-            return
         if result.get("status") == "error":
             await self._send_error(chat_id, "批量分析", result.get("error", "未知错误"))
             return
 
-        # 发送结果卡片
+        # 全部完成，发汇总卡片
         success = result.get("success_count", 0)
-        await self._send_text(chat_id, f"✅ 批量分析完成：{success}/{total} 成功")
+        await self._send_text(chat_id, f"✅ 批量分析全部完成：{success}/{total} 成功")
         card = self._cards.build_batch_card(result)
         await self._send_card(chat_id, card)
 

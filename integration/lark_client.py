@@ -140,9 +140,10 @@ class LarkClient:
         progress_callback: Optional[Callable] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        """POST /api/batch/analyze — 带进度回调的批量分析。
+        """POST /api/batch/analyze — 逐只返回，无超时。
 
-        progress_callback(current: int, symbol: str, message: str) — 每完成一只调用一次
+        progress_callback(symbol, data, index, total) — 每完成一只调用一次
+        持续轮询直到全部完成，无超时限制。
         """
         session = await self._ensure_session()
 
@@ -150,9 +151,7 @@ class LarkClient:
         if master:
             payload["master"] = master
 
-        logger.info(
-            f"[LarkClient] batch_analyze_with_progress: {len(symbols)} stocks"
-        )
+        logger.info(f"[LarkClient] batch_with_progress: {len(symbols)} stocks")
         async with session.post(
             f"{self._base}/api/batch/analyze", json=payload
         ) as resp:
@@ -162,44 +161,41 @@ class LarkClient:
         if not task_id:
             return task
 
-        seen_results: set = set()
+        seen: set = set()
         poll_interval = 3.0
-        max_wait = 600.0
-        waited = 0.0
 
-        while waited < max_wait:
+        while True:
             await asyncio.sleep(poll_interval)
-            waited += poll_interval
             async with session.get(
                 f"{self._base}/api/batch/analyze/{task_id}"
             ) as resp:
                 status = await resp.json()
 
             results = status.get("results", [])
+            total = status.get("total", len(symbols))
+
+            # 逐只返回已完成的
             for r in results:
                 sym = r.get("symbol", "")
-                if sym and sym not in seen_results:
-                    seen_results.add(sym)
-                    st = r.get("status", "?")
-                    msg = "✅" if st == "complete" else f"⚠️ {st}"
+                st = r.get("status", "")
+                data = r.get("data") or {}
+                if sym and st == "complete" and sym not in seen:
+                    seen.add(sym)
                     if progress_callback:
                         try:
-                            await progress_callback(
-                                len(seen_results), sym, msg
-                            )
+                            await progress_callback(sym, data, len(seen), total)
                         except Exception:
-                            pass  # 回调异常不阻断分析
+                            pass
 
             st = status.get("status", "")
             if st == "completed":
                 logger.info(
-                    f"[LarkClient] batch done: {status.get('success_count', 0)}/{len(symbols)}"
+                    f"[LarkClient] batch done: {status.get('success_count', 0)}/{total}"
                 )
                 return status
             elif st == "error":
                 return status
-
-        return {"task_id": task_id, "status": "timeout", "error": "批量分析超时"}
+            # 无超时，继续轮询
 
     # ── 大师列表 ──────────────────────────────────────────
 
