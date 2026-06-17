@@ -21,7 +21,7 @@ class LarkClient:
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
-            timeout = aiohttp.ClientTimeout(total=120)  # /analyze 最多 60s，留足余量
+            timeout = aiohttp.ClientTimeout(total=1200)  # /analyze 可能 10min+
             self._session = aiohttp.ClientSession(timeout=timeout)
         return self._session
 
@@ -108,7 +108,7 @@ class LarkClient:
 
         # 轮询
         poll_interval = 2.0
-        max_wait = 600.0  # 最长等 10 分钟
+        max_wait = 1800.0  # 最长等 30 分钟
         waited = 0.0
         while waited < max_wait:
             await asyncio.sleep(poll_interval)
