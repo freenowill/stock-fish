@@ -401,14 +401,34 @@ class StockFishBot:
 
     async def _handle_update_data(self, chat_id: str) -> None:
         """处理 /update_data 命令。"""
-        await self._send_text(chat_id, "📦 正在下载最新 Qlib 数据...\n这可能需要几分钟。")
+        await self._send_text(chat_id, "📦 Qlib 数据更新启动...\n下载可能需要几分钟，请耐心等待。")
+
+        heartbeat_running = True
+
+        async def _heartbeat():
+            waited = 0
+            while heartbeat_running:
+                await asyncio.sleep(120)  # 2 分钟汇报一次
+                waited += 2
+                if heartbeat_running:
+                    await self._send_text(
+                        chat_id,
+                        f"⏳ 数据下载中...（已等待 {waited} 分钟）",
+                    )
+
+        heartbeat_task = asyncio.create_task(_heartbeat())
 
         try:
             result = await self._api.qlib_data_update()
         except Exception as e:
+            heartbeat_running = False
+            heartbeat_task.cancel()
             logger.error(f"[StockFishBot] qlib_data_update failed: {e}")
             await self._send_text(chat_id, f"❌ 数据更新失败: {e}")
             return
+
+        heartbeat_running = False
+        heartbeat_task.cancel()
 
         if result.get("status") == "completed":
             message = result.get("message", "更新完成")
@@ -425,15 +445,36 @@ class StockFishBot:
         """处理 /qlib_inference 命令。"""
         DEFAULT_MODEL = "2026-06-12-csi300-alpha158"
         await self._send_text(
-            chat_id, f"🤖 正在执行 Qlib 推理...\n模型: {DEFAULT_MODEL}\n这可能需要几分钟。"
+            chat_id, f"🤖 Qlib 推理启动\n模型: {DEFAULT_MODEL}\n每 5 分钟汇报一次进度..."
         )
+
+        # 后台心跳
+        heartbeat_running = True
+
+        async def _heartbeat():
+            waited = 0
+            while heartbeat_running:
+                await asyncio.sleep(300)  # 5 分钟汇报一次
+                waited += 5
+                if heartbeat_running:
+                    await self._send_text(
+                        chat_id,
+                        f"⏳ Qlib 推理中...（已等待 {waited} 分钟）",
+                    )
+
+        heartbeat_task = asyncio.create_task(_heartbeat())
 
         try:
             result = await self._api.qlib_infer(model=DEFAULT_MODEL)
         except Exception as e:
+            heartbeat_running = False
+            heartbeat_task.cancel()
             logger.error(f"[StockFishBot] qlib_infer failed: {e}")
             await self._send_text(chat_id, f"❌ Qlib 推理失败: {e}")
             return
+
+        heartbeat_running = False
+        heartbeat_task.cancel()
 
         if result.get("status") == "completed":
             count = result.get("count", 0)

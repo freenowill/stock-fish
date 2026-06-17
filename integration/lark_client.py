@@ -233,45 +233,54 @@ class LarkClient:
         return await self._poll_qlib_task(task.get("task_id", ""), "infer")
 
     async def _poll_qlib_task(self, task_id: str, path: str) -> Dict[str, Any]:
-        """轮询 qlib SSE 流直到任务完成。"""
+        """轮询 qlib SSE 流直到任务完成（最长 2 小时）。"""
         if not task_id:
             return {"status": "error", "error": "未获取到 task_id"}
 
         session = await self._ensure_session()
         stream_url = f"{self._base}/api/qlib/{path}/{task_id}/stream"
+        poll_interval = 15  # 每 15 秒查一次
+        max_wait = 7200     # 最长 2 小时
+        waited = 0
 
-        # 持续 SSE 读取
-        try:
-            async with session.get(
-                stream_url, timeout=aiohttp.ClientTimeout(total=0, sock_read=1800)
-            ) as resp:
-                line_buffer = ""
-                async for chunk in resp.content.iter_chunked(256):
-                    text = chunk.decode("utf-8", errors="ignore")
-                    line_buffer += text
-                    while "\n\n" in line_buffer:
-                        msg, line_buffer = line_buffer.split("\n\n", 1)
-                        for line in msg.split("\n"):
-                            if line.startswith("data: "):
-                                try:
-                                    data = json.loads(line[6:])
-                                    st = data.get("status", "")
-                                    if st == "completed":
-                                        logger.info("[LarkClient] qlib done")
-                                        return {"status": "completed", **data}
-                                    elif st == "failed":
-                                        return {
-                                            "status": "error",
-                                            "error": data.get("message", "失败"),
-                                        }
-                                except json.JSONDecodeError:
-                                    pass
-                return {"status": "completed", "task_id": task_id}
-        except asyncio.CancelledError:
-            return {"status": "timeout", "error": "任务被取消"}
-        except Exception as e:
-            logger.error(f"[LarkClient] SSE poll error: {e}")
-            return {"status": "error", "error": str(e)}
+        while waited < max_wait:
+            await asyncio.sleep(poll_interval)
+            waited += poll_interval
+
+            try:
+                # 每次请求 SSE 端点，读最新的状态
+                async with session.get(
+                    stream_url,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    text = await resp.text()
+                    # 解析 SSE: "data: {...}\n\n"
+                    last_status = None
+                    for line in text.split("\n"):
+                        if line.startswith("data: "):
+                            try:
+                                data = json.loads(line[6:])
+                                last_status = data
+                            except json.JSONDecodeError:
+                                pass
+
+                    if last_status:
+                        st = last_status.get("status", "")
+                        if st == "completed":
+                            logger.info("[LarkClient] qlib done")
+                            return {"status": "completed", **last_status}
+                        elif st == "failed":
+                            return {
+                                "status": "error",
+                                "error": last_status.get("message", "推理失败"),
+                            }
+                        # running → 继续等
+            except asyncio.TimeoutError:
+                logger.debug(f"[LarkClient] poll timeout at {waited}s, retrying...")
+            except Exception as e:
+                logger.warning(f"[LarkClient] poll error at {waited}s: {e}")
+
+        return {"task_id": task_id, "status": "timeout", "error": "推理超时（超过 2 小时）"}
 
     # ── 健康检查 ──────────────────────────────────────────
 
