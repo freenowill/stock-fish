@@ -350,46 +350,74 @@ class StockFishBot:
     async def _handle_batch(
         self, chat_id: str, open_id: Optional[str], parsed: ParsedMessage
     ) -> None:
-        """批量分析——每完成一只立刻返回卡片，不等待全部。"""
+        """批量分析——逐只调用 /api/analyze，每完成一只立刻返回卡片。"""
         symbols = parsed.symbols
         master = parsed.inline_master or self._prefs.get_master(open_id)
         total = len(symbols)
+        master_label = f"（{self._master_label(master)}视角）" if master else ""
 
         await self._send_text(
             chat_id,
-            f"📊 批量分析启动：**{total}** 只股票\n"
-            + "、".join(symbols[:6])
-            + (f"等..." if total > 6 else "")
-            + "\n\n分析好一支就立刻返回，不用等到全部完成。",
+            f"📊 批量分析启动：**{total}** 只股票{master_label}\n"
+            + "、".join(symbols[:8])
+            + (f"等..." if total > 8 else "")
+            + "\n\n逐只分析，完成一支立刻返回。",
         )
 
-        # 回调：每完成一只立刻发卡片
-        async def on_progress(sym: str, data: dict, idx: int, total_count: int):
+        success = 0
+        for i, symbol in enumerate(symbols, 1):
+            await self._send_text(chat_id, f"⏳ **{i}/{total}** — 正在分析 **{symbol}**...")
+
+            # 心跳
+            heartbeat_running = True
+
+            async def _heartbeat():
+                waited = 0
+                while heartbeat_running:
+                    await asyncio.sleep(20)
+                    waited += 20
+                    if heartbeat_running:
+                        await self._send_text(
+                            chat_id,
+                            f"⏳ **{i}/{total}** — {symbol} 分析中...（已等待 {waited} 秒）",
+                        )
+
+            hb_task = asyncio.create_task(_heartbeat())
+
+            try:
+                result = await self._api.analyze(symbol, master=master)
+            except Exception as e:
+                heartbeat_running = False
+                hb_task.cancel()
+                logger.error(f"[StockFishBot] analyze {symbol} failed: {e}")
+                await self._send_text(chat_id, f"❌ **{i}/{total}** — {symbol} 失败: {e}")
+                continue
+
+            heartbeat_running = False
+            hb_task.cancel()
+
+            if result.get("status") == "error":
+                await self._send_text(
+                    chat_id,
+                    f"❌ **{i}/{total}** — {symbol} 失败: {result.get('error', '未知错误')}",
+                )
+                continue
+
+            # 成功 → 立刻发卡片
+            success += 1
+            await self._send_text(chat_id, f"✅ **{i}/{total}** — {symbol} 完成")
             if master:
-                card = self._cards.build_master_card(data)
+                card = self._cards.build_master_card(result)
             else:
-                card = self._cards.build_analysis_card(data)
-            await self._send_text(chat_id, f"✅ **{idx}/{total_count}** — {sym} 完成")
+                card = self._cards.build_analysis_card(result)
             await self._send_card(chat_id, card)
 
-        try:
-            result = await self._api.batch_analyze_with_progress(
-                symbols, master=master, progress_callback=on_progress
-            )
-        except Exception as e:
-            logger.error(f"[StockFishBot] batch_analyze failed: {e}")
-            await self._send_error(chat_id, "批量分析", str(e))
-            return
-
-        if result.get("status") == "error":
-            await self._send_error(chat_id, "批量分析", result.get("error", "未知错误"))
-            return
-
-        # 全部完成，发汇总卡片
-        success = result.get("success_count", 0)
-        await self._send_text(chat_id, f"✅ 批量分析全部完成：{success}/{total} 成功")
-        card = self._cards.build_batch_card(result)
-        await self._send_card(chat_id, card)
+        # 全部完成
+        await self._send_text(
+            chat_id,
+            f"📊 批量分析全部完成：**{success}/{total}** 成功"
+            + (f"，{total - success} 失败" if success < total else ""),
+        )
 
     # ── Qlib 数据更新 ──────────────────────────────────────
 
