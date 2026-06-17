@@ -444,8 +444,12 @@ class CardBuilder:
                 "　设默认: `/master buffett`\n"
                 "　单次用: `600519 --master graham`\n"
                 "　关闭: `/master off`\n"
-                "　查看可选大师: `/master list`\n\n"
-                "**4. 本帮助** — `/help` 或 `帮助`"
+                "　查看: `/master list`\n\n"
+                "**4. Qlib 数据更新** — `/update_data`\n"
+                "　下载最新 qlib 市场数据\n\n"
+                "**5. Qlib 推理** — `/qlib_inference`\n"
+                "　使用默认微调模型推理选股\n\n"
+                "**6. 本帮助** — `/help`"
             ),
             _hr(),
             _md(

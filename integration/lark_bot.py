@@ -70,9 +70,11 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
     优先级:
     1. /master <key|off|list>  → 大师偏好设置
     2. /help /帮助                → 帮助
-    3. 多只股票 (/ 分割)          → 批量分析
-    4. 单只股票                   → 单股分析
-    5. 不匹配                     → None
+    3. /update_data               → Qlib 数据更新
+    4. /qlib_inference [code]     → Qlib 推理
+    5. 多只股票 (/ 分割)          → 批量分析
+    6. 单只股票                   → 单股分析
+    7. 不匹配                     → None
     """
     # 去掉 @Bot 提及
     clean = _MENTION_CLEAN.sub("", text).strip()
@@ -97,7 +99,20 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
         result.is_help = True
         return result
 
-    # 3. 批量: 检测多只股票 / 分割
+    # 3. /update_data 命令
+    if clean.lower().startswith("/update_data"):
+        result.is_help = False
+        result.symbols = ["__update_data__"]
+        return result
+
+    # 4. /qlib_inference 命令
+    if clean.lower().startswith("/qlib_inference"):
+        result.is_help = False
+        symbols = _STOCK_PATTERN.findall(clean)
+        result.symbols = ["__qlib_infer__"]
+        return result
+
+    # 5. 批量: 检测多只股票 / 分割
     if "/" in clean and _MULTI_STOCK_PATTERN.match(clean):
         raw_symbols = [s.strip() for s in clean.split("/") if s.strip()]
         symbols = [_normalize_symbol(s) for s in raw_symbols if _STOCK_PATTERN.match(s)]
@@ -106,13 +121,13 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
             result.symbols = symbols
             return result
 
-    # 4. 单股
+    # 6. 单股
     symbols = _STOCK_PATTERN.findall(clean)
     if symbols:
         result.symbols = [_normalize_symbol(s) for s in symbols[:1]]
         return result
 
-    # 5. 不匹配
+    # 7. 不匹配
     return None
 
 
@@ -220,6 +235,10 @@ class StockFishBot:
             self._dispatch(self._handle_master_cmd(chat_id, open_id, parsed))
         elif parsed.is_help:
             self._dispatch(self._send_help(chat_id))
+        elif parsed.symbols and parsed.symbols[0] == "__update_data__":
+            self._dispatch(self._handle_update_data(chat_id))
+        elif parsed.symbols and parsed.symbols[0] == "__qlib_infer__":
+            self._dispatch(self._handle_qlib_inference(chat_id, parsed))
         elif parsed.is_batch:
             self._dispatch(self._handle_batch(chat_id, open_id, parsed))
         else:
@@ -377,6 +396,63 @@ class StockFishBot:
         await self._send_text(chat_id, f"✅ 批量分析完成：{success}/{total} 成功")
         card = self._cards.build_batch_card(result)
         await self._send_card(chat_id, card)
+
+    # ── Qlib 数据更新 ──────────────────────────────────────
+
+    async def _handle_update_data(self, chat_id: str) -> None:
+        """处理 /update_data 命令。"""
+        await self._send_text(chat_id, "📦 正在下载最新 Qlib 数据...\n这可能需要几分钟。")
+
+        try:
+            result = await self._api.qlib_data_update()
+        except Exception as e:
+            logger.error(f"[StockFishBot] qlib_data_update failed: {e}")
+            await self._send_text(chat_id, f"❌ 数据更新失败: {e}")
+            return
+
+        if result.get("status") == "completed":
+            message = result.get("message", "更新完成")
+            await self._send_text(chat_id, f"✅ Qlib 数据更新完成！\n{message}")
+        else:
+            error = result.get("error", "未知错误")
+            await self._send_text(chat_id, f"❌ 数据更新失败: {error}")
+
+    # ── Qlib 推理 ──────────────────────────────────────────
+
+    async def _handle_qlib_inference(
+        self, chat_id: str, parsed: ParsedMessage
+    ) -> None:
+        """处理 /qlib_inference 命令。"""
+        DEFAULT_MODEL = "2026-06-12-csi300-alpha158-fintune"
+        await self._send_text(
+            chat_id, f"🤖 正在执行 Qlib 推理...\n模型: {DEFAULT_MODEL}\n这可能需要几分钟。"
+        )
+
+        try:
+            result = await self._api.qlib_infer(model=DEFAULT_MODEL)
+        except Exception as e:
+            logger.error(f"[StockFishBot] qlib_infer failed: {e}")
+            await self._send_text(chat_id, f"❌ Qlib 推理失败: {e}")
+            return
+
+        if result.get("status") == "completed":
+            count = result.get("count", 0)
+            stocks = result.get("stocks", "")
+            pred_date = result.get("pred_date", "")
+            message = result.get("message", "推理完成")
+
+            resp = [f"✅ Qlib 推理完成！", f"模型: {DEFAULT_MODEL}"]
+            if pred_date:
+                resp.append(f"预测日期: {pred_date}")
+            if count:
+                resp.append(f"选出股票: {count} 只")
+            resp.append(f"\n{message}")
+            if stocks:
+                resp.append(f"\n**选股结果**:\n{stocks}")
+            await self._send_text(chat_id, "\n".join(resp))
+        else:
+            error = result.get("error", "未知错误")
+            await self._send_text(chat_id, f"❌ Qlib 推理失败: {error}")
 
     # ── 消息发送 ───────────────────────────────────────────
 

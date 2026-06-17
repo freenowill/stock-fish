@@ -6,6 +6,7 @@
 """
 
 import asyncio
+import json
 from typing import Any, Callable, Dict, List, Optional
 
 import aiohttp
@@ -208,6 +209,69 @@ class LarkClient:
         async with session.get(f"{self._base}/api/masters") as resp:
             data = await resp.json()
             return data.get("masters", [])
+
+    # ── Qlib 数据更新 ────────────────────────────────────
+
+    async def qlib_data_update(self) -> Dict[str, Any]:
+        """POST /api/qlib/data/update — 下载最新 qlib 数据。"""
+        session = await self._ensure_session()
+        logger.info("[LarkClient] qlib_data_update start")
+        async with session.post(f"{self._base}/api/qlib/data/update") as resp:
+            task = await resp.json()
+        return await self._poll_qlib_task(task.get("task_id", ""), "data/update")
+
+    # ── Qlib 推理 ──────────────────────────────────────────
+
+    async def qlib_infer(self, model: str = "2026-06-12-csi300-alpha158-fintune") -> Dict[str, Any]:
+        """POST /api/qlib/infer — Qlib 模型推理。"""
+        session = await self._ensure_session()
+        logger.info(f"[LarkClient] qlib_infer model={model}")
+        async with session.post(
+            f"{self._base}/api/qlib/infer", json={"model": model}
+        ) as resp:
+            task = await resp.json()
+        return await self._poll_qlib_task(task.get("task_id", ""), "infer")
+
+    async def _poll_qlib_task(self, task_id: str, path: str) -> Dict[str, Any]:
+        """轮询 qlib SSE 流直到任务完成。"""
+        if not task_id:
+            return {"status": "error", "error": "未获取到 task_id"}
+
+        session = await self._ensure_session()
+        stream_url = f"{self._base}/api/qlib/{path}/{task_id}/stream"
+
+        # 持续 SSE 读取
+        try:
+            async with session.get(
+                stream_url, timeout=aiohttp.ClientTimeout(total=0, sock_read=1800)
+            ) as resp:
+                line_buffer = ""
+                async for chunk in resp.content.iter_chunked(256):
+                    text = chunk.decode("utf-8", errors="ignore")
+                    line_buffer += text
+                    while "\n\n" in line_buffer:
+                        msg, line_buffer = line_buffer.split("\n\n", 1)
+                        for line in msg.split("\n"):
+                            if line.startswith("data: "):
+                                try:
+                                    data = json.loads(line[6:])
+                                    st = data.get("status", "")
+                                    if st == "completed":
+                                        logger.info("[LarkClient] qlib done")
+                                        return {"status": "completed", **data}
+                                    elif st == "failed":
+                                        return {
+                                            "status": "error",
+                                            "error": data.get("message", "失败"),
+                                        }
+                                except json.JSONDecodeError:
+                                    pass
+                return {"status": "completed", "task_id": task_id}
+        except asyncio.CancelledError:
+            return {"status": "timeout", "error": "任务被取消"}
+        except Exception as e:
+            logger.error(f"[LarkClient] SSE poll error: {e}")
+            return {"status": "error", "error": str(e)}
 
     # ── 健康检查 ──────────────────────────────────────────
 
