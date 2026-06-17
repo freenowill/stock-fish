@@ -429,7 +429,12 @@ def batch_status(task_id: str):
         'status': bt['status'],
         'progress': bt['progress'],
         'message': bt['message'],
+        'results': bt.get('results', []),
         'results_count': len(bt.get('results', [])),
+        'total': len(bt.get('symbols', [])),
+        'success_count': sum(1 for r in bt.get('results', []) if r.get('status') == 'complete'),
+        'summary': bt.get('summary'),
+        'quality_pick': bt.get('quality_pick'),
         'created_at': bt['created_at'],
         'completed_at': bt['completed_at'],
     })
