@@ -290,7 +290,8 @@ class LarkClient:
             url += "&exclude_star=true"
         async with session.get(url) as resp:
             data = await resp.json()
-            return data.get("stocks", [])
+            stocks = data.get("stocks", "")
+            return stocks.split("/") if stocks else []
 
     # ── 健康检查 ──────────────────────────────────────────
 

@@ -51,11 +51,14 @@ services:
       - .env
     environment:
       - STOCKFISH_API_URL=http://stockfish:8000
-    command: python integration/lark_bot.py
+    command: >
+      sh -c "pip install -r requirements.txt -q && python integration/lark_bot.py"
     depends_on:
       stockfish:
         condition: service_started
     restart: unless-stopped
+    volumes:
+      - ./:/app                      # 项目代码挂载，方便改代码即时生效
     networks:
       - stockfish-net
     # 开发时可注释掉下面这行以避免启动 bot
