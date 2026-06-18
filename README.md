@@ -206,7 +206,10 @@ bash run.sh --bot
 | 查看大师 | `/master list` | 列出 7 位可选大师 |
 | 关闭大师 | `/master off` | 恢复普通分析 |
 | Qlib 数据更新 | `/update_data` | 下载最新 Qlib 市场数据 |
-| Qlib 推理 | `/qlib_inference` | 使用默认微调模型推理选股 |
+| 全市场大师分析 | `/analyze_index [市场]` | 大师分析整个指数成分股（CSI300/500/1000），逐只返回卡片 |
+| 全市场分析高级 | `/analyze_index csi500 --include-star` | 指定市场 + 保留科创板 |
+| Qlib 数据更新 | `/update_data` | 下载最新 Qlib 市场数据 |
+| Qlib 推理 | `/qlib_inference [市场]` | Qlib 模型推理选股（非大师分析） |
 | 帮助 | `/help` | 显示使用帮助卡片 |
 
 ### 卡片类型

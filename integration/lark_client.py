@@ -278,6 +278,20 @@ class LarkClient:
 
         return {"task_id": task_id, "status": "timeout", "error": "推理超时（超过 2 小时）"}
 
+    # ── 指数成分股 ──────────────────────────────────────
+
+    async def get_index_stocks(
+        self, index: str = "csi300", exclude_star: bool = True
+    ) -> List[str]:
+        """GET /api/qlib/index-stocks — 获取指数成分股列表。"""
+        session = await self._ensure_session()
+        url = f"{self._base}/api/qlib/index-stocks?index={index}"
+        if exclude_star:
+            url += "&exclude_star=true"
+        async with session.get(url) as resp:
+            data = await resp.json()
+            return data.get("stocks", [])
+
     # ── 健康检查 ──────────────────────────────────────────
 
     async def health_check(self) -> bool:

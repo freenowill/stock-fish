@@ -105,7 +105,23 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
         result.symbols = ["__update_data__"]
         return result
 
-    # 4. /qlib_inference [csi300|csi500|csi1000] [--include-star]
+    # 4. /analyze_index [csi300|csi500|csi1000] [--include-star]
+    if clean.lower().startswith("/analyze_index"):
+        result.is_help = False
+        parts = clean.split()
+        market = "csi300"
+        exclude_star = True
+        for p in parts[1:]:
+            p_lower = p.lower()
+            if p_lower in ("csi300", "csi500", "csi1000"):
+                market = p_lower
+            elif p_lower == "--include-star":
+                exclude_star = False
+        result.symbols = ["__analyze_index__"]
+        result.inline_master = f"{market}:{exclude_star}"
+        return result
+
+    # 5. /qlib_inference [csi300|csi500|csi1000] [--include-star]
     if clean.lower().startswith("/qlib_inference"):
         result.is_help = False
         parts = clean.split()
@@ -251,6 +267,8 @@ class StockFishBot:
             self._dispatch(self._send_help(chat_id))
         elif parsed.symbols and parsed.symbols[0] == "__update_data__":
             self._dispatch(self._handle_update_data(chat_id))
+        elif parsed.symbols and parsed.symbols[0] == "__analyze_index__":
+            self._dispatch(self._handle_analyze_index(chat_id, open_id, parsed))
         elif parsed.symbols and parsed.symbols[0] == "__qlib_infer__":
             self._dispatch(self._handle_qlib_inference(chat_id, parsed))
         elif parsed.is_batch:
@@ -430,6 +448,91 @@ class StockFishBot:
         await self._send_text(
             chat_id,
             f"📊 批量分析全部完成：**{success}/{total}** 成功"
+            + (f"，{total - success} 失败" if success < total else ""),
+        )
+
+    # ── 全市场大师分析 ────────────────────────────────────
+
+    async def _handle_analyze_index(
+        self, chat_id: str, open_id: Optional[str], parsed: ParsedMessage
+    ) -> None:
+        """处理 /analyze_index <market> [--include-star] 命令。"""
+        market = "csi300"
+        exclude_star = True
+        if parsed.inline_master and ":" in parsed.inline_master:
+            parts = parsed.inline_master.split(":")
+            market = parts[0]
+            exclude_star = parts[1] == "True"
+
+        master = self._prefs.get_master(open_id)
+        master_label = f"（{self._master_label(master)}视角）" if master else ""
+
+        # 获取成分股列表
+        await self._send_text(chat_id, f"📊 正在获取 **{market.upper()}** 成分股列表...")
+        try:
+            stocks = await self._api.get_index_stocks(market, exclude_star)
+        except Exception as e:
+            await self._send_text(chat_id, f"❌ 获取成分股失败: {e}")
+            return
+
+        total = len(stocks)
+        star_note = "（已剔除科创板）" if exclude_star else ""
+        await self._send_text(
+            chat_id,
+            f"📊 **{market.upper()}** 全市场大师分析启动{master_label}\n"
+            f"成分股: **{total}** 只 {star_note}\n"
+            f"逐只分析，完成立刻返回。预计耗时很长...",
+        )
+
+        success = 0
+        for i, symbol in enumerate(stocks, 1):
+            await self._send_text(chat_id, f"⏳ **{i}/{total}** — 正在分析 **{symbol}**...")
+
+            heartbeat_running = True
+
+            async def _heartbeat():
+                waited = 0
+                while heartbeat_running:
+                    await asyncio.sleep(20)
+                    waited += 20
+                    if heartbeat_running:
+                        await self._send_text(
+                            chat_id,
+                            f"⏳ **{i}/{total}** — {symbol} 分析中...（{waited}s）",
+                        )
+
+            hb_task = asyncio.create_task(_heartbeat())
+
+            try:
+                result = await self._api.analyze(symbol, master=master)
+            except Exception as e:
+                heartbeat_running = False
+                hb_task.cancel()
+                logger.error(f"[StockFishBot] analyze {symbol} failed: {e}")
+                await self._send_text(chat_id, f"❌ **{i}/{total}** — {symbol} 失败: {e}")
+                continue
+
+            heartbeat_running = False
+            hb_task.cancel()
+
+            if result.get("status") == "error":
+                await self._send_text(
+                    chat_id,
+                    f"❌ **{i}/{total}** — {symbol} 失败: {result.get('error', '未知')}",
+                )
+                continue
+
+            success += 1
+            await self._send_text(chat_id, f"✅ **{i}/{total}** — {symbol} 完成")
+            if master:
+                card = self._cards.build_master_card(result)
+            else:
+                card = self._cards.build_analysis_card(result)
+            await self._send_card(chat_id, card)
+
+        await self._send_text(
+            chat_id,
+            f"📊 **{market.upper()}** 全市场分析完成：**{success}/{total}** 成功"
             + (f"，{total - success} 失败" if success < total else ""),
         )
 
