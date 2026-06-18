@@ -110,12 +110,25 @@ def run_inference(
     cfg = _resolve_model(model_name)
     pred_date = os.environ.get("PRED_DATE_OVERRIDE") or _get_pred_date()
 
+    # 如果模型自带 predict_only YAML（如 finetune 模型），优先使用
+    base_dir = f"{WORKDIR}/models" if cfg.get("use_models_dir") else f"{WORKDIR}/DATA/analysis_outputs"
+    model_dir = _LOCAL_PROJECT_ROOT / "DATA" / "analysis_outputs" / model_name
+    _find_predict_yaml = lambda root: next(
+        (p for p in sorted(Path(root).rglob("workflow_config_practice.yaml"), reverse=True)
+         if "predict_only" in str(p)),
+        None,
+    )
+    local_template = _find_predict_yaml(model_dir)
+    if local_template:
+        rel = local_template.relative_to(_LOCAL_PROJECT_ROOT)
+        cfg["template"] = f"{WORKDIR}/{rel}"
+        _log(f"使用模型自带 YAML: {rel}")
+
     _log(f"模型: {model_name}")
     _log(f"市场: {cfg['market']} | 预测日期: {pred_date}")
     _log(f"镜像: {DOCKER_IMAGE}")
 
     # 构建 Docker 命令
-    base_dir = f"{WORKDIR}/models" if cfg.get("use_models_dir") else f"{WORKDIR}/DATA/analysis_outputs"
     output_root_ctr = f"{base_dir}/{model_name}/model_predict"
     analysis_root_ctr = f"{base_dir}/{model_name}"
 
