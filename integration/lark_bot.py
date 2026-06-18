@@ -470,7 +470,7 @@ class StockFishBot:
         self, chat_id: str, parsed: ParsedMessage
     ) -> None:
         """处理 /qlib_inference 命令。"""
-        DEFAULT_MODEL = "2026-06-12-csi300-alpha158"
+        DEFAULT_MODEL = "2026-06-12-csi300-alpha158-fintune"
         await self._send_text(
             chat_id, f"🤖 Qlib 推理启动\n模型: {DEFAULT_MODEL}\n每 5 分钟汇报一次进度..."
         )
