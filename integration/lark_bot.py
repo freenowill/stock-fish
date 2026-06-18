@@ -99,7 +99,32 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
         result.is_help = True
         return result
 
-    # 3. /update_data 命令
+    # 3. /panel — 控制面板
+    if clean.lower().startswith("/panel"):
+        result.symbols = ["__panel__"]
+        return result
+
+    # 4. /__stock <code> [--master X] — 内部命令（控制面板按钮）
+    if clean.startswith("/__stock "):
+        parts = clean[len("/__stock "):]
+        # 解析股票代码和大师
+        m = _MASTER_ARG.search(parts)
+        if m:
+            result.inline_master = m.group(1).lower()
+        sym = _STOCK_PATTERN.findall(parts)
+        if sym:
+            result.symbols = [_normalize_symbol(sym[0]), "__stock__"]
+        return result
+
+    # 5. /__index <market> — 内部命令（控制面板按钮）
+    if clean.startswith("/__index "):
+        market = clean[len("/__index "):].strip().lower()
+        if market in ("csi300", "csi500", "csi1000"):
+            result.symbols = ["__analyze_index__"]
+            result.inline_master = f"{market}:True"
+        return result
+
+    # 6. /update_data 命令
     if clean.lower().startswith("/update_data"):
         result.is_help = False
         result.symbols = ["__update_data__"]
@@ -216,6 +241,7 @@ class StockFishBot:
 
         handler = lark.EventDispatcherHandler.builder("", "") \
             .register_p2_im_message_receive_v1(self._on_message) \
+            .register_p2_card_action_trigger(self._on_card_action) \
             .build()
 
         ws_client = lark.ws.Client(
@@ -230,6 +256,45 @@ class StockFishBot:
         """停止 Bot（WebSocket 由 SDK 管理，随进程退出）。"""
         self._loop.call_soon_threadsafe(self._loop.stop)
         logger.info("[StockFishBot] 已停止")
+
+    # ── 卡片回调处理 ──────────────────────────────────────
+
+    def _on_card_action(self, data) -> None:
+        """卡片按钮点击回调。提取 cmd 字段，转为内部消息处理。"""
+        try:
+            # 打印完整数据便于调试
+            import pprint
+            raw = {"data": str(data)[:500]}
+            logger.info(f"[StockFishBot] card_action: {raw}")
+
+            # 尝试多种方式提取 action value
+            action = getattr(data, 'event', None)
+            if action:
+                act = getattr(action, 'action', None)
+                if act:
+                    value = getattr(act, 'value', None)
+                    if value is None:
+                        value = act.get('value', {}) if hasattr(act, 'get') else {}
+                    cmd = value.get("cmd", "") if isinstance(value, dict) else ""
+                    if cmd:
+                        logger.info(f"[StockFishBot] 卡片回调 cmd: {cmd}")
+                        # 尝试获取 open_id 和 chat_id
+                        open_id = None
+                        chat_id = None
+                        if hasattr(act, 'open_id'):
+                            open_id = act.open_id
+                        # fallback: 用 chat_map
+                        if open_id and not chat_id:
+                            chat_id = self._prefs.get_chat_id(open_id)
+                        if not chat_id:
+                            chat_id = open_id or "oc_default"
+                        # 执行命令
+                        from integration.lark_bot import parse_message
+                        parsed = parse_message(cmd)
+                        if parsed:
+                            self._route_parsed(chat_id, open_id, parsed)
+        except Exception as e:
+            logger.error(f"[StockFishBot] card_action error: {e}", exc_info=True)
 
     # ── 消息处理入口 ───────────────────────────────────────
 
@@ -260,17 +325,24 @@ class StockFishBot:
             self._dispatch(self._send_help(chat_id, "未识别股票代码，请发送 600519 这样的代码。"))
             return
 
-        # 分发到异步处理器
+        self._route_parsed(chat_id, open_id, parsed)
+
+    def _route_parsed(self, chat_id: str, open_id: Optional[str], parsed: ParsedMessage) -> None:
+        """根据解析结果分发到对应处理器。"""
         if parsed.is_master_command:
             self._dispatch(self._handle_master_cmd(chat_id, open_id, parsed))
         elif parsed.is_help:
             self._dispatch(self._send_help(chat_id))
+        elif parsed.symbols and parsed.symbols[0] == "__panel__":
+            self._dispatch(self._handle_panel(chat_id, open_id))
         elif parsed.symbols and parsed.symbols[0] == "__update_data__":
             self._dispatch(self._handle_update_data(chat_id))
         elif parsed.symbols and parsed.symbols[0] == "__analyze_index__":
             self._dispatch(self._handle_analyze_index(chat_id, open_id, parsed))
         elif parsed.symbols and parsed.symbols[0] == "__qlib_infer__":
             self._dispatch(self._handle_qlib_inference(chat_id, parsed))
+        elif parsed.symbols and "__stock__" in parsed.symbols:
+            self._dispatch(self._handle_single(chat_id, open_id, parsed))
         elif parsed.is_batch:
             self._dispatch(self._handle_batch(chat_id, open_id, parsed))
         else:
@@ -450,6 +522,14 @@ class StockFishBot:
             f"📊 批量分析全部完成：**{success}/{total}** 成功"
             + (f"，{total - success} 失败" if success < total else ""),
         )
+
+    # ── 控制面板 ────────────────────────────────────────
+
+    async def _handle_panel(self, chat_id: str, open_id: Optional[str]) -> None:
+        """发送交互式控制面板卡片。"""
+        master = self._prefs.get_master(open_id)
+        card = self._cards.build_panel_card(current_master=master)
+        await self._send_card(chat_id, card)
 
     # ── 全市场大师分析 ────────────────────────────────────
 
