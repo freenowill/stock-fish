@@ -105,11 +105,20 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
         result.symbols = ["__update_data__"]
         return result
 
-    # 4. /qlib_inference 命令
+    # 4. /qlib_inference [csi300|csi500|csi1000] [--include-star]
     if clean.lower().startswith("/qlib_inference"):
         result.is_help = False
-        symbols = _STOCK_PATTERN.findall(clean)
+        parts = clean.split()
+        market = "csi300"
+        exclude_star = True
+        for p in parts[1:]:
+            p_lower = p.lower()
+            if p_lower in ("csi300", "csi500", "csi1000"):
+                market = p_lower
+            elif p_lower == "--include-star":
+                exclude_star = False
         result.symbols = ["__qlib_infer__"]
+        result.inline_master = f"{market}:{exclude_star}"  # 复用字段传参
         return result
 
     # 5. 批量: 检测多只股票 / 分割
@@ -469,10 +478,30 @@ class StockFishBot:
     async def _handle_qlib_inference(
         self, chat_id: str, parsed: ParsedMessage
     ) -> None:
-        """处理 /qlib_inference 命令。"""
-        DEFAULT_MODEL = "2026-06-12-csi300-alpha158-fintune"
+        """处理 /qlib_inference [csi300|csi500|csi1000] [--include-star] 命令。"""
+        # 解析参数: inline_master 被复用为 "market:exclude_star"
+        market = "csi300"
+        exclude_star = True
+        if parsed.inline_master and ":" in parsed.inline_master:
+            parts = parsed.inline_master.split(":")
+            market = parts[0]
+            exclude_star = parts[1] == "True"
+
+        # 模型映射
+        MODELS = {
+            "csi300": "2026-06-12-csi300-alpha158-fintune",
+            "csi500": "2026-06-12-csi300-alpha158-fintune",  # 暂时复用 csi300 模型
+            "csi1000": "2026-06-12-csi300-alpha158-fintune",  # 暂时复用 csi300 模型
+        }
+        model = MODELS.get(market, MODELS["csi300"])
+        star_note = "（剔除科创板）" if exclude_star else ""
+
         await self._send_text(
-            chat_id, f"🤖 Qlib 推理启动\n模型: {DEFAULT_MODEL}\n每 5 分钟汇报一次进度..."
+            chat_id,
+            f"🤖 Qlib 推理启动\n"
+            f"市场: **{market.upper()}** {star_note}\n"
+            f"模型: {model}\n"
+            f"每 5 分钟汇报一次进度...",
         )
 
         # 后台心跳
@@ -481,18 +510,18 @@ class StockFishBot:
         async def _heartbeat():
             waited = 0
             while heartbeat_running:
-                await asyncio.sleep(300)  # 5 分钟汇报一次
+                await asyncio.sleep(300)
                 waited += 5
                 if heartbeat_running:
                     await self._send_text(
                         chat_id,
-                        f"⏳ Qlib 推理中...（已等待 {waited} 分钟）",
+                        f"⏳ Qlib {market.upper()} 推理中...（已等待 {waited} 分钟）",
                     )
 
         heartbeat_task = asyncio.create_task(_heartbeat())
 
         try:
-            result = await self._api.qlib_infer(model=DEFAULT_MODEL)
+            result = await self._api.qlib_infer(model=model)
         except Exception as e:
             heartbeat_running = False
             heartbeat_task.cancel()
@@ -505,18 +534,26 @@ class StockFishBot:
 
         if result.get("status") == "completed":
             count = result.get("count", 0)
-            stocks = result.get("stocks", "")
+            stocks_raw = result.get("stocks", "")
             pred_date = result.get("pred_date", "")
             message = result.get("message", "推理完成")
 
-            resp = [f"✅ Qlib 推理完成！", f"模型: {DEFAULT_MODEL}"]
+            # 剔除科创板（688 开头）
+            if exclude_star and stocks_raw:
+                all_stocks = [s.strip() for s in stocks_raw.replace("/", " ").split() if s.strip()]
+                filtered = [s for s in all_stocks if not s.startswith("688")]
+                stocks_raw = " / ".join(filtered)
+                filtered_count = len(filtered)
+                star_count = len(all_stocks) - filtered_count
+                if star_count > 0:
+                    message += f"（已剔除 {star_count} 只科创板）"
+
+            resp = [f"✅ Qlib 推理完成！", f"市场: {market.upper()} {star_note}", f"模型: {model}"]
             if pred_date:
                 resp.append(f"预测日期: {pred_date}")
-            if count:
-                resp.append(f"选出股票: {count} 只")
             resp.append(f"\n{message}")
-            if stocks:
-                resp.append(f"\n**选股结果**:\n{stocks}")
+            if stocks_raw:
+                resp.append(f"\n**选股结果**:\n{stocks_raw}")
             await self._send_text(chat_id, "\n".join(resp))
         else:
             error = result.get("error", "未知错误")

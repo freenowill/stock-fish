@@ -469,8 +469,11 @@ class CardBuilder:
                 "　查看: `/master list`\n\n"
                 "**4. Qlib 数据更新** — `/update_data`\n"
                 "　下载最新 qlib 市场数据\n\n"
-                "**5. Qlib 推理** — `/qlib_inference`\n"
-                "　使用默认微调模型推理选股\n\n"
+                "**5. Qlib 推理** — `/qlib_inference [市场]`\n"
+                "　如: `/qlib_inference` (默认 CSI300)\n"
+                "　如: `/qlib_inference csi500`\n"
+                "　如: `/qlib_inference csi1000 --include-star`\n"
+                "　默认剔除科创板，加 `--include-star` 保留\n\n"
                 "**6. 本帮助** — `/help`"
             ),
             _hr(),
