@@ -69,12 +69,13 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
 
     优先级:
     1. /master <key|off|list>  → 大师偏好设置
-    2. /help /帮助                → 帮助
+    2. /help /帮助 /panel        → 帮助/控制面板
     3. /update_data               → Qlib 数据更新
-    4. /qlib_inference [code]     → Qlib 推理
-    5. 多只股票 (/ 分割)          → 批量分析
-    6. 单只股票                   → 单股分析
-    7. 不匹配                     → None
+    4. /analyze_index <market>    → 全市场大师分析
+    5. /qlib_inference [market]   → Qlib 推理
+    6. 多只股票 (/ 分割)          → 批量分析
+    7. 单只股票                   → 单股分析
+    8. 不匹配                     → None
     """
     # 去掉 @Bot 提及
     clean = _MENTION_CLEAN.sub("", text).strip()
@@ -104,27 +105,7 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
         result.symbols = ["__panel__"]
         return result
 
-    # 4. /__stock <code> [--master X] — 内部命令（控制面板按钮）
-    if clean.startswith("/__stock "):
-        parts = clean[len("/__stock "):]
-        # 解析股票代码和大师
-        m = _MASTER_ARG.search(parts)
-        if m:
-            result.inline_master = m.group(1).lower()
-        sym = _STOCK_PATTERN.findall(parts)
-        if sym:
-            result.symbols = [_normalize_symbol(sym[0]), "__stock__"]
-        return result
-
-    # 5. /__index <market> — 内部命令（控制面板按钮）
-    if clean.startswith("/__index "):
-        market = clean[len("/__index "):].strip().lower()
-        if market in ("csi300", "csi500", "csi1000"):
-            result.symbols = ["__analyze_index__"]
-            result.inline_master = f"{market}:True"
-        return result
-
-    # 6. /update_data 命令
+    # 4. /update_data 命令
     if clean.lower().startswith("/update_data"):
         result.is_help = False
         result.symbols = ["__update_data__"]
@@ -241,7 +222,6 @@ class StockFishBot:
 
         handler = lark.EventDispatcherHandler.builder("", "") \
             .register_p2_im_message_receive_v1(self._on_message) \
-            .register_p2_card_action_trigger(self._on_card_action) \
             .build()
 
         ws_client = lark.ws.Client(
@@ -256,45 +236,6 @@ class StockFishBot:
         """停止 Bot（WebSocket 由 SDK 管理，随进程退出）。"""
         self._loop.call_soon_threadsafe(self._loop.stop)
         logger.info("[StockFishBot] 已停止")
-
-    # ── 卡片回调处理 ──────────────────────────────────────
-
-    def _on_card_action(self, data) -> None:
-        """卡片按钮点击回调。提取 cmd 字段，转为内部消息处理。"""
-        try:
-            # 打印完整数据便于调试
-            import pprint
-            raw = {"data": str(data)[:500]}
-            logger.info(f"[StockFishBot] card_action: {raw}")
-
-            # 尝试多种方式提取 action value
-            action = getattr(data, 'event', None)
-            if action:
-                act = getattr(action, 'action', None)
-                if act:
-                    value = getattr(act, 'value', None)
-                    if value is None:
-                        value = act.get('value', {}) if hasattr(act, 'get') else {}
-                    cmd = value.get("cmd", "") if isinstance(value, dict) else ""
-                    if cmd:
-                        logger.info(f"[StockFishBot] 卡片回调 cmd: {cmd}")
-                        # 尝试获取 open_id 和 chat_id
-                        open_id = None
-                        chat_id = None
-                        if hasattr(act, 'open_id'):
-                            open_id = act.open_id
-                        # fallback: 用 chat_map
-                        if open_id and not chat_id:
-                            chat_id = self._prefs.get_chat_id(open_id)
-                        if not chat_id:
-                            chat_id = open_id or "oc_default"
-                        # 执行命令
-                        from integration.lark_bot import parse_message
-                        parsed = parse_message(cmd)
-                        if parsed:
-                            self._route_parsed(chat_id, open_id, parsed)
-        except Exception as e:
-            logger.error(f"[StockFishBot] card_action error: {e}", exc_info=True)
 
     # ── 消息处理入口 ───────────────────────────────────────
 
@@ -341,8 +282,6 @@ class StockFishBot:
             self._dispatch(self._handle_analyze_index(chat_id, open_id, parsed))
         elif parsed.symbols and parsed.symbols[0] == "__qlib_infer__":
             self._dispatch(self._handle_qlib_inference(chat_id, parsed))
-        elif parsed.symbols and "__stock__" in parsed.symbols:
-            self._dispatch(self._handle_single(chat_id, open_id, parsed))
         elif parsed.is_batch:
             self._dispatch(self._handle_batch(chat_id, open_id, parsed))
         else:

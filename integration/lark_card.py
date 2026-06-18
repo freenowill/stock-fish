@@ -133,35 +133,6 @@ def _button(text: str, url: str, btn_type: str = "primary") -> Dict:
     }
 
 
-def _cmd_button(text: str, command: str, btn_type: str = "primary") -> Dict:
-    """按钮 → 点击触发 p2_card_action_trigger 回调。"""
-    return {
-        "tag": "button",
-        "text": {"tag": "plain_text", "content": text},
-        "type": btn_type,
-        "width": "fill",
-        "behaviors": [
-            {
-                "type": "callback",
-                "value": {"cmd": command},
-            }
-        ],
-    }
-
-
-def _small_cmd(text: str, command: str, btn_type: str = "default") -> Dict:
-    """小按钮，用于行内多个操作。"""
-    return {
-        "tag": "button",
-        "text": {"tag": "plain_text", "content": text},
-        "type": btn_type,
-        "behaviors": [
-            {
-                "type": "callback",
-                "value": {"cmd": command},
-            }
-        ],
-    }
 
 
 # ── CardBuilder ─────────────────────────────────────────────
@@ -485,42 +456,21 @@ class CardBuilder:
     # ── 控制面板卡片 ──────────────────────────────────
 
     def build_panel_card(self, current_master: str = "") -> Dict[str, Any]:
-        """构建交互式控制面板，按钮点击触发回调。"""
-        master_note = f"当前大师: **{current_master}**" if current_master else "大师模式: 未启用"
+        """构建控制面板菜单卡片（视觉参考）。"""
+        master_note = f"**{current_master}**" if current_master else "未启用"
 
         elements = [
-            _md(f"**📊 股票分析**\n{master_note}"),
-            _md("输入股票代码或点击下方按钮快速操作："),
-            _cmd_button("🟢 分析 600519（巴菲特）", "/__stock 600519 --master buffett", "primary"),
+            _md(f"**🎛 StockFish 控制面板**\n当前大师: {master_note}"),
             _hr(),
-            _md("**🏢 全市场大师分析**"),
-            _cmd_button("📈 CSI300 分析（300 只）", "/__index csi300", "primary"),
-            _cmd_button("📈 CSI500 分析（500 只）", "/__index csi500", "default"),
-            _cmd_button("📈 CSI1000 分析（1000 只）", "/__index csi1000", "default"),
-            _hr(),
-            _md("**🎓 大师选择**"),
-            _small_cmd("格雷厄姆", "/master graham"),
-            _small_cmd("巴菲特", "/master buffett"),
-            _small_cmd("费雪", "/master fisher"),
-            _small_cmd("林奇", "/master lynch"),
-            _small_cmd("邓普顿", "/master templeton"),
-            _small_cmd("索罗斯", "/master soros"),
-            _small_cmd("达利欧", "/master dalio"),
-            _small_cmd("关闭大师", "/master off", "danger"),
-            _hr(),
-            _md("**🤖 Qlib 模型**"),
-            _cmd_button("📥 更新数据", "/update_data", "default"),
-            _cmd_button("🧠 CSI300 推理", "/qlib_inference csi300", "default"),
-            _cmd_button("🧠 CSI500 推理", "/qlib_inference csi500", "default"),
-            _cmd_button("🧠 CSI1000 推理", "/qlib_inference csi1000", "default"),
-            _hr(),
-            _md("**📋 其他**"),
-            _small_cmd("帮助", "/help", "default"),
-            _small_cmd("刷新面板", "/panel", "default"),
+            _md("**📊 股票分析** — 直接发送股票代码\n`600519` 单股 / `600519/000858` 批量\n`600519 --master buffett` 指定大师"),
+            _md("**🏢 全市场大师分析** — 分析整个指数\n`/analyze_index csi300` (300 只)\n`/analyze_index csi500` (500 只)\n`/analyze_index csi1000` (1000 只)\n加 `--include-star` 保留科创板"),
+            _md("**🎓 大师选择**\n`/master graham` 格雷厄姆\n`/master buffett` 巴菲特\n`/master fisher` 费雪\n`/master lynch` 林奇\n`/master templeton` 邓普顿\n`/master soros` 索罗斯\n`/master dalio` 达利欧\n`/master off` 关闭大师"),
+            _md("**🤖 Qlib 模型**\n`/update_data` 更新数据\n`/qlib_inference` CSI300 推理\n`/qlib_inference csi500` CSI500\n`/qlib_inference csi1000` CSI1000"),
+            _md("**📋 其他**\n`/panel` 显示本面板\n`/help` 使用帮助"),
         ]
         return _card(
             title="🎛 StockFish 控制面板",
-            subtitle="点击按钮执行操作 | 也可直接输入股票代码",
+            subtitle="输入命令或股票代码即可 | 发送 /panel 重新显示",
             color="blue",
             elements=elements,
         )
