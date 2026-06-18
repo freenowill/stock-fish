@@ -178,7 +178,12 @@ class StockFishBot:
 
     def _dispatch(self, coro) -> None:
         """将异步任务调度到后台事件循环。"""
-        asyncio.run_coroutine_threadsafe(coro, self._loop)
+        async def _wrap():
+            try:
+                await coro
+            except Exception as e:
+                logger.error(f"[StockFishBot] 任务异常: {e}", exc_info=True)
+        asyncio.run_coroutine_threadsafe(_wrap(), self._loop)
 
     def start(self) -> None:
         """启动 WebSocket 连接，进入消息循环（阻塞主线程）。"""
@@ -543,13 +548,15 @@ class StockFishBot:
     async def _send_card(self, chat_id: str, card: Dict[str, Any]) -> None:
         """发送互动卡片。"""
         try:
+            content_str = json.dumps(card, ensure_ascii=False)
+            logger.info(f"[StockFishBot] send_card: size={len(content_str)} bytes")
             req = lark.im.v1.CreateMessageRequest.builder() \
                 .receive_id_type("chat_id") \
                 .request_body(
                     lark.im.v1.CreateMessageRequestBody.builder()
                     .receive_id(chat_id)
                     .msg_type("interactive")
-                    .content(json.dumps(card, ensure_ascii=False))
+                    .content(content_str)
                     .build()
                 ).build()
             resp = self._client.im.v1.message.create(req)
@@ -558,6 +565,8 @@ class StockFishBot:
                     f"[StockFishBot] send_card failed: "
                     f"code={resp.code} msg={resp.msg}"
                 )
+            else:
+                logger.info(f"[StockFishBot] send_card success")
         except Exception as e:
             logger.error(f"[StockFishBot] send_card exception: {e}")
 

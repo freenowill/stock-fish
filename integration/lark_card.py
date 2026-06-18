@@ -5,7 +5,7 @@
 A 股配色：红涨绿跌。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 # ── 信号 → 飞书 Header 颜色映射 ────────────────────────────
 
@@ -47,16 +47,38 @@ def _signal_emoji(label: str) -> str:
 def _safe_str(val: Any, default: str = "--") -> str:
     if val is None:
         return default
-    if isinstance(val, float):
+    if isinstance(val, (int, float)):
         return f"{val:.2f}"
+    if isinstance(val, dict):
+        return default
     return str(val)
 
 
-def _pct(val: Optional[float]) -> str:
+def _safe_money(val: Any) -> str:
+    """安全格式化金额，非数字返回 --。"""
     if val is None:
         return "--"
-    sign = "+" if val > 0 else ""
-    return f"{sign}{val:.2f}%"
+    if isinstance(val, (int, float)):
+        return f"¥{val:.2f}"
+    return "--"
+
+
+def _safe_score(val: Any) -> str:
+    """安全格式化评分。"""
+    if val is None:
+        return "--"
+    if isinstance(val, (int, float)):
+        return f"+{val:.1f}" if val > 0 else f"{val:.1f}"
+    return str(val)
+
+
+def _pct(val: Any) -> str:
+    if val is None:
+        return "--"
+    if isinstance(val, (int, float)):
+        sign = "+" if val > 0 else ""
+        return f"{sign}{val:.2f}%"
+    return "--"
 
 
 def _direction_cn(d: str) -> str:
@@ -138,7 +160,7 @@ class CardBuilder:
         emoji = _signal_emoji(label)
 
         # ── Header ──
-        score_str = f"+{final_score:.1f}" if final_score > 0 else f"{final_score:.1f}"
+        score_str = _safe_score(final_score)
         title = f"{emoji} {label} {score_str}  {name} ({symbol})"
 
         # ── 行情行 ──
@@ -146,17 +168,17 @@ class CardBuilder:
         change_pct_val = quote.get("change_pct")
         pe = quote.get("pe")
         pb = quote.get("pb")
-        price_s = f"¥{_safe_str(price)}" if price else "--"
+        price_s = _safe_money(price)
         change_s = _pct(change_pct_val) if change_pct_val is not None else "--"
-        pe_s = f"{_safe_str(pe)}" if pe else "--"
-        pb_s = f"{_safe_str(pb)}" if pb else "--"
+        pe_s = _safe_str(pe)
+        pb_s = _safe_str(pb)
 
         # ── 估值 ──
         val_level = result.get("valuation_level", "--") or "--"
         val_pct = result.get("valuation_percentile")
-        val_pct_s = f"{val_pct:.1f}%" if val_pct is not None else "--"
+        val_pct_s = f"{val_pct:.1f}%" if isinstance(val_pct, (int, float)) else "--"
         buy_price = result.get("suggested_buy_price", 0)
-        buy_s = f"¥{buy_price:.2f}" if buy_price else "--"
+        buy_s = _safe_money(buy_price)
 
         # ── 多周期预测 ──
         st = pred.get("short_term", {}) or {}
@@ -167,8 +189,8 @@ class CardBuilder:
         act_name = action.get("action", "--") or "--"
         sl = action.get("stop_loss")
         tp = action.get("take_profit")
-        sl_s = f"¥{sl:.2f}" if sl else "--"
-        tp_s = f"¥{tp:.2f}" if tp else "--"
+        sl_s = _safe_money(sl)
+        tp_s = _safe_money(tp)
 
         # ── 组装 Body ──
         elements = [
@@ -246,7 +268,7 @@ class CardBuilder:
         color = _signal_color(label)
         emoji = _signal_emoji(label)
 
-        score_str = f"+{final_score:.1f}" if final_score > 0 else f"{final_score:.1f}"
+        score_str = _safe_score(final_score)
         master_key = cio.get("master_key", cio.get("master_name", ""))
         title = (
             f"{emoji} {label} {score_str}  {name} ({symbol})\n"
@@ -257,13 +279,13 @@ class CardBuilder:
         price = quote.get("price")
         change_pct_val = quote.get("change_pct")
         pe = quote.get("pe")
-        price_s = f"¥{_safe_str(price)}" if price else "--"
+        price_s = _safe_money(price)
         change_s = _pct(change_pct_val) if change_pct_val is not None else "--"
-        pe_s = f"{_safe_str(pe)}" if pe else "--"
+        pe_s = _safe_str(pe)
 
         val_level = result.get("valuation_level", "--") or "--"
         buy_price = result.get("suggested_buy_price", 0)
-        buy_s = f"¥{buy_price:.2f}" if buy_price else "--"
+        buy_s = _safe_money(buy_price)
 
         # ── CIO 决策 ──
         summary = cio.get("decision_summary", "")[:200]
@@ -276,8 +298,8 @@ class CardBuilder:
         order_entry = order.get("entry_condition", "--")
         order_sl = order.get("stop_loss")
         order_tp = order.get("take_profit")
-        order_sl_s = f"¥{order_sl:.2f}" if order_sl else "--"
-        order_tp_s = f"¥{order_tp:.2f}" if order_tp else "--"
+        order_sl_s = _safe_money(order_sl)
+        order_tp_s = _safe_money(order_tp)
 
         # ── 大师多周期预测 ──
         st = cio.get("short_term", {}) or {}
@@ -373,7 +395,7 @@ class CardBuilder:
             "| :-- | :-- | :-- | :-- | :-- |"
         ]
         for i, item in enumerate(scored[:10], 1):
-            s = f"+{item['score']:.1f}" if item["score"] > 0 else f"{item['score']:.1f}"
+            s = _safe_score(item["score"])
             table_lines.append(
                 f"| {i} | {item['symbol']} {item['name']} | "
                 f"{s} | {item['valuation']} | {item['action']} |"
