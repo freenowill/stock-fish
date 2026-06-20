@@ -195,6 +195,10 @@ class StockFishBot:
         self._cards = CardBuilder()
         self._prefs = UserPrefManager()
 
+        # 消息去重：防止 WebSocket 重连时重放旧消息
+        self._seen_messages: set = set()  # 已处理的 message_id
+        self._active_analysis_chats: set = set()  # 正在执行分析的 chat_id
+
         # 专用 asyncio 事件循环（在后台线程运行），用于异步 API 调用
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._loop_thread = threading.Thread(
@@ -249,6 +253,16 @@ class StockFishBot:
         # 只处理文本消息
         if message.message_type != "text":
             return
+
+        # 去重：防止 WebSocket 重连时飞书重放旧消息
+        msg_id = message.message_id
+        if msg_id in self._seen_messages:
+            logger.debug(f"[StockFishBot] 跳过重复消息 msg_id={msg_id}")
+            return
+        self._seen_messages.add(msg_id)
+        # 限制内存：保留最近 10000 条
+        if len(self._seen_messages) > 10000:
+            self._seen_messages.clear()
 
         text = json.loads(message.content).get("text", "").strip()
         if not text:
@@ -476,6 +490,22 @@ class StockFishBot:
         self, chat_id: str, open_id: Optional[str], parsed: ParsedMessage
     ) -> None:
         """处理 /analyze_index <market> [--include-star] 命令。"""
+        # 防重复：同一群聊只能有一个全市场分析在跑
+        task_key = f"analyze_index:{chat_id}"
+        if task_key in self._active_analysis_chats:
+            await self._send_text(chat_id, "⚠️ 全市场分析已在运行中，请等待完成后再试。")
+            return
+        self._active_analysis_chats.add(task_key)
+
+        try:
+            await self._do_analyze_index(chat_id, open_id, parsed)
+        finally:
+            self._active_analysis_chats.discard(task_key)
+
+    async def _do_analyze_index(
+        self, chat_id: str, open_id: Optional[str], parsed: ParsedMessage
+    ) -> None:
+        """实际执行全市场分析。"""
         market = "csi300"
         exclude_star = True
         if parsed.inline_master and ":" in parsed.inline_master:
