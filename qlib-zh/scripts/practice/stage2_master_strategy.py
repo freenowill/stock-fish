@@ -67,15 +67,15 @@ FACTOR_EXPRESSIONS: dict[str, list[tuple[str, int, float]]] = {
     ],
     "quality": [
         # Return stability (low earnings volatility proxy)
-        ("Std(Ref($close, -1) / $close - 1, 63)", -1, 0.25),
+        ("Std(Ref($close, 1) / $close - 1, 63)", -1, 0.25),
         # Sharpe-like: return / volatility ratio over 6 months
-        ("($close / Ref($close, 126) - 1) / (Std(Ref($close, -1) / $close - 1, 126) + 1e-8)", 1, 0.25),
+        ("($close / Ref($close, 126) - 1) / (Std(Ref($close, 1) / $close - 1, 126) + 1e-8)", 1, 0.25),
         # Price above long-term MA = stable uptrend
         ("$close / Mean($close, 126) - 1", 1, 0.15),
         # Low debt proxy: low volatility over long period
-        ("Std(Ref($close, -1) / $close - 1, 252)", -1, 0.20),
+        ("Std(Ref($close, 1) / $close - 1, 252)", -1, 0.20),
         # Price-volume correlation (healthy correlation = institutional quality)
-        ("Corr($close / Ref($close, -1) - 1, $volume / Mean($volume, 21), 63)", 1, 0.15),
+        ("Corr($close / Ref($close, 1) - 1, $volume / Mean($volume, 21), 63)", 1, 0.15),
     ],
     "growth": [
         # 1-month return
@@ -106,11 +106,11 @@ FACTOR_EXPRESSIONS: dict[str, list[tuple[str, int, float]]] = {
     ],
     "low_risk": [
         # Short-term volatility
-        ("Std(Ref($close, -1) / $close - 1, 21)", -1, 0.20),
+        ("Std(Ref($close, 1) / $close - 1, 21)", -1, 0.20),
         # Medium-term volatility
-        ("Std(Ref($close, -1) / $close - 1, 63)", -1, 0.25),
+        ("Std(Ref($close, 1) / $close - 1, 63)", -1, 0.25),
         # Long-term volatility
-        ("Std(Ref($close, -1) / $close - 1, 126)", -1, 0.20),
+        ("Std(Ref($close, 1) / $close - 1, 126)", -1, 0.20),
         # Max drawdown proxy (distance from 3-month high)
         ("$close / Max($high, 63) - 1", 1, 0.15),
         # Downside volatility: lower volatility of negative-return days = safer
