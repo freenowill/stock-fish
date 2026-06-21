@@ -218,12 +218,19 @@ class LarkClient:
 
     # ── Qlib 推理 ──────────────────────────────────────────
 
-    async def qlib_infer(self, model: str = "2026-06-21-csi300-alpha158") -> Dict[str, Any]:
+    async def qlib_infer(
+        self,
+        model: str = "2026-06-21-csi300-alpha158",
+        holdings: str = "",
+    ) -> Dict[str, Any]:
         """POST /api/qlib/infer — Qlib 模型推理。"""
         session = await self._ensure_session()
-        logger.info(f"[LarkClient] qlib_infer model={model}")
+        payload: Dict[str, Any] = {"model": model}
+        if holdings:
+            payload["holdings"] = holdings
+        logger.info(f"[LarkClient] qlib_infer model={model}" + (f" holdings={holdings}" if holdings else ""))
         async with session.post(
-            f"{self._base}/api/qlib/infer", json={"model": model}
+            f"{self._base}/api/qlib/infer", json=payload
         ) as resp:
             task = await resp.json()
         return await self._poll_qlib_task(task.get("task_id", ""), "infer")

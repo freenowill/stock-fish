@@ -127,20 +127,25 @@ def parse_message(text: str) -> Optional[ParsedMessage]:
         result.inline_master = f"{market}:{exclude_star}"
         return result
 
-    # 5. /qlib_inference [csi300|csi500|csi1000] [--include-star]
+    # 5. /qlib_inference [csi300|csi500|csi1000] [股票代码...]
+    # 注意：不处理 --include-star，科创板过滤仅属于 /analyze_index
     if clean.lower().startswith("/qlib_inference"):
         result.is_help = False
         parts = clean.split()
         market = "csi300"
-        exclude_star = True
+        holdings = []  # 股票代码（调仓模式）
         for p in parts[1:]:
             p_lower = p.lower()
             if p_lower in ("csi300", "csi500", "csi1000"):
                 market = p_lower
-            elif p_lower == "--include-star":
-                exclude_star = False
+            else:
+                # 提取 6 位股票代码（支持 / 分隔的多只股票）
+                codes = re.findall(r'(\d{6})', p)
+                holdings.extend(codes)
         result.symbols = ["__qlib_infer__"]
-        result.inline_master = f"{market}:{exclude_star}"  # 复用字段传参
+        # 格式: market[:stock_codes]
+        holding_str = "/".join(holdings) if holdings else ""
+        result.inline_master = f"{market}:{holding_str}" if holding_str else market
         return result
 
     # 5. 批量: 检测多只股票 / 分割
@@ -638,30 +643,35 @@ class StockFishBot:
         """
         # 解析参数
         market = "csi300"
-        exclude_star = True
         holdings_raw = ""
 
         if parsed.inline_master:
             raw = parsed.inline_master.strip()
-            # Check if input looks like stock codes (6-digit numbers separated by / or space)
-            import re
-            code_pattern = re.findall(r'\b\d{6}\b', raw)
-            if code_pattern:
-                holdings_raw = "/".join(code_pattern)
-            elif ":" in raw:
-                parts = raw.split(":")
-                market = parts[0]
-                exclude_star = parts[1] == "True"
+            # 格式: market[:holdings]
+            if ":" in raw:
+                parts = raw.split(":", 1)
+                if parts[0] in ("csi300", "csi500", "csi1000"):
+                    market = parts[0]
+                if len(parts) > 1 and parts[1]:
+                    holdings_raw = parts[1]
+            elif raw in ("csi300", "csi500", "csi1000"):
+                market = raw
+            else:
+                # 纯股票代码（向后兼容）
+                import re
+                codes = re.findall(r'\b\d{6}\b', raw)
+                if codes:
+                    holdings_raw = "/".join(codes)
 
         # 默认模型
         MODEL = "2026-06-21-csi300-alpha158"
-        star_note = "（剔除科创板）" if exclude_star else ""
 
         is_rebalance = bool(holdings_raw)
 
         await self._send_text(
             chat_id,
             f"🤖 Qlib 推理启动\n"
+            f"市场: **{market.upper()}**\n"
             f"模型: **{MODEL}**\n"
             f"策略: **Strategy B (Master Veto)**\n"
             + (f"当前持仓: **{holdings_raw}**\n" if is_rebalance else "")
@@ -685,7 +695,7 @@ class StockFishBot:
         heartbeat_task = asyncio.create_task(_heartbeat())
 
         try:
-            result = await self._api.qlib_infer(model=model)
+            result = await self._api.qlib_infer(model=MODEL, holdings=holdings_raw)
         except Exception as e:
             heartbeat_running = False
             heartbeat_task.cancel()
@@ -703,17 +713,11 @@ class StockFishBot:
             message = result.get("message", "推理完成")
             strategy_b = result.get("strategy_b", {})
 
-            # 剔除科创板（688 开头）
-            if exclude_star and stocks_raw:
-                all_stocks = [s.strip() for s in stocks_raw.replace("/", " ").split() if s.strip()]
-                filtered = [s for s in all_stocks if not s.startswith("688")]
-                stocks_raw = " / ".join(filtered)
-                filtered_count = len(filtered)
-                star_count = len(all_stocks) - filtered_count
-                if star_count > 0:
-                    message += f"（已剔除 {star_count} 只科创板）"
-
             resp = [f"✅ Qlib 推理完成！", f"模型: **{MODEL}** | 预测日期: {pred_date}"]
+
+            # 辅助函数：去掉 Qlib instrument 前缀 (SH/SZ/BJ)
+            def _strip_inst(s):
+                return s[2:] if len(s) > 2 and s[:2] in ("SH", "SZ", "BJ") else s
 
             # ── Strategy B Analysis ────────────────────────────
             if strategy_b:
@@ -728,28 +732,58 @@ class StockFishBot:
                     keep_list = strategy_b.get("keep", [])
                     sell_list = strategy_b.get("sell", [])
                     if keep_list:
-                        resp.append(f"🟢 **继续持有**: {' / '.join(keep_list)}")
+                        items = []
+                        for k in keep_list:
+                            code = _strip_inst(k if isinstance(k, str) else k.get("stock", ""))
+                            reason = "" if isinstance(k, str) else k.get("reason", "")
+                            items.append(f"{code}" + (f"({reason})" if reason else ""))
+                        resp.append(f"🟢 **继续持有**: {' / '.join(items)}")
                     if sell_list:
-                        resp.append(f"🔴 **建议卖出**: {' / '.join(sell_list)}")
+                        items = []
+                        for s in sell_list:
+                            code = _strip_inst(s if isinstance(s, str) else s.get("stock", ""))
+                            reason = "" if isinstance(s, str) else s.get("reason", "")
+                            items.append(f"{code}" + (f"({reason})" if reason else ""))
+                        resp.append(f"🔴 **建议卖出**: {' / '.join(items)}")
                     if sb_buy:
-                        buy_codes = [b if isinstance(b, str) else b.get("stock", "") for b in sb_buy]
+                        buy_codes = [_strip_inst(b if isinstance(b, str) else b.get("stock", "")) for b in sb_buy]
                         resp.append(f"🆕 **建议买入**: {' / '.join(buy_codes[:5])}")
                 else:
                     resp.append(f"\n📊 **初始买入建议** (Strategy B Master Veto)")
                     if sb_buy:
-                        buy_codes = [b if isinstance(b, str) else b.get("stock", "") for b in sb_buy]
+                        buy_codes = [_strip_inst(b if isinstance(b, str) else b.get("stock", "")) for b in sb_buy]
                         resp.append(f"🆕 **建议买入**: {' / '.join(buy_codes[:5])}")
                     else:
                         resp.append(f"🆕 **建议买入**: {stocks_raw}")
 
                 if sb_vetoed:
-                    resp.append(f"\n⚠ **Strategy B 否决** (已剔除): {' / '.join(sb_vetoed[:5])}")
+                    codes = [_strip_inst(v if isinstance(v, str) else v.get("stock", "")) for v in sb_vetoed[:5]]
+                    resp.append(f"\n⚠ **Strategy B 否决** (已剔除): {' / '.join(codes)}")
                 if sb_over:
                     resp.append(f"💡 **加仓信号**: {' / '.join(sb_over[:3])} (仅参考)")
                 if sb_reasons:
                     resp.append(f"\n📝 **否决原因**:")
                     for r in sb_reasons[:3]:
                         resp.append(f"  · {r[:100]}")
+            elif is_rebalance:
+                # Strategy B 不可用时的 fallback 调仓对比
+                model_stocks = set(stocks_raw.replace("/", " ").split())
+                holding_list = [h.strip() for h in holdings_raw.split("/") if h.strip()]
+                holding_set = set(holding_list)
+
+                keep = [h for h in holding_list if h in model_stocks]
+                sell = [h for h in holding_list if h not in model_stocks]
+                # 建议买入：模型 Top-N 中不在持仓中的取前 5
+                new_buy = [s for s in stocks_raw.replace("/", " ").split() if s not in holding_set][:5]
+
+                resp.append(f"\n📊 **调仓建议** (简单对比：持仓 vs 模型 Top-{count})")
+                if keep:
+                    resp.append(f"🟢 **继续持有**: {' / '.join(keep)}")
+                if sell:
+                    resp.append(f"🔴 **建议卖出** (不在模型 Top-{count}): {' / '.join(sell)}")
+                if new_buy:
+                    resp.append(f"🆕 **建议买入**: {' / '.join(new_buy)}")
+                resp.append(f"\n> 模型 Top-{count}: {stocks_raw}")
             else:
                 resp.append(f"\n**模型 Top-{count}**: {stocks_raw}")
 

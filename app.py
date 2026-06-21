@@ -592,6 +592,7 @@ def qlib_infer():
     """启动 qlib 推理任务"""
     data = request.get_json(silent=True) or {}
     model = data.get('model', '').strip()
+    holdings = data.get('holdings', '').strip()
 
     if not model:
         return jsonify({'error': '请选择模型'}), 400
@@ -632,12 +633,13 @@ def qlib_infer():
                                  stocks=event_data.get('stocks', ''),
                                  count=event_data.get('count', 0),
                                  scores=event_data.get('scores', []),
-                                 pred_date=event_data.get('pred_date', ''))
+                                 pred_date=event_data.get('pred_date', ''),
+                                 strategy_b=event_data.get('strategy_b', {}))
                 else:
                     progress = 0.5 if '推理' in message else 0.1
                     _update_qlib(task_id, progress, 'running', message)
 
-            result = run_qlib_inference(model, top_n=20, progress_callback=_progress)
+            result = run_qlib_inference(model, top_n=20, progress_callback=_progress, holdings=holdings)
 
             # 确保完成状态
             with _qlib_lock:
@@ -686,6 +688,7 @@ def qlib_infer_stream(task_id):
                 data['stocks'] = qt.get('stocks', '')
                 data['count'] = qt.get('count', 0)
                 data['pred_date'] = qt.get('pred_date', '')
+                data['strategy_b'] = qt.get('strategy_b', {})
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 break
 

@@ -139,14 +139,18 @@ def main():
 
     if holdings:
         holdings_set = set(holdings)
+        all_candidates = set(stocks)  # 模型 Top-20
         for h in holdings:
             if h in vetoed:
-                sell_recs.append({"stock": h, "reason": "Strategy B veto"})
+                sell_recs.append({"stock": h, "reason": "Strategy B 否决"})
+            elif h not in all_candidates:
+                # 不在模型 Top-20 内 → 建议卖出
+                sell_recs.append({"stock": h, "reason": "不在模型 Top-20"})
             elif h in [b["stock"] for b in buy_list[:top_n]]:
-                keep_recs.append({"stock": h, "reason": "in top picks"})
+                keep_recs.append({"stock": h, "reason": f"在 Top-{top_n} 推荐中"})
             else:
-                # Not in top picks but not vetoed — neutral
-                keep_recs.append({"stock": h, "reason": "hold (not in top-5, not vetoed)"})
+                # 在 Top-20 但不在 Top-5 → 持有但关注
+                keep_recs.append({"stock": h, "reason": f"在模型 Top-20 (非 Top-{top_n})"})
 
         # Also suggest buying stocks not currently held
         buy_recs = [b for b in buy_recs if b not in holdings_set]
@@ -154,10 +158,10 @@ def main():
     # ── Output ─────────────────────────────────────────────────────
     result = {
         "date": args.date,
-        "buy": buy_recs,
-        "sell": [s["stock"] for s in sell_recs],
-        "keep": [k["stock"] for k in keep_recs],
-        "vetoed": [v["stock"] for v in veto_list],
+        "buy": buy_list[:top_n],  # 保留完整 dict（stock + score）
+        "sell": sell_recs,        # 保留完整 dict（stock + reason）
+        "keep": keep_recs,        # 保留完整 dict（stock + reason）
+        "vetoed": veto_list,      # 保留完整 dict（stock + score + reason）
         "veto_reasons": reasons[:5],
         "overweight_signals": list(overweight.keys()),
         "top20_ranked": [{"stock": s, "score": round(sc, 4), "vetoed": s in vetoed}

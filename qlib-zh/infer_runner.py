@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import os
 import subprocess
 import sys
@@ -85,10 +86,22 @@ def _instrument_to_code(instrument: str) -> str:
     return instrument
 
 
+def _code_to_instrument(code: str) -> str:
+    """将纯数字代码转为 qlib instrument 格式. 600519 → SH600519, 000001 → SZ000001."""
+    code = code.strip()
+    if not code or len(code) != 6:
+        return code
+    if code.startswith(("60", "68")):
+        return f"SH{code}"
+    else:
+        return f"SZ{code}"
+
+
 def run_inference(
     model_name: str,
     top_n: int = 20,
     progress_callback=None,
+    holdings: str = "",
 ) -> dict:
     """
     在 Docker 中运行 qlib predict_only 推理，返回 Top N 股票。
@@ -97,6 +110,7 @@ def run_inference(
         model_name: 模型名称 (如 "2026-05-27-csi300-alpha158")
         top_n: 取前 N 只股票
         progress_callback: 可选回调函数，接收 dict(status, message, ...)
+        holdings: 当前持仓，/ 分隔的纯数字代码 (如 "600018/600066/600309")
 
     Returns:
         {"stocks": "300394/601899/...", "count": 20, "pred_date": "...",
@@ -228,50 +242,51 @@ def run_inference(
 
     _log(f"读取: {scores_csv}")
 
-    # 按 rank 升序取 top_n
-    rows = []
+    # ── 读取全部股票（用于 dropout buffer） ──────────────────────
+    all_rows = []
     with open(scores_csv, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            instrument = row.get("instrument", "")
+            code = _instrument_to_code(instrument)
+            score = float(row.get("score", 0))
             rank = int(row.get("rank", "999999"))
-            if rank <= top_n:
-                rows.append(row)
+            all_rows.append({"code": code, "instrument": instrument, "score": score, "rank": rank})
 
-    # 按 rank 排序
-    rows.sort(key=lambda r: int(r.get("rank", "999999")))
+    all_rows.sort(key=lambda r: r["rank"])
+    total_universe = len(all_rows)
+    _log(f"全市场 {total_universe} 只股票，准备 dropout buffer 分析...")
 
-    stocks = []
-    scores_detail = []
-    for row in rows[:top_n]:
-        instrument = row.get("instrument", "")
-        code = _instrument_to_code(instrument)
-        score = float(row.get("score", 0))
-        rank = int(row.get("rank", 0))
-        stocks.append(code)
-        scores_detail.append({"code": code, "score": round(score, 4), "rank": rank})
+    # 全市场排名映射
+    rank_map: dict[str, int] = {r["code"]: r["rank"] for r in all_rows}
+    code_to_inst: dict[str, str] = {r["code"]: r["instrument"] for r in all_rows}
+
+    # Top-N 用于展示
+    top_n_rows = [r for r in all_rows if r["rank"] <= top_n]
+    stocks = [r["code"] for r in top_n_rows]
+    scores_detail = [{"code": r["code"], "score": round(r["score"], 4), "rank": r["rank"]} for r in top_n_rows]
 
     # ── Strategy B Master Veto Analysis ────────────────────────────
+    # 传入 top-50 给 Strategy B 做否决分析（扩大覆盖，避免漏判）
     strategy_b_result: dict = {}
     try:
         _log("运行 Strategy B Master Veto 分析...")
-        _all_stocks_raw = []
-        with open(scores_csv, newline="", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                code = _instrument_to_code(row.get("instrument", ""))
-                score = float(row.get("score", 0))
-                rank = int(row.get("rank", "999999"))
-                if rank <= 20:  # top-20 for Strategy B
-                    _all_stocks_raw.append((code, score, row.get("instrument", "")))
+        _sb_n = min(50, total_universe)
+        _sb_rows = [r for r in all_rows if r["rank"] <= _sb_n]
+        _sb_stocks = [r["instrument"] for r in _sb_rows]
+        _sb_scores = [str(r["score"]) for r in _sb_rows]
 
-        _all_stocks_raw.sort(key=lambda x: x[2])  # sort by instrument for consistency
-        _sb_stocks = [s[2] for s in _all_stocks_raw]  # Qlib instruments
-        _sb_scores = [str(s[1]) for s in _all_stocks_raw]
+        # 转换用户持仓为 Qlib instrument 格式
+        _sb_holdings = ""
+        if holdings:
+            codes = [c.strip() for c in holdings.split("/") if c.strip()]
+            _sb_holdings = ",".join(_code_to_instrument(c) for c in codes)
 
         sb_cmd = [
             "docker", "run", "--rm",
             "-e", f"QLIB_DATA_DIR={cfg['qlib_data_dir']}",
             "-v", f"{_HOST_PROJECT_ROOT}:{WORKDIR}",
+            "-v", f"{_HOST_QLIB_DATA}:/root/.qlib",
             "-w", WORKDIR,
             DOCKER_IMAGE,
             "python3", "strategy_b_analyze.py",
@@ -280,6 +295,8 @@ def run_inference(
             "--date", pred_date,
             "--top-n", "5",
         ]
+        if _sb_holdings:
+            sb_cmd.extend(["--holdings", _sb_holdings])
 
         sb_process = subprocess.run(sb_cmd, capture_output=True, text=True, timeout=120)
         if sb_process.returncode == 0 and sb_process.stdout.strip():
@@ -290,6 +307,53 @@ def run_inference(
             _log(f"Strategy B analysis failed: {sb_process.stderr[:200]}")
     except Exception as e:
         _log(f"Strategy B analysis error: {e}")
+
+    # ── Dropout Buffer 调仓（对齐回测逻辑） ────────────────────────
+    if strategy_b_result and holdings:
+        dropout_buffer_pct = float(os.environ.get("DROPOUT_BUFFER_PCT", "0.5"))
+        hold_num = int(os.environ.get("HOLD_NUM", "5"))
+        keep_rank_cutoff = max(hold_num, int(math.ceil(total_universe * dropout_buffer_pct)))
+        _log(f"Dropout buffer: keep if rank <= {keep_rank_cutoff}/{total_universe} (Top {dropout_buffer_pct*100:.0f}%)")
+
+        # 解析被否决的股票代码
+        vetoed_codes: set[str] = set()
+        for v in strategy_b_result.get("vetoed", []):
+            v_code = _instrument_to_code(v if isinstance(v, str) else v.get("stock", ""))
+            vetoed_codes.add(v_code)
+
+        holding_codes = [c.strip() for c in holdings.split("/") if c.strip()]
+
+        keep_list = []
+        sell_list = []
+        for h in holding_codes:
+            rank = rank_map.get(h, 999999)
+            if h in vetoed_codes:
+                sell_list.append({"stock": h, "reason": "Strategy B 否决"})
+            elif rank >= 999999:
+                sell_list.append({"stock": h,
+                    "reason": f"不在模型覆盖范围 (数据缺失或未纳入成分股)"})
+            elif rank > keep_rank_cutoff:
+                sell_list.append({"stock": h,
+                    "reason": f"排名 {rank}/{total_universe} > 阈值 {keep_rank_cutoff}"})
+            elif rank <= hold_num:
+                keep_list.append({"stock": h,
+                    "reason": f"Top-{hold_num} 强推荐 (排名 {rank}/{total_universe})"})
+            else:
+                keep_list.append({"stock": h,
+                    "reason": f"在 buffer 内 (排名 {rank}/{total_universe})"})
+
+        # 建议买入：全市场 Top-5 非否决、非已持有
+        held_set = set(holding_codes)
+        buy_candidates = [r for r in all_rows
+                          if r["code"] not in held_set
+                          and r["code"] not in vetoed_codes]
+        buy_list = [{"stock": r["code"], "score": round(r["score"], 4)}
+                    for r in buy_candidates[:5]]
+
+        strategy_b_result["keep"] = keep_list
+        strategy_b_result["sell"] = sell_list
+        strategy_b_result["buy"] = buy_list
+        _log(f"调仓: keep={len(keep_list)}, sell={len(sell_list)}, buy={len(buy_list)}")
 
     result = {
         "stocks": "/".join(stocks),
@@ -306,6 +370,7 @@ def run_inference(
         count=result["count"],
         pred_date=result["pred_date"],
         scores=result["scores"],
+        strategy_b=result["strategy_b"],
     )
 
     return result
