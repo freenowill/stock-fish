@@ -504,7 +504,8 @@ class PredictionNode:
             f"PE: {q.get('pe','?')}  PB: {q.get('pb','?')}  市值: {q.get('market_cap','?')}亿",
             f"估值等级: {state.get('valuation_level','?')} (PE分位: {pe_pct_str})",
             f"EPS: {fs.get('eps','?')}  ROE: {fs.get('roe','?')}%  "
-            f"经营现金流: {fs.get('operating_cash_flow','N/A')}亿",
+            f"经营现金流: {fs.get('operating_cash_flow','N/A')}亿  "
+            f"自由现金流: {fs.get('free_cash_flow','N/A')}亿",
             f"营收: {fs.get('revenue','?')}亿  净利: {fs.get('net_profit','?')}亿",
             f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield','N/A')}%",
             f"毛利率: {fs.get('gross_margin','?')}%  负债率: {fs.get('debt_ratio','?')}%",

@@ -275,6 +275,7 @@ class AdvancedBackend(BaseStockBackend):
                     gross_margin=_safe_float(growth_payload.get('gross_margin')),
                     debt_ratio=_safe_float(growth_payload.get('debt_ratio')),
                     operating_cash_flow=_safe_float(fin_report.get('operating_cash_flow')),
+                    free_cash_flow=_safe_float(fin_report.get('free_cash_flow')),
                     dividend_per_share=_safe_float(div_per_share),
                     dividend_yield=div_yield,
                     report_date=str(fin_report.get('report_date', '')),

@@ -234,7 +234,8 @@ class BaseAgent:
             f"历史PE均值: {state.get('historical_pe_avg') or 'N/A'}  "
             f"建议买入价: {state.get('suggested_buy_price', '?')}",
             f"EPS: {fs.get('eps', '?')}  ROE: {fs.get('roe', '?')}%  "
-            f"经营现金流: {fs.get('operating_cash_flow', 'N/A')}亿",
+            f"经营现金流: {fs.get('operating_cash_flow', 'N/A')}亿  "
+            f"自由现金流: {fs.get('free_cash_flow', 'N/A')}亿",
             f"营收: {fs.get('revenue', '?')}亿  净利: {fs.get('net_profit', '?')}亿",
             f"毛利率: {fs.get('gross_margin', '?')}%  负债率: {fs.get('debt_ratio', '?')}%  "
             f"股息率: {fs.get('dividend_yield') or q.get('dividend_yield', 'N/A')}%",

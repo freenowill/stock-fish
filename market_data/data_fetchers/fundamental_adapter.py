@@ -328,11 +328,26 @@ class AkshareFundamentalAdapter:
                     "roe": roe,
                     "gross_margin": gross_margin,
                 }
+                # 尝试提取资本支出，计算自由现金流
+                capex = _safe_float(
+                    _pick_by_keywords(row, ["购建固定资产无形资产和其他长期资产支付的现金",
+                                             "购建固定资产支付的现金", "资本支出", "CAPEX",
+                                             "投资活动现金流出小计"])
+                )
+                # FCF = 经营现金流 - 资本支出；若无法获取 capex，保守用经营现金流近似
+                fcf = None
+                if operating_cash_flow is not None:
+                    if capex is not None:
+                        fcf = operating_cash_flow + capex  # capex 为负值（现金流出）
+                    else:
+                        fcf = operating_cash_flow  # 回退为经营现金流近似
+
                 financial_report_payload = {
                     "report_date": report_date,
                     "revenue": revenue,
                     "net_profit_parent": net_profit_parent,
                     "operating_cash_flow": operating_cash_flow,
+                    "free_cash_flow": fcf,
                     "roe": roe,
                 }
                 if any(v is not None for v in financial_report_payload.values()):

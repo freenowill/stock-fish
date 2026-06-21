@@ -368,6 +368,9 @@ class ScoringEngine:
         """ROE + 现金流验证 [-1.5, +1.5]"""
         roe = safe_float(fin.get('roe', 0))
         debt_ratio = safe_float(fin.get('debt_ratio', 0))
+        operating_cf = safe_float(fin.get('operating_cash_flow', None))
+        free_cf = safe_float(fin.get('free_cash_flow', None))
+        net_profit = safe_float(fin.get('net_profit', None))
         is_financial = _is_financial_industry(state) if hasattr(state, 'get') else False
 
         if roe > 25:
@@ -386,6 +389,19 @@ class ScoringEngine:
         # 高负债扣分（金融行业除外：银行/保险高负债是结构性特征）
         if debt_ratio > 70 and not is_financial:
             base -= 0.3
+
+        # 现金流验证：经营现金流为正 → +0.2，自由现金流为负 → -0.4
+        if operating_cf is not None and operating_cf > 0:
+            base += 0.2
+        if free_cf is not None and free_cf < 0:
+            base -= 0.4
+        # 利润含金量：FCF/净利 > 0.8 → +0.2
+        if free_cf is not None and net_profit is not None and net_profit > 0:
+            fcf_ratio = free_cf / net_profit
+            if fcf_ratio > 0.8:
+                base += 0.2
+            elif fcf_ratio < 0:
+                base -= 0.3
 
         return clamp(base, -1.5, 1.5)
 

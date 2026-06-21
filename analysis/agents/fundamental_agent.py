@@ -79,6 +79,23 @@ class FundamentalAgent(BaseAgent):
             elif roic < 5:
                 score -= 1; risks.append(f"ROIC={roic:.1f}%，资本回报效率偏低")
 
+        # 自由现金流验证 (巴菲特核心指标)
+        oper_cf = fs.get('operating_cash_flow', 0) or 0
+        fcf = fs.get('free_cash_flow')
+        rev = fs.get('revenue', 0) or 0
+        if fcf is not None:
+            if fcf > 0 and rev > 0:
+                fcf_margin = fcf / rev * 100
+                if fcf_margin > 10:
+                    score += 2; points.append(f"FCF/营收={fcf_margin:.1f}%，现金流极强")
+                else:
+                    score += 1; points.append(f"自由现金流={fcf:.1f}亿，现金流健康")
+            elif fcf < 0:
+                score -= 2; risks.append(f"自由现金流为负({fcf:.1f}亿)，盈利质量存疑")
+        elif oper_cf > 0 and rev > 0:
+            # 无 FCF 时用经营现金流近似
+            score += 0.5; points.append(f"经营现金流为正({oper_cf:.1f}亿)")
+
         # 多期趋势
         ft = state.get('financial_trends') or {}
         gm_trend = ft.get('gross_margin_trend')
