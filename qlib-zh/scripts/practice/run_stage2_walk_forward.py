@@ -72,7 +72,7 @@ MODEL_SPECS = [
     {
         "name": "lightgbm",
         "template": ROOT / "examples" / "benchmarks" / "LightGBM" / "workflow_config_lightgbm_Alpha158.yaml",
-        "model_mode": "robust",
+        "model_mode": os.environ.get("MODEL_MODE", "robust"),
     },
 ]
 
@@ -2654,7 +2654,130 @@ def _write_full_backtest_report(
     full_backtest_strategy = str(os.environ.get("FULL_BACKTEST_STRATEGY", "stage36_risk_parity") or "stage36_risk_parity").strip().lower()
     target_market = str(os.environ.get("TARGET_MARKET") or _resolve_instrument_name(template_cfg) or "csi300").strip().lower()
 
-    if full_backtest_strategy == "buffered_equal_weight_topk":
+    if full_backtest_strategy == "enhanced_model":
+        # ── Enhanced Model: buffered top-K + risk filter + industry cap + risk parity ──
+        # Preserves model's IC quality while adding risk management layers
+        # the model doesn't optimize for: tail-risk exclusion, diversification, sizing.
+        _rebalance_freq = os.environ.get("FULL_BACKTEST_REBALANCE_FREQ", "weekly").strip().lower()
+        if _rebalance_freq not in ("daily", "weekly", "monthly", "yearly"):
+            _rebalance_freq = "weekly"
+
+        # 1. Pre-filter tail-risk stocks from the raw signal
+        from qlib.data import D as _D
+        _risk_instruments = sorted(raw_signal_df.index.get_level_values("instrument").unique().tolist())
+        _risk_start = pd.to_datetime(raw_signal_df.index.get_level_values("datetime").min()).strftime("%Y-%m-%d")
+        _risk_end = pd.to_datetime(raw_signal_df.index.get_level_values("datetime").max()).strftime("%Y-%m-%d")
+
+        # Lazy-import risk filter from master strategy
+        _master_path2 = str((Path(__file__).resolve().parent / "stage2_master_strategy.py").resolve())
+        if "stage2_master_strategy" not in sys.modules:
+            import importlib.util as _iu2
+            _ms2 = _iu2.spec_from_file_location("stage2_master_strategy", _master_path2)
+            _mm2 = _iu2.module_from_spec(_ms2)
+            _ms2.loader.exec_module(_mm2)
+            sys.modules["stage2_master_strategy"] = _mm2
+        _master_mod2 = sys.modules["stage2_master_strategy"]
+
+        # Query factors for risk filtering (same expressions as master strategy)
+        _risk_exprs = [
+            "Std(Ref($close, 1) / $close - 1, 63)",  # volatility
+            "$close / Max($close, 252) - 1",           # drawdown
+            "$close / Ref($close, 126) - 1",           # 6-month return
+        ]
+        _risk_factor_df = _D.features(_risk_instruments, _risk_exprs,
+                                       start_time=_risk_start, end_time=_risk_end)
+        if _risk_factor_df is not None and not _risk_factor_df.empty:
+            # Normalize factor_df index
+            if not isinstance(_risk_factor_df.index, pd.MultiIndex):
+                _risk_factor_df = _risk_factor_df.reset_index()
+                _risk_factor_df = _risk_factor_df.rename(columns={
+                    _risk_factor_df.columns[0]: "datetime",
+                    _risk_factor_df.columns[1]: "instrument"
+                })
+                _risk_factor_df["datetime"] = pd.to_datetime(_risk_factor_df["datetime"])
+                _risk_factor_df = _risk_factor_df.set_index(["datetime", "instrument"])
+
+            # Filter raw_signal_df: at each date, remove flagged stocks
+            _filtered_signal = raw_signal_df.copy()
+            _all_dates = pd.DatetimeIndex(raw_signal_df.index.get_level_values("datetime").unique()).sort_values()
+            _flagged_count = 0
+            for _dt in _all_dates:
+                _raw_idx = raw_signal_df.index
+                _raw_mask = pd.to_datetime(_raw_idx.get_level_values("datetime")) == _dt
+                _insts = raw_signal_df[_raw_mask].index.get_level_values("instrument").tolist()
+                if len(_insts) < hold_num * 3:
+                    continue
+                # Extract factor slice at this date (no-leakage: only rows <= _dt)
+                _fs_idx = _risk_factor_df.index
+                _dt_mask = pd.to_datetime(_fs_idx.get_level_values("datetime")) <= _dt
+                _fs = _risk_factor_df[_dt_mask].copy()
+                if _fs.empty:
+                    continue
+                # Take last observation per instrument
+                _fs = _fs.reset_index().sort_values(["instrument", "datetime"]).groupby("instrument").last()
+                _fs = _fs[_fs.index.isin(_insts)]
+                if len(_fs) < hold_num:
+                    continue
+                # Flag risky stocks
+                _risky, _ = _master_mod2._flag_tail_risk_stocks(_fs, _fs.index.tolist())
+                if _risky:
+                    # Remove flagged stocks from signal at this date
+                    _fs_dt = pd.to_datetime(_filtered_signal.index.get_level_values("datetime"))
+                    _fs_inst = _filtered_signal.index.get_level_values("instrument")
+                    _mask = ~((_fs_dt == _dt) & (_fs_inst.isin(_risky)))
+                    _filtered_signal = _filtered_signal[_mask]
+                    _flagged_count += len(_risky)
+            print(f"[enhanced_model] Flagged {_flagged_count} tail-risk stock-date pairs across {len(_all_dates)} dates")
+        else:
+            _filtered_signal = raw_signal_df
+
+        # 2. Buffered top-K selection on filtered signal
+        shifted_signal = _build_buffered_equal_weight_signal(
+            _filtered_signal,
+            cal=cal,
+            hold_num=hold_num,
+            price_cap=price_cap,
+            dropout_buffer_pct=float(os.environ.get("FULL_BACKTEST_BUFFER_PCT", "0.5") or 0.5),
+            freq=_rebalance_freq,
+        )
+
+        # 3. Apply industry cap at each date
+        _industry_cap = float(os.environ.get("MASTER_INDUSTRY_CAP", "0.40"))
+        if not shifted_signal.empty and "selected" in shifted_signal.columns:
+            _capped_frames = []
+            for _dt, _grp in shifted_signal.reset_index().groupby("datetime", sort=True):
+                _grp = _grp.copy()
+                _n = len(_grp)
+                if _n > hold_num:
+                    # Simple industry cap: group by stock code prefix (3 digits)
+                    _grp["sector"] = _grp["instrument"].str.replace("SH", "").str.replace("SZ", "").str[:3]
+                    _sector_max = max(1, int(hold_num * _industry_cap))
+                    _capped_idx = []
+                    _sector_count = {}
+                    for _i, _row in _grp.sort_values("score", ascending=False).iterrows():
+                        _sec = _row["sector"]
+                        _cnt = _sector_count.get(_sec, 0)
+                        if _cnt < _sector_max and len(_capped_idx) < hold_num:
+                            _capped_idx.append(_i)
+                            _sector_count[_sec] = _cnt + 1
+                    _grp = _grp.loc[_capped_idx]
+                _capped_frames.append(_grp)
+            if _capped_frames:
+                _capped_df = pd.concat(_capped_frames, ignore_index=True)
+                _capped_df = _capped_df.set_index(["datetime", "instrument"])
+                # Recompute equal weights after cap
+                _capped_df["weight"] = 1.0 / hold_num
+                shifted_signal = _capped_df
+
+        signal_source = "enhanced_model"
+        portfolio_construction = (
+            f"Enhanced Model: risk-filtered → buffered Top{hold_num} equal-weight "
+            f"(buffer={os.environ.get('FULL_BACKTEST_BUFFER_PCT', '0.5')}, "
+            f"industry_cap={os.environ.get('MASTER_INDUSTRY_CAP', '0.40')})"
+        )
+        risk_degree = 1.0
+
+    elif full_backtest_strategy == "buffered_equal_weight_topk":
         _rebalance_freq = os.environ.get("FULL_BACKTEST_REBALANCE_FREQ", "weekly").strip().lower()
         shifted_signal = _build_buffered_equal_weight_signal(
             raw_signal_df,
@@ -3471,8 +3594,8 @@ def main() -> None:
     ap.add_argument("--experiment-name", required=True)
     ap.add_argument("--latest-pred-date", default=None)
     ap.add_argument("--uri-folder", default="mlruns")
-    ap.add_argument("--half-life", type=int, default=252)
-    ap.add_argument("--floor", type=float, default=0.2)
+    ap.add_argument("--half-life", type=int, default=126)
+    ap.add_argument("--floor", type=float, default=0.3)
     ap.add_argument("--step-years", type=int, default=1,
                     help="Walk-forward stride in years (annual mode). Overrides --step-weeks when > 0.")
     ap.add_argument("--step-weeks", type=int, default=0,
@@ -3490,7 +3613,7 @@ def main() -> None:
     ap.add_argument("--walk-forward-end", required=True)
     ap.add_argument("--hold-num", type=int, default=int(os.environ.get("HOLD_NUM", "5")))
     ap.add_argument("--segment-years", type=int, default=1, help="Group folds into year chunks for staged execution")
-    ap.add_argument("--model-mode", choices=["default", "robust"], default="robust")
+    ap.add_argument("--model-mode", choices=["default", "robust", "multihorizon"], default="multihorizon")
     ap.add_argument("--predict-only", action="store_true", default=False,
                     help="Skip training, load latest fold's model checkpoint and predict only")
     ap.add_argument("--pred-date", default=None,
