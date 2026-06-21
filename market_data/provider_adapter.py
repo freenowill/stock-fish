@@ -281,6 +281,14 @@ class AdvancedBackend(BaseStockBackend):
                     report_date=str(fin_report.get('report_date', '')),
                 )
                 if fin.eps or fin.roe or fin.revenue or fin.net_profit:
+                    # 单独补充现金流数据（AkShare adapter 可能直接存在 earnings 下）
+                    _cf_report = earn_payload.get('financial_report') or earnings.get('financial_report') or {}
+                    _ocf = _safe_float(_cf_report.get('operating_cash_flow'))
+                    _fcf = _safe_float(_cf_report.get('free_cash_flow'))
+                    if _ocf is not None and fin.operating_cash_flow is None:
+                        object.__setattr__(fin, 'operating_cash_flow', _ocf)
+                    if _fcf is not None and fin.free_cash_flow is None:
+                        object.__setattr__(fin, 'free_cash_flow', _fcf)
                     return fin
         except Exception as e:
             logger.debug(f"AdvancedBackend: 基本面适配器不可用 ({e})")
