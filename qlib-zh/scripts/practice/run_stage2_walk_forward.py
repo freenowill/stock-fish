@@ -2204,7 +2204,7 @@ def _build_buffered_equal_weight_signal(
     instruments = sorted(shifted_df["instrument"].unique().tolist())
     start_time = pd.Timestamp(shifted_df["datetime"].min()).strftime("%Y-%m-%d")
     end_time = pd.Timestamp(shifted_df["datetime"].max()).strftime("%Y-%m-%d")
-    close_df = D.features(instruments, ["$close"], start_time=start_time, end_time=end_time)
+    close_df = D.features(instruments, ["$close", "$factor"], start_time=start_time, end_time=end_time)
     if close_df is None or len(close_df) == 0:
         return pd.DataFrame(columns=["score", "weight", "rank", "close", "selected"])
 
@@ -2214,15 +2214,16 @@ def _build_buffered_equal_weight_signal(
         close_df = close_df.copy()
     if isinstance(close_df.index, pd.MultiIndex):
         close_df = close_df.reset_index()
-    if "datetime" not in close_df.columns or "instrument" not in close_df.columns:
-        return pd.DataFrame(columns=["score", "weight", "rank", "close", "selected"])
 
-    close_col = "close" if "close" in close_df.columns else close_df.columns[-1]
+    # Qlib stores $close as a normalised dimensionless value.
+    # Dividing by $factor recovers the forward-adjusted close in RMB so that
+    # the price-cap threshold (intended for real-world 元 prices) works
+    # correctly.  See _get_price_cap() for the formula derivation.
+    close_df["close_rmb"] = pd.to_numeric(close_df["$close"], errors="coerce") / pd.to_numeric(close_df["$factor"], errors="coerce").replace(0, float("nan"))
     close_df["datetime"] = pd.to_datetime(close_df["datetime"], errors="coerce")
     close_df["instrument"] = close_df["instrument"].astype(str)
-    close_df[close_col] = pd.to_numeric(close_df[close_col], errors="coerce")
-    close_df = close_df[["datetime", "instrument", close_col]].dropna()
-    close_df = close_df.rename(columns={close_col: "close"})
+    close_df = close_df[["datetime", "instrument", "close_rmb"]].dropna()
+    close_df = close_df.rename(columns={"close_rmb": "close"})
 
     ranked = shifted_df.merge(close_df, on=["datetime", "instrument"], how="left")
     ranked["close"] = pd.to_numeric(ranked["close"], errors="coerce")
@@ -2532,7 +2533,7 @@ def _apply_price_cap_to_trade_signal(trade_signal: pd.DataFrame, price_cap: floa
     instruments = sorted(df["instrument"].astype(str).unique().tolist())
     start_time = pd.Timestamp(df["datetime"].min()).strftime("%Y-%m-%d")
     end_time = pd.Timestamp(df["datetime"].max()).strftime("%Y-%m-%d")
-    close_df = D.features(instruments, ["$close"], start_time=start_time, end_time=end_time)
+    close_df = D.features(instruments, ["$close", "$factor"], start_time=start_time, end_time=end_time)
     if close_df is None or len(close_df) == 0:
         return trade_signal
 
@@ -2542,14 +2543,11 @@ def _apply_price_cap_to_trade_signal(trade_signal: pd.DataFrame, price_cap: floa
         close_df = close_df.copy()
     if isinstance(close_df.index, pd.MultiIndex):
         close_df = close_df.reset_index()
-    if "datetime" not in close_df.columns or "instrument" not in close_df.columns:
-        return trade_signal
-    close_col = "close" if "close" in close_df.columns else close_df.columns[-1]
+    close_df["close_rmb"] = pd.to_numeric(close_df["$close"], errors="coerce") / pd.to_numeric(close_df["$factor"], errors="coerce").replace(0, float("nan"))
     close_df["datetime"] = pd.to_datetime(close_df["datetime"], errors="coerce")
     close_df["instrument"] = close_df["instrument"].astype(str)
-    close_df[close_col] = pd.to_numeric(close_df[close_col], errors="coerce")
-    close_df = close_df[["datetime", "instrument", close_col]].dropna()
-    close_df = close_df.rename(columns={close_col: "close"})
+    close_df = close_df[["datetime", "instrument", "close_rmb"]].dropna()
+    close_df = close_df.rename(columns={"close_rmb": "close"})
 
     merged = df.merge(close_df, on=["datetime", "instrument"], how="left")
     merged = merged[pd.to_numeric(merged["close"], errors="coerce").fillna(np.inf) <= float(price_cap)]
@@ -2765,13 +2763,85 @@ def _write_full_backtest_report(
             if _capped_frames:
                 _capped_df = pd.concat(_capped_frames, ignore_index=True)
                 _capped_df = _capped_df.set_index(["datetime", "instrument"])
-                # Recompute equal weights after cap
-                _capped_df["weight"] = 1.0 / hold_num
+
+                # ── Volatility-targeted position sizing ────────────────
+                # Inverse-vol weighting: w_i ∝ 1/σ_i → lower weight for
+                # high-vol stocks, higher for stable ones. This directly
+                # reduces drawdowns without changing stock selection.
+                _use_vol_sizing = os.environ.get("ENHANCED_VOL_SIZING", "1") == "1"
+                if _use_vol_sizing and not _capped_df.empty:
+                    _enh_insts = _capped_df.index.get_level_values("instrument").unique().tolist()
+                    _enh_dates = pd.DatetimeIndex(_capped_df.index.get_level_values("datetime").unique())
+                    # Query 60-day trailing volatility for sizing
+                    _vol_expr = "Std(Ref($close, 1) / $close - 1, 63)"
+                    _vol_start = (_enh_dates.min() - pd.Timedelta(days=200)).strftime("%Y-%m-%d")
+                    _vol_end = _enh_dates.max().strftime("%Y-%m-%d")
+                    try:
+                        _vol_df = _D.features(_enh_insts, [_vol_expr],
+                                              start_time=_vol_start, end_time=_vol_end)
+                        if _vol_df is not None and not _vol_df.empty:
+                            if isinstance(_vol_df, pd.DataFrame):
+                                _vol_s = _vol_df.iloc[:, 0]
+                            else:
+                                _vol_s = _vol_df
+                            # For each date, compute inverse-vol weights
+                            for _dt in _enh_dates:
+                                _dt_mask = _capped_df.index.get_level_values("datetime") == _dt
+                                _dt_insts = _capped_df[_dt_mask].index.get_level_values("instrument").tolist()
+                                # Get vol for these instruments at this date (no-leakage: <= _dt)
+                                _vols = []
+                                for _inst in _dt_insts:
+                                    try:
+                                        _v = _vol_s.loc[pd.IndexSlice[:_dt, _inst]]
+                                        _v = _v.iloc[-1] if len(_v) > 0 else 0.03
+                                    except Exception:
+                                        _v = 0.03
+                                    _vols.append(max(float(_v), 0.01))  # floor at 1% vol
+                                _vols = np.array(_vols)
+                                _inv_vols = 1.0 / _vols
+                                _weights = _inv_vols / _inv_vols.sum()
+                                _capped_df.loc[_dt_mask, "weight"] = _weights
+                    except Exception:
+                        _capped_df["weight"] = 1.0 / hold_num
+                else:
+                    _capped_df["weight"] = 1.0 / hold_num
+
+                # ── Market trend filter ────────────────────────────────
+                # If 60d market return is strongly negative, scale down
+                # exposure (hold more cash). This reduces drawdowns in
+                # bear markets without affecting stock selection.
+                _use_trend = os.environ.get("ENHANCED_TREND_FILTER", "1") == "1"
+                if _use_trend:
+                    _trend_ret_expr = "$close / Ref($close, 63) - 1"
+                    try:
+                        _trend_df = _D.features(["SH000300"], [_trend_ret_expr],
+                                                 start_time=_vol_start, end_time=_vol_end)
+                        if _trend_df is not None and not _trend_df.empty:
+                            if isinstance(_trend_df, pd.DataFrame):
+                                _trend_s = _trend_df.iloc[:, 0]
+                            else:
+                                _trend_s = _trend_df
+                            for _dt in _enh_dates:
+                                try:
+                                    _tv = _trend_s.loc[:_dt]
+                                    _market_ret = float(_tv.iloc[-1]) if len(_tv) > 0 else 0.0
+                                except Exception:
+                                    _market_ret = 0.0
+                                # Scale: -10% market → 80% exposure, -20% → 60%
+                                if _market_ret < -0.10:
+                                    _scale = max(0.50, 1.0 + (_market_ret + 0.10) * 4.0)
+                                    _dt_mask2 = _capped_df.index.get_level_values("datetime") == _dt
+                                    _capped_df.loc[_dt_mask2, "weight"] *= _scale
+                    except Exception:
+                        pass
+
                 shifted_signal = _capped_df
 
         signal_source = "enhanced_model"
+        _sizing = "vol-targeted" if os.environ.get("ENHANCED_VOL_SIZING", "1") == "1" else "equal"
+        _trend = "+trend" if os.environ.get("ENHANCED_TREND_FILTER", "1") == "1" else ""
         portfolio_construction = (
-            f"Enhanced Model: risk-filtered → buffered Top{hold_num} equal-weight "
+            f"Enhanced Model: risk-filtered → buffered Top{hold_num} {_sizing} {_trend}"
             f"(buffer={os.environ.get('FULL_BACKTEST_BUFFER_PCT', '0.5')}, "
             f"industry_cap={os.environ.get('MASTER_INDUSTRY_CAP', '0.40')})"
         )
