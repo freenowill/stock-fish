@@ -237,13 +237,15 @@ class AdvancedBackend(BaseStockBackend):
             return None
         name = self._resolve_name(symbol)
 
+        # 尝试多个数据源，构建 FinancialSummary
+        fin = None
+
         # 1. 尝试 DataFetcherManager 基本面管道（akshare/yfinance 多源）
         try:
             ctx = self.manager.get_fundamental_context(symbol)
             if ctx and ctx.get('status') not in ('failed', 'not_supported'):
                 earnings = ctx.get('earnings', {})
                 earn_payload = earnings.get('payload', {}) or {}
-                # financial_report 子结构包含核心财务数据
                 fin_report = earn_payload.get('financial_report', {}) or {}
                 growth = ctx.get('growth', {})
                 growth_payload = growth.get('payload', {}) or {}
@@ -258,7 +260,6 @@ class AdvancedBackend(BaseStockBackend):
 
                 dividend_payload = earnings.get('dividend', {}) or {}
                 div_per_share = dividend_payload.get('ttm_cash_dividend_per_share')
-                # 计算股息率 = 每股股息 / 股价
                 div_yield = None
                 price = _safe_float(ctx.get('quote', {}).get('price') or fin_report.get('price'))
                 if div_per_share and price and price > 0:
@@ -280,35 +281,55 @@ class AdvancedBackend(BaseStockBackend):
                     dividend_yield=div_yield,
                     report_date=str(fin_report.get('report_date', '')),
                 )
-                if fin.eps or fin.roe or fin.revenue or fin.net_profit:
-                    # 单独补充现金流数据（AkShare adapter 可能直接存在 earnings 下）
-                    _cf_report = earn_payload.get('financial_report') or earnings.get('financial_report') or {}
+
+                # AkShare 现金流数据可能存在于不同路径
+                _cf_report = earn_payload.get('financial_report') or earnings.get('financial_report') or {}
+                if _cf_report and fin.operating_cash_flow is None:
                     _ocf = _safe_float(_cf_report.get('operating_cash_flow'))
                     _fcf = _safe_float(_cf_report.get('free_cash_flow'))
-                    if _ocf is not None and fin.operating_cash_flow is None:
+                    if _ocf is not None:
                         object.__setattr__(fin, 'operating_cash_flow', _ocf)
-                    if _fcf is not None and fin.free_cash_flow is None:
+                    if _fcf is not None:
                         object.__setattr__(fin, 'free_cash_flow', _fcf)
-                    return fin
         except Exception as e:
             logger.debug(f"AdvancedBackend: 基本面适配器不可用 ({e})")
 
         # 2. Tushare 直接查询兜底（仅 A 股）
-        try:
-            fin = self._get_tushare_financials(symbol, name)
-            if fin and (fin.eps or fin.roe):
-                return fin
-        except Exception as e:
-            logger.debug(f"AdvancedBackend: Tushare 基本面兜底失败 ({e})")
+        if not (fin and (fin.eps or fin.roe)):
+            try:
+                fin = self._get_tushare_financials(symbol, name)
+            except Exception as e:
+                logger.debug(f"AdvancedBackend: Tushare 基本面兜底失败 ({e})")
 
-        # 3. yfinance 直接兜底（适用于 A 股/港股/美股）
-        try:
-            fin = self._get_yfinance_financials(symbol, name)
-            if fin and (fin.eps or fin.roe or fin.revenue):
-                logger.info(f"AdvancedBackend: yfinance 基本面兜底成功 {symbol}")
-                return fin
-        except Exception as e:
-            logger.debug(f"AdvancedBackend: yfinance 基本面兜底失败 ({e})")
+        # 3. yfinance 直接兜底
+        if not (fin and (fin.eps or fin.roe or fin.revenue)):
+            try:
+                fin = self._get_yfinance_financials(symbol, name)
+                if fin and (fin.eps or fin.roe or fin.revenue):
+                    logger.info(f"AdvancedBackend: yfinance 基本面兜底成功 {symbol}")
+            except Exception as e:
+                logger.debug(f"AdvancedBackend: yfinance 基本面兜底失败 ({e})")
+
+        # 4. 统一补充现金流数据（从 AkShare adapter 单独查询）
+        if fin and (fin.eps or fin.roe or fin.revenue) and fin.operating_cash_flow is None:
+            try:
+                from market_data.data_fetchers.fundamental_adapter import AkshareFundamentalAdapter
+                _adapter = AkshareFundamentalAdapter()
+                _bundle = _adapter.get_fundamental_bundle(symbol)
+                _cf_report = _bundle.get('earnings', {}).get('financial_report', {})
+                if _cf_report:
+                    _ocf = _safe_float(_cf_report.get('operating_cash_flow'))
+                    _fcf = _safe_float(_cf_report.get('free_cash_flow'))
+                    if _ocf is not None:
+                        object.__setattr__(fin, 'operating_cash_flow', _ocf)
+                    if _fcf is not None:
+                        object.__setattr__(fin, 'free_cash_flow', _fcf)
+                        logger.info(f"AdvancedBackend: 现金流补充成功 {symbol} OCF={_ocf:.2f}亿 FCF={_fcf:.2f}亿")
+            except Exception as e:
+                logger.debug(f"AdvancedBackend: 现金流补充失败 ({e})")
+
+        if fin and (fin.eps or fin.roe or fin.revenue):
+            return fin
 
         return FinancialSummary(symbol=symbol, name=name)
 
