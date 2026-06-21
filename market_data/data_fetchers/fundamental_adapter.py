@@ -356,27 +356,28 @@ class AkshareFundamentalAdapter:
 
         # 单独获取现金流量表数据（stock_financial_abstract 不含现金流字段）
         cf_df, cf_source, cf_errors = self._call_df_candidates([
-            ("stock_cash_flow_sheet", {"symbol": stock_code}),
+            ("stock_financial_cash_ths", {"symbol": stock_code, "indicator": "经营活动产生的现金流量净额"}),
+            ("stock_cash_flow_sheet_by_yearly_em", {"symbol": stock_code}),
         ])
         result["errors"].extend(cf_errors)
         if cf_df is not None and not cf_df.empty:
             cf_row = _extract_latest_row(cf_df, stock_code)
             if cf_row is not None:
+                # THS 格式列名含 * 前缀
                 oper_cf = _safe_float(
-                    _pick_by_keywords(cf_row, ["经营活动产生的现金流量净额", "经营现金流",
-                                                "经营活动现金净流量", "经营性现金流"])
+                    _pick_by_keywords(cf_row, ["*经营活动产生的现金流量净额",
+                                                "经营活动产生的现金流量净额", "经营现金流"])
                 )
                 capex = _safe_float(
-                    _pick_by_keywords(cf_row, ["购建固定资产无形资产和其他长期资产支付的现金",
-                                                "购建固定资产支付的现金", "资本支出",
-                                                "投资活动现金流出小计"])
+                    _pick_by_keywords(cf_row, ["购建固定资产、无形资产和其他长期资产支付的现金",
+                                                "购建固定资产支付的现金", "资本支出"])
                 )
                 # 更新 financial_report 中的现金流字段
                 if oper_cf is not None:
                     fin_report = result["earnings"].get("financial_report", {})
                     fin_report["operating_cash_flow"] = oper_cf
-                    if capex is not None and capex < 0:
-                        fin_report["free_cash_flow"] = oper_cf + capex  # capex 为负
+                    if capex is not None:
+                        fin_report["free_cash_flow"] = oper_cf - capex
                     else:
                         fin_report["free_cash_flow"] = oper_cf  # 回退近似
                     result["earnings"]["financial_report"] = fin_report
