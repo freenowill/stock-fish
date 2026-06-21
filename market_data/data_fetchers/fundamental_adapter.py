@@ -363,15 +363,13 @@ class AkshareFundamentalAdapter:
         if cf_df is not None and not cf_df.empty:
             cf_row = _extract_latest_row(cf_df, stock_code)
             if cf_row is not None:
-                # THS 格式列名含 * 前缀
-                oper_cf = _safe_float(
-                    _pick_by_keywords(cf_row, ["*经营活动产生的现金流量净额",
-                                                "经营活动产生的现金流量净额", "经营现金流"])
-                )
-                capex = _safe_float(
-                    _pick_by_keywords(cf_row, ["购建固定资产、无形资产和其他长期资产支付的现金",
-                                                "购建固定资产支付的现金", "资本支出"])
-                )
+                # THS 格式列名含 * 前缀，值带单位（亿/万）
+                _oper_cf_raw = _pick_by_keywords(cf_row, ["*经营活动产生的现金流量净额",
+                                                          "经营活动产生的现金流量净额", "经营现金流"])
+                _capex_raw = _pick_by_keywords(cf_row, ["购建固定资产、无形资产和其他长期资产支付的现金",
+                                                        "购建固定资产支付的现金", "资本支出"])
+                oper_cf = _safe_float(str(_oper_cf_raw).replace("亿", "").replace("万", "").replace("元", "")) if _oper_cf_raw is not None else None
+                capex = _safe_float(str(_capex_raw).replace("亿", "").replace("万", "").replace("元", "")) if _capex_raw is not None else None
                 # 更新 financial_report 中的现金流字段
                 if oper_cf is not None:
                     fin_report = result["earnings"].get("financial_report", {})
