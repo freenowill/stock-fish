@@ -2945,6 +2945,56 @@ def _write_full_backtest_report(
     trade_start = shifted_signal.index.get_level_values("datetime").min()
     trade_end = shifted_signal.index.get_level_values("datetime").max()
 
+    # ── Market Drawdown Protection ────────────────────────────────────
+    # Scale down exposure when benchmark is in significant drawdown
+    # from its 52-week high. This reduces MaxDD without changing stock
+    # selection. Disabled by default — set MARKET_DRAWDOWN_PROTECT=1.
+    _use_market_dd_protect = os.environ.get("MARKET_DRAWDOWN_PROTECT", "0") == "1"
+    if _use_market_dd_protect and not shifted_signal.empty:
+        from qlib.data import D as _D2
+        _protect_dates = pd.DatetimeIndex(shifted_signal.index.get_level_values("datetime").unique()).sort_values()
+        _protect_end = _protect_dates.max().strftime("%Y-%m-%d")
+        try:
+            # Build market proxy from first 30 liquid CSI300 stocks
+            _sample_insts = sorted(raw_signal_df.index.get_level_values("instrument").unique().tolist())[:30]
+            _proxy_start = (_protect_dates.min() - pd.Timedelta(days=400)).strftime("%Y-%m-%d")
+            _close_data = _D2.features(_sample_insts, ["$close"],
+                                        start_time=_proxy_start, end_time=_protect_end)
+            if _close_data is not None and not _close_data.empty:
+                # D.features returns DataFrame with MultiIndex (instrument, datetime) — instrument FIRST
+                # Swap levels to group by datetime
+                _close_swapped = _close_data.swaplevel(0, 1)
+                _close_avg = _close_swapped.groupby(level=0).mean().iloc[:, 0]
+                _close_avg = pd.to_numeric(_close_avg, errors='coerce').dropna()
+                if len(_close_avg) >= 21:
+                    _close_avg.index = pd.to_datetime(_close_avg.index)
+                    _close_avg = _close_avg.sort_index()
+                    _eq_high = _close_avg.rolling(252, min_periods=21).max()
+
+                    _scaled_count = 0
+                    for _dt in _protect_dates:
+                        _valid_close = _close_avg[_close_avg.index <= _dt]
+                        _valid_high = _eq_high[_eq_high.index <= _dt]
+                        if len(_valid_close) < 21 or len(_valid_high) == 0: continue
+                        _curr = float(_valid_close.iloc[-1])
+                        _high = float(_valid_high.iloc[-1])
+                        if _high <= 0: continue
+                        _dd = _curr / _high - 1.0
+                        if _dd < -0.45:       _scale = 0.30
+                        elif _dd < -0.35:     _scale = 0.55
+                        elif _dd < -0.25:     _scale = 0.80
+                        else:                 continue
+
+                        _dt_mask = shifted_signal.index.get_level_values("datetime") == _dt
+                        shifted_signal.loc[_dt_mask, "weight"] *= _scale
+                        _scaled_count += 1
+                    if _scaled_count > 0:
+                        print(f"    [dd_protect] Scaled {_scaled_count}/{len(_protect_dates)} dates")
+        except Exception as _exc:
+            import traceback
+            print(f"    [drawdown_protect] Failed: {_exc}")
+            traceback.print_exc()
+
     strategy = PrecomputedWeightStrategy.create(signal=shifted_signal, risk_degree=risk_degree)
 
     report_normal, _positions_normal = backtest_daily(
