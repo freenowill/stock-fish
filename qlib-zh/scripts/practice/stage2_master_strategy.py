@@ -69,6 +69,11 @@ REGIME_MASTER_SELECTION: dict[str, list[str]] = {
 # These are the model's highest-conviction picks, preserving IC=0.038 ranking quality.
 GUARANTEED_FROM_MODEL: int = 2
 
+# Cache of most recent factor IC validation result.
+# Updated each time validate_factor_ic=True is used. Consulted by
+# _compute_adaptive_guaranteed_seats() to adjust model seats.
+_last_factor_ic_result: pd.DataFrame | None = None
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Factor Expressions per Dimension
 # Qlib expression syntax: $close, Ref(), Mean(), Std(), Sum(), Max(), Min()...
@@ -552,6 +557,102 @@ def _compute_adaptive_model_weight(
     return adaptive_weight
 
 
+def _flag_tail_risk_stocks(
+    factor_slice: pd.DataFrame,
+    instruments_slice: list[str],
+) -> tuple[set[str], dict[str, list[str]]]:
+    """Flag stocks with extreme tail risk for exclusion.
+
+    Identifies candidates with:
+    a. High short-term volatility (>1.5× peer median)
+    b. Severe drawdown from 52-week high (>40%)
+    c. Persistent weakness (6-month return < -30%)
+
+    These stocks are excluded BEFORE master ranking — the factor layer
+    acts as a risk filter rather than a re-ranker.
+
+    Returns:
+        (risky_set, reason_map) — set of instruments to exclude,
+        dict mapping instrument → list of risk reasons (for logging).
+    """
+    risky: set[str] = set()
+    reasons: dict[str, list[str]] = {}
+
+    def _check(instrument, condition, tag):
+        if condition:
+            risky.add(instrument)
+            reasons.setdefault(instrument, []).append(tag)
+
+    # ── Volatility check (60-day) ──────────────────────────────────────
+    vol_expr = "Std(Ref($close, 1) / $close - 1, 63)"
+    if vol_expr in factor_slice.columns:
+        vols = factor_slice[vol_expr].astype(float)
+        median_vol = vols.median()
+        for i, inst in enumerate(instruments_slice):
+            v = vols.iloc[i] if i < len(vols) else 0.0
+            _check(inst, v > median_vol * 1.5 and v > 0.03, "high_vol")
+
+    # ── Drawdown check (from 52-week high) ─────────────────────────────
+    dd_threshold = float(os.environ.get("RISK_FILTER_DD_THRESHOLD", "-0.50"))
+    dd_expr = "$close / Max($close, 252) - 1"
+    if dd_expr in factor_slice.columns:
+        dds = factor_slice[dd_expr].astype(float)
+        for i, inst in enumerate(instruments_slice):
+            d = dds.iloc[i] if i < len(dds) else 0.0
+            _check(inst, d < dd_threshold, "deep_drawdown")
+
+    # ── Persistent weakness (6-month return) ────────────────────────────
+    ret_threshold = float(os.environ.get("RISK_FILTER_WEAKNESS_THRESHOLD", "-0.40"))
+    ret_expr = "$close / Ref($close, 126) - 1"
+    if ret_expr in factor_slice.columns:
+        rets = factor_slice[ret_expr].astype(float)
+        for i, inst in enumerate(instruments_slice):
+            r = rets.iloc[i] if i < len(rets) else 0.0
+            _check(inst, r < -0.30, "persistent_weakness")
+
+    return risky, reasons
+
+
+def _compute_adaptive_guaranteed_seats(
+    hold_num: int,
+    validate_result: pd.DataFrame | None = None,
+) -> int:
+    """Determine how many top model picks are guaranteed a seat.
+
+    When factors have strong IC, the master gets more discretion (fewer
+    guaranteed model seats). When factors are weak or negative, the model
+    gets more guaranteed seats (preserving IC quality).
+
+    Args:
+        hold_num: Total seats
+        validate_result: Factor IC validation DataFrame from _validate_factor_ic,
+            or None if IC data is unavailable.
+
+    Returns:
+        Number of guaranteed model seats (1 to hold_num-1).
+    """
+    if validate_result is None or validate_result.empty:
+        return min(2, max(1, hold_num - 1))
+
+    # Compute mean IC across dimensions (excluding model_score)
+    dim_rows = validate_result[validate_result["dimension"] != "model_score"]
+    if dim_rows.empty or dim_rows["mean_RankIC"].isna().all():
+        return min(2, max(1, hold_num - 1))
+
+    mean_ic = float(dim_rows["mean_RankIC"].mean())
+
+    # Strong factors → fewer guaranteed seats (master has discretion)
+    if mean_ic > 0.05:
+        return max(1, hold_num - 3)       # e.g., 5 → 2
+    elif mean_ic > 0.02:
+        return max(1, hold_num - 2)       # e.g., 5 → 3
+    elif mean_ic > 0.0:
+        return max(1, hold_num - 1)       # e.g., 5 → 4
+    else:
+        # Negative IC → almost pure model
+        return max(1, hold_num - 1)
+
+
 def build_master_signal(
     raw_signal_df: pd.DataFrame,
     cal: pd.DatetimeIndex,
@@ -563,6 +664,7 @@ def build_master_signal(
     price_cap: float = 9999.0,
     industry_cap_ratio: float = 0.40,
     validate_factor_ic: bool = False,
+    strategy_mode: str = "full",
 ) -> pd.DataFrame:
     """Build a master-analyzed trade signal from raw stage2 predictions.
 
@@ -588,6 +690,14 @@ def build_master_signal(
         validate_factor_ic: If True, compute per-dimension Rank IC against
             forward returns at the rebalance horizon (diagnostic only).
             Also controllable via env var MASTER_VALIDATE_FACTOR_IC=1.
+        strategy_mode: Strategy operating mode:
+            - "full": Full master analysis with 7 masters + factor re-ranking
+              (current default, backward-compatible).
+            - "risk_filter": Factor layer acts as risk filter only — flags
+              and excludes tail-risk stocks, then uses pure model ranking
+              for the survivors. Preserves model IC quality.
+            - "simple": Direct dimension-mean blend with model_score.
+              No per-master weighting. model_score=60%, factor_mean=40%.
 
     Returns:
         MultiIndex DataFrame [datetime, instrument] with columns:
@@ -597,6 +707,15 @@ def build_master_signal(
         return pd.DataFrame(columns=["score", "weight", "master_score"])
 
     from qlib.data import D
+
+    # Module-level cache for adaptive seats
+    global _last_factor_ic_result
+
+    # Allow strategy_mode override via environment variable
+    _env_mode = os.environ.get("MASTER_STRATEGY_MODE", "").strip().lower()
+    if _env_mode and _env_mode in ("full", "risk_filter", "simple"):
+        strategy_mode = _env_mode
+        print(f"[master] Strategy mode override (env): {strategy_mode}")
 
     # ── Step 1: Shift raw signal to trade dates ─────────────────────────
     shifted = _shift_signal_to_trade_dates(raw_signal_df[["score"]], cal, freq=freq)
@@ -755,6 +874,101 @@ def build_master_signal(
         ])
         dim_scores["model_score"] = _cross_sectional_percentile(model_score_raw)
 
+        # ── Collect data for optional factor IC validation ─────────────
+        if validate_factor_ic:
+            dim_scores_per_date[trade_dt] = {dim: vals.copy() for dim, vals in dim_scores.items()}
+            instruments_per_date[trade_dt] = list(instruments_slice)
+
+        # ── Strategy mode branching ──────────────────────────────────
+        if strategy_mode == "risk_filter":
+            # ── Risk Filter Mode ──────────────────────────────────────
+            # 1. Flag tail-risk stocks → exclude from candidates
+            # 2. Use pure model ranking on survivors
+            # 3. No master scoring — factor layer is filter, not re-ranker
+            risky_set, risk_reasons = _flag_tail_risk_stocks(factor_slice, instruments_slice)
+
+            if risky_set:
+                n_risky = len(risky_set)
+                risky_list = sorted(risky_set)
+                print(f"[master]   {_fmt(trade_dt)}: flagged {n_risky} tail-risk stocks: "
+                      f"{', '.join(f'{r}({risk_reasons.get(r, [])})' for r in risky_list[:5])}"
+                      f"{'...' if n_risky > 5 else ''}")
+
+            # Filter out risky stocks from selection
+            safe_mask = np.array([inst not in risky_set for inst in instruments_slice])
+            safe_indices = np.where(safe_mask)[0]
+
+            if len(safe_indices) < hold_num:
+                # Not enough safe stocks → fill from flagged (least risky first)
+                print(f"[master]   {_fmt(trade_dt)}: only {len(safe_indices)} safe stocks, "
+                      f"backfilling from flagged")
+                safe_indices = np.arange(len(instruments_slice))
+
+            # Pure model score ranking on safe stocks
+            safe_scores = model_score_raw[safe_indices]
+            safe_insts = [instruments_slice[i] for i in safe_indices]
+            sel_df = pd.DataFrame({
+                "instrument": safe_insts,
+                "model_score": safe_scores,
+                "ensemble_score": safe_scores,  # = model score in risk_filter mode
+            })
+            sel_df = sel_df.sort_values("model_score", ascending=False).head(hold_num)
+
+            # Equal-weight
+            scores = sel_df["ensemble_score"].values
+            lo, hi = float(np.min(scores)), float(np.max(scores))
+            weights = ((scores - lo) / (hi - lo)) if hi > lo else np.ones(len(scores)) / len(scores)
+            weights = weights / weights.sum()
+
+            sel_df["datetime"] = trade_dt
+            sel_df["score"] = weights
+            sel_df["weight"] = weights
+            sel_df["master_score"] = sel_df["ensemble_score"]
+
+            result_frames.append(
+                sel_df[["datetime", "instrument", "score", "weight", "master_score"]]
+            )
+            continue  # next rebalance date
+
+        elif strategy_mode == "simple":
+            # ── Simple Mode: model_score 60% + factor mean 40% ─────────
+            # No per-master weights, no regime selection.
+            # Direct blend of model predictions with dimension average.
+            factor_dims = [d for d in dim_scores if d != "model_score"]
+            if factor_dims:
+                factor_mean = np.nanmean(np.column_stack(
+                    [dim_scores[d] for d in factor_dims]
+                ), axis=1)
+            else:
+                factor_mean = np.ones(n) * 0.5
+
+            ensemble = 0.6 * dim_scores["model_score"] + 0.4 * factor_mean
+
+            # Simple top-N selection
+            sel_df = pd.DataFrame({
+                "instrument": instruments_slice,
+                "model_score": model_score_raw,
+                "ensemble_score": ensemble,
+            })
+            sel_df = sel_df.sort_values("ensemble_score", ascending=False).head(hold_num)
+
+            scores = sel_df["ensemble_score"].values
+            lo, hi = float(np.min(scores)), float(np.max(scores))
+            weights = ((scores - lo) / (hi - lo)) if hi > lo else np.ones(len(scores)) / len(scores)
+            weights = weights / weights.sum()
+
+            sel_df["datetime"] = trade_dt
+            sel_df["score"] = weights
+            sel_df["weight"] = weights
+            sel_df["master_score"] = sel_df["ensemble_score"]
+
+            result_frames.append(
+                sel_df[["datetime", "instrument", "score", "weight", "master_score"]]
+            )
+            continue  # next rebalance date
+
+        # ── Full Mode (default): per-master scoring + ensemble ───────
+
         # ── Step 6: Per-master scoring with adaptive model_score weight ──
         # Compute market volatility once per date for adaptive weight
         if regime != "manual":
@@ -803,11 +1017,14 @@ def build_master_signal(
         else:
             ensemble = np.nanmean(stacked, axis=1)
 
+        # ── Adaptive guaranteed seats (based on factor IC quality) ─────
+        _guaranteed = _compute_adaptive_guaranteed_seats(hold_num, _last_factor_ic_result)
+
         # ── Step 8: Select top hold_num with model guaranteed seats ────
-        # Model's top GUARANTEED_FROM_MODEL picks are directly included,
+        # Model's top _guaranteed picks are directly included,
         # preserving the highest-conviction model predictions.
-        # Master selects the remaining (hold_num - GUARANTEED_FROM_MODEL)
-        # from positions [GUARANTEED_FROM_MODEL : top_k_candidates].
+        # Master selects the remaining (hold_num - _guaranteed)
+        # from positions [_guaranteed : top_k_candidates].
         sel_df = pd.DataFrame({
             "instrument": instruments_slice,
             "model_score": model_score_raw,
@@ -815,8 +1032,21 @@ def build_master_signal(
         })
         sel_df["model_rank"] = sel_df["model_score"].rank(ascending=False).astype(int)
 
-        guaranteed = sel_df[sel_df["model_rank"] <= GUARANTEED_FROM_MODEL].copy()
-        remaining_pool = sel_df[sel_df["model_rank"] > GUARANTEED_FROM_MODEL].copy()
+        # ── Model confidence gating: lock in very high-confidence picks ──
+        # Stocks with model z-score > 2.0 bypass factor re-ranking entirely.
+        model_z = (model_score_raw - np.nanmean(model_score_raw)) / (np.nanstd(model_score_raw) + 1e-8)
+        confidence_locked = set(
+            instruments_slice[i] for i in range(len(instruments_slice))
+            if model_z[i] > 2.0
+        )
+        # Merge confidence-locked with guaranteed seats
+        n_guaranteed = max(_guaranteed, len(confidence_locked))
+        guaranteed_seats = set(sel_df.nsmallest(n_guaranteed, "model_rank")["instrument"])
+        guaranteed_seats |= confidence_locked
+        n_guaranteed = len(guaranteed_seats)
+
+        guaranteed = sel_df[sel_df["instrument"].isin(guaranteed_seats)].copy()
+        remaining_pool = sel_df[~sel_df["instrument"].isin(guaranteed_seats)].copy()
         n_remaining = hold_num - len(guaranteed)
 
         if n_remaining > 0 and not remaining_pool.empty:
@@ -844,11 +1074,6 @@ def build_master_signal(
         result_frames.append(
             sel_df[["datetime", "instrument", "score", "weight", "master_score"]]
         )
-
-        # ── Collect data for optional factor IC validation ─────────────
-        if validate_factor_ic:
-            dim_scores_per_date[trade_dt] = {dim: vals.copy() for dim, vals in dim_scores.items()}
-            instruments_per_date[trade_dt] = list(instruments_slice)
 
     if not result_frames:
         return pd.DataFrame(columns=["score", "weight", "master_score"])
@@ -879,7 +1104,7 @@ def build_master_signal(
     # ── Factor IC validation (opt-in, diagnostic only) ──────────────────
     if validate_factor_ic and dim_scores_per_date:
         try:
-            _validate_factor_ic(
+            _last_factor_ic_result = _validate_factor_ic(
                 cal=cal,
                 trade_dates=trade_dates,
                 dim_scores_per_date=dim_scores_per_date,
