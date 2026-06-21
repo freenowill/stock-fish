@@ -493,6 +493,27 @@ class StockAnalysisAgent:
                 arr = np.array(trends['gross_margin'])
                 trends['gross_margin_trend'] = '上升' if arr[-1] > arr[0] else '下降' if arr[-1] < arr[0] else '稳定'
 
+            # 5. 从 FinancialSummary 兜底计算 ROIC 和 FCF/股
+            fs = getattr(state, 'financial_summary', None) or {}
+            q = getattr(state, 'quote', None) or {}
+            # FCF/股
+            if state.fcf_per_share is None and fs.get('free_cash_flow'):
+                price = q.get('price', 0)
+                mcap = q.get('market_cap', 0)
+                if price and mcap and price > 0:
+                    total_shares = mcap / price  # 亿股（mcap 单位亿, price 单位元）
+                    fcf_val = fs['free_cash_flow']  # 亿
+                    if total_shares > 0:
+                        state.fcf_per_share = round(fcf_val / total_shares, 4)
+            # ROIC ≈ NOPAT / (净利为正时才可信)
+            if state.roic is None and fs.get('net_profit') and fs.get('roe'):
+                np_profit = fs['net_profit']  # 亿
+                roe_val = fs['roe']  # %
+                debt = fs.get('debt_ratio', 50)  # %
+                if np_profit > 0:
+                    # 简化: ROIC ≈ ROE * (1 - debt_ratio/200)
+                    state.roic = round(roe_val * (1 - debt / 200), 4)
+
             if trends:
                 state.financial_trends = trends
                 logger.info(f"[{symbol}] 详细财务数据: ROIC={state.roic}% FCF/股={state.fcf_per_share} "
