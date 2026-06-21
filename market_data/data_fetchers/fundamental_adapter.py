@@ -354,6 +354,34 @@ class AkshareFundamentalAdapter:
                     result["earnings"]["financial_report"] = financial_report_payload
                 result["source_chain"].append(f"growth:{fin_source}")
 
+        # 单独获取现金流量表数据（stock_financial_abstract 不含现金流字段）
+        cf_df, cf_source, cf_errors = self._call_df_candidates([
+            ("stock_cash_flow_sheet", {"symbol": stock_code}),
+        ])
+        result["errors"].extend(cf_errors)
+        if cf_df is not None and not cf_df.empty:
+            cf_row = _extract_latest_row(cf_df, stock_code)
+            if cf_row is not None:
+                oper_cf = _safe_float(
+                    _pick_by_keywords(cf_row, ["经营活动产生的现金流量净额", "经营现金流",
+                                                "经营活动现金净流量", "经营性现金流"])
+                )
+                capex = _safe_float(
+                    _pick_by_keywords(cf_row, ["购建固定资产无形资产和其他长期资产支付的现金",
+                                                "购建固定资产支付的现金", "资本支出",
+                                                "投资活动现金流出小计"])
+                )
+                # 更新 financial_report 中的现金流字段
+                if oper_cf is not None:
+                    fin_report = result["earnings"].get("financial_report", {})
+                    fin_report["operating_cash_flow"] = oper_cf
+                    if capex is not None and capex < 0:
+                        fin_report["free_cash_flow"] = oper_cf + capex  # capex 为负
+                    else:
+                        fin_report["free_cash_flow"] = oper_cf  # 回退近似
+                    result["earnings"]["financial_report"] = fin_report
+                    result["source_chain"].append(f"cash_flow:{cf_source}")
+
         # Earnings forecast
         forecast_df, forecast_source, forecast_errors = self._call_df_candidates([
             ("stock_yjyg_em", {"symbol": stock_code}),
