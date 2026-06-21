@@ -218,7 +218,7 @@ class LarkClient:
 
     # ── Qlib 推理 ──────────────────────────────────────────
 
-    async def qlib_infer(self, model: str = "2026-06-12-csi300-alpha158-fintune") -> Dict[str, Any]:
+    async def qlib_infer(self, model: str = "2026-06-21-csi300-alpha158") -> Dict[str, Any]:
         """POST /api/qlib/infer — Qlib 模型推理。"""
         session = await self._ensure_session()
         logger.info(f"[LarkClient] qlib_infer model={model}")
