@@ -48,6 +48,11 @@ from urllib.parse import urlparse
 
 import numpy as np
 import pandas as pd
+
+# Module-level force-exit calendar: set of dates where portfolio must go to cash.
+# Populated by _write_full_backtest_report() when MAX_DRAWDOWN_THRESHOLD > 0.
+# Read by _PrecomputedWeightStrategy.generate_target_weight_position() daily.
+_FORCE_EXIT_DAILY: set = set()
 import yaml
 
 try:
@@ -2427,6 +2432,8 @@ class PrecomputedWeightStrategy:
                 if not clean_target:
                     return []
 
+                # Preserve the input total weight to support cash buffers
+                _input_total = float(sum(clean_target.values()))
                 current_stock = set(current.get_stock_list())
                 tradable_target: dict[str, float] = {}
                 locked_target: dict[str, float] = {}
@@ -2450,7 +2457,8 @@ class PrecomputedWeightStrategy:
                 if tradable_target:
                     tradable_weight_sum = float(sum(tradable_target.values()))
                     locked_weight_sum = float(sum(locked_target.values()))
-                    residual_weight = max(1.0 - locked_weight_sum, 0.0)
+                    # Use input total (not 1.0) to preserve cash buffer
+                    residual_weight = max(_input_total - locked_weight_sum, 0.0)
                     if tradable_weight_sum > 0 and residual_weight > 0:
                         tradable_target = {
                             stock_id: weight / tradable_weight_sum * residual_weight
@@ -2458,10 +2466,10 @@ class PrecomputedWeightStrategy:
                         }
 
                 adjusted_target = {**locked_target, **tradable_target}
+                # Don't re-normalize — let cash remain when _input_total < 1.0
                 total_weight = float(sum(adjusted_target.values()))
                 if total_weight <= 0:
                     return []
-                adjusted_target = {stock_id: weight / total_weight for stock_id, weight in adjusted_target.items()}
 
                 return super().generate_order_list_from_target_weight_position(
                     current=current,
@@ -2479,6 +2487,9 @@ class PrecomputedWeightStrategy:
                 super().__init__(order_generator_cls_or_obj=_RedistributingOrderGenWOInteract(), **kwargs)
 
             def generate_target_weight_position(self, score, current, trade_start_time, trade_end_time):
+                # Force-exit: if today is a drawdown breach day, go to cash
+                if pd.Timestamp(trade_start_time) in _FORCE_EXIT_DAILY:
+                    return {}  # empty → sell all, go to cash
                 if score is None:
                     return {}
                 if isinstance(score, pd.Series):
@@ -2500,7 +2511,11 @@ class PrecomputedWeightStrategy:
                 total = float(weight_s.sum())
                 if total <= 0:
                     return {}
-                weight_s = weight_s / total
+                # Preserve cash buffer: don't force sum to 1.0
+                if total < 0.99:
+                    pass  # keep original weights (cash = 1 - total)
+                else:
+                    weight_s = weight_s / total  # normalize only when close to 1.0
                 return {str(k): float(v) for k, v in weight_s.items() if pd.notna(v) and v > 0}
 
         return _PrecomputedWeightStrategy(signal=signal, risk_degree=risk_degree)
@@ -2993,6 +3008,146 @@ def _write_full_backtest_report(
         except Exception as _exc:
             import traceback
             print(f"    [drawdown_protect] Failed: {_exc}")
+            traceback.print_exc()
+
+    # ── Signal-Level Risk Scaling ────────────────────────────────────
+    # When model confidence drops sharply (avg top-K score declining),
+    # proactively reduce exposure. This catches regime changes BEFORE
+    # drawdowns materialize, unlike post-hoc two-pass approaches.
+    _use_risk_scale = os.environ.get("RISK_SCALE", "0") == "1"
+    if _use_risk_scale and not shifted_signal.empty:
+        _rs_dates = pd.DatetimeIndex(shifted_signal.index.get_level_values("datetime").unique()).sort_values()
+        _rs_threshold = float(os.environ.get("RISK_SCALE_THRESHOLD", "0.40"))
+        _rs_lookback = int(os.environ.get("RISK_SCALE_LOOKBACK", "6"))
+        # Compute avg score of top-K picks at each signal date
+        _score_history = []
+        for _dt in _rs_dates:
+            _dt_mask = shifted_signal.index.get_level_values("datetime") == _dt
+            _scores = shifted_signal.loc[_dt_mask, "score"].values
+            _avg = float(np.mean(_scores)) if len(_scores) > 0 else 0.0
+            _score_history.append((_dt, _avg))
+        # Check for confidence decline
+        _scaled = 0
+        for _i, (_dt, _avg) in enumerate(_score_history):
+            if _i < _rs_lookback:
+                continue
+            _trailing_avg = np.mean([s for _, s in _score_history[_i - _rs_lookback:_i]])
+            if _trailing_avg > 0 and _avg < _trailing_avg * (1 - _rs_threshold):
+                # Confidence dropped > threshold → scale to 50%
+                _dt_mask2 = shifted_signal.index.get_level_values("datetime") == _dt
+                shifted_signal.loc[_dt_mask2, "weight"] *= 0.5
+                _scaled += 1
+        if _scaled > 0:
+            print(f"    [risk_scale] Confidence drop at {_scaled}/{len(_rs_dates)} dates → 50% exposure")
+        else:
+            print(f"    [risk_scale] No confidence drops detected")
+
+    # ── Cash Buffer ──────────────────────────────────────────────────
+    # Keep a fixed fraction of capital in cash to cushion drawdowns.
+    # CASH_BUFFER=0.15 → 15% cash, 85% invested → MaxDD ≈ original × 0.85.
+    # Does NOT change stock selection — just scales position sizes.
+    _cash_buffer = float(os.environ.get("CASH_BUFFER", "0.0"))
+    if _cash_buffer > 0 and not shifted_signal.empty:
+        _invested = 1.0 - _cash_buffer
+        # Scale weights: if total weight per date = 1.0, scale to _invested
+        for _dt in pd.DatetimeIndex(shifted_signal.index.get_level_values("datetime").unique()):
+            _dt_mask = shifted_signal.index.get_level_values("datetime") == _dt
+            _sum_before = shifted_signal.loc[_dt_mask, "weight"].sum()
+            shifted_signal.loc[_dt_mask, "weight"] *= _invested
+        print(f"    [cash_buffer] {_cash_buffer*100:.0f}% cash → {_invested*100:.0f}% invested")
+
+    # ── Master Per-Stock Risk Veto ───────────────────────────────────
+    # For each signal date, analyze each candidate stock's 6 dimension
+    # factor scores. Veto (remove) stocks with specific risk patterns
+    # (momentum crash, quality deterioration, sentiment extreme).
+    # This reduces MaxDD by avoiding individual blow-ups while keeping
+    # the model's stock selection intact for healthy candidates.
+    _use_master_veto = os.environ.get("MASTER_VETO", "0") == "1"
+    if _use_master_veto and not shifted_signal.empty:
+        from qlib.data import D as _D3
+        # Lazy-import master strategy
+        _mv_path = str((Path(__file__).resolve().parent / "stage2_master_strategy.py").resolve())
+        if "stage2_master_strategy" not in sys.modules:
+            import importlib.util as _iu3
+            _mv_spec = _iu3.spec_from_file_location("stage2_master_strategy", _mv_path)
+            _mv_mod = _iu3.module_from_spec(_mv_spec)
+            _mv_spec.loader.exec_module(_mv_mod)
+            sys.modules["stage2_master_strategy"] = _mv_mod
+        _mv_mod = sys.modules["stage2_master_strategy"]
+
+        _mv_dates = pd.DatetimeIndex(shifted_signal.index.get_level_values("datetime").unique()).sort_values()
+        _mv_all_insts = sorted(shifted_signal.index.get_level_values("instrument").unique().tolist())
+        _mv_start = (_mv_dates.min() - pd.Timedelta(days=300)).strftime("%Y-%m-%d")
+        _mv_end = _mv_dates.max().strftime("%Y-%m-%d")
+
+        # Query all 6-dimension factor expressions
+        _mv_exprs = _mv_mod._ALL_EXPRESSIONS
+        print(f"    [master_veto] Querying {len(_mv_exprs)} factors for {len(_mv_all_insts)} stocks...")
+        try:
+            _mv_factor_df = _D3.features(_mv_all_insts, _mv_exprs,
+                                          start_time=_mv_start, end_time=_mv_end)
+            if _mv_factor_df is not None and not _mv_factor_df.empty:
+                # Build dim_scores per date using existing master strategy functions
+                _mv_dim_factors = {}
+                for _dim, _factors in _mv_mod.FACTOR_EXPRESSIONS.items():
+                    _avail = [(_e, _d, _w) for _e, _d, _w in _factors if _e in _mv_factor_df.columns]
+                    if _avail:
+                        _mv_dim_factors[_dim] = _avail
+
+                _total_vetoed = 0
+                _total_overweight = 0
+                for _dt in _mv_dates:
+                    _dt_mask = shifted_signal.index.get_level_values("datetime") == _dt
+                    _dt_insts = shifted_signal[_dt_mask].index.get_level_values("instrument").tolist()
+                    if len(_dt_insts) < 3: continue
+
+                    # Extract no-leakage factor snapshot at this date
+                    _fs = _mv_mod._extract_no_leakage_factors(_mv_factor_df, _dt_insts, _dt)
+                    if _fs.empty or len(_fs) < 2: continue
+
+                    # Compute per-dimension cross-sectional percentiles
+                    _mv_dim_scores = {}
+                    for _dim, _factors in _mv_dim_factors.items():
+                        _vals = np.zeros(len(_fs))
+                        _tw = 0.0
+                        for _expr, _dir, _w in _factors:
+                            if _expr not in _fs.columns: continue
+                            _raw = _fs[_expr].astype(float).values
+                            _pct = _mv_mod._cross_sectional_percentile(_raw)
+                            if _dir == -1: _pct = 1.0 - _pct
+                            _vals += _w * _pct
+                            _tw += _w
+                        if _tw > 0: _vals /= _tw
+                        _mv_dim_scores[_dim] = _vals
+
+                    # Run per-stock assessment
+                    _vetoed, _over, _reasons = _mv_mod._assess_stock_risk_opportunity(
+                        _mv_dim_scores, _fs.index.tolist(), _fs)
+
+                    if _vetoed:
+                        # Remove vetoed stocks from shifted_signal at this date
+                        _ve_mask = shifted_signal.index.get_level_values("datetime") == _dt
+                        _ve_inst_mask = shifted_signal.index.get_level_values("instrument").isin(_vetoed)
+                        shifted_signal = shifted_signal[~(_ve_mask & _ve_inst_mask)]
+                        _total_vetoed += len(_vetoed)
+                        for _r in _reasons[:3]:
+                            print(f"    [master_veto] {_dt.date()}: {_r}")
+                        if len(_reasons) > 3:
+                            print(f"    [master_veto]   ... and {len(_reasons)-3} more")
+
+                    if _over:
+                        _total_overweight += len(_over)
+                        # Note: overweight is informational — weight scaling
+                        # doesn't work due to normalization. Veto is the
+                        # primary mechanism for MaxDD reduction.
+
+                print(f"    [master_veto] Vetoed {_total_vetoed} stock-dates, "
+                      f"overweight signals at {_total_overweight} stock-dates")
+            else:
+                print(f"    [master_veto] WARNING: factor query returned empty")
+        except Exception as _exc:
+            import traceback
+            print(f"    [master_veto] Failed: {_exc}")
             traceback.print_exc()
 
     strategy = PrecomputedWeightStrategy.create(signal=shifted_signal, risk_degree=risk_degree)

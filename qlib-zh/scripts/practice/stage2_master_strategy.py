@@ -1213,6 +1213,140 @@ def _build_fallback_topk_signal(
     return out
 
 
+def _assess_stock_risk_opportunity(
+    dim_scores: dict[str, np.ndarray],
+    instruments: list[str],
+    factor_slice: pd.DataFrame,
+) -> tuple[set[str], dict[str, float], list[str]]:
+    """Per-stock risk veto and opportunity overweight assessment.
+
+    For EACH candidate stock, checks whether it should be:
+    - VETOED (excluded): stock-specific risk is too high
+    - OVERWEIGHTED: stock shows strong value/quality/contrarian signal
+    - NORMAL: kept at standard weight
+
+    This is fundamentally different from market-level timing — it evaluates
+    each stock independently, allowing the portfolio to stay partially
+    invested even in bear markets by keeping only the highest-quality names.
+
+    Veto rules (any one triggers exclusion):
+      1. Momentum crash: 60d ret < -30% AND 20d vol > 40% ann
+      2. Quality deterioration: recent vol / long-term vol > 1.5 AND price < MA126
+      3. Sentiment extreme: near 52wk low AND volume collapsing
+      4. Systematic weakness: 4+ of 6 dimensions in bottom 15%
+
+    Overweight rules (any one triggers multiplier):
+      1. Deep value + quality: value > 85% AND quality > 70% → 1.5×
+      2. Contrarian sentiment: sent < 20% AND quality > 60% AND low_risk > 50% → 1.5×
+      3. GARP: growth > 60% AND value > 50% → 1.3×
+      4. Trend + quality: momentum > 70% AND quality > 70% AND vol < median → 1.2×
+
+    Args:
+        dim_scores: Dict dimension_name → percentile array (n_candidates,)
+        instruments: Stock codes
+        factor_slice: DataFrame with raw factor values indexed by instrument
+
+    Returns:
+        (vetoed_set, overweight_dict, reason_log)
+    """
+    n = len(instruments)
+    vetoed: set[str] = set()
+    overweight: dict[str, float] = {}
+    reasons: list[str] = []
+
+    if n == 0:
+        return vetoed, overweight, reasons
+
+    # ── Helper: get dimension percentile for a stock ─────────────────
+    def _dim_pct(dim: str, idx: int) -> float:
+        if dim not in dim_scores: return 0.5
+        arr = dim_scores[dim]
+        return float(arr[idx]) if idx < len(arr) else 0.5
+
+    # ── Precompute dimension stats for systematic weakness check ─────
+    dim_names = list(dim_scores.keys())
+    bottom_count = np.zeros(n, dtype=int)
+    for dim in dim_names:
+        arr = dim_scores[dim]
+        for i in range(min(n, len(arr))):
+            if arr[i] < 0.15:
+                bottom_count[i] += 1
+
+    # ── Compute vol stats for quality checks ─────────────────────────
+    vol_short_expr = "Std(Ref($close, 1) / $close - 1, 63)"
+    vol_long_expr = "Std(Ref($close, 1) / $close - 1, 252)"
+    ma_expr = "Mean($close, 126)"
+    ret_60d_expr = "$close / Ref($close, 63) - 1"
+    vol_20d_expr = "Std(Ref($close, 1) / $close - 1, 21)"
+    low_52w_expr = "$close / Min($close, 252) - 1"
+    vol_ratio_expr = "$volume / Mean($volume, 63)"
+
+    has_vol_data = all(e in factor_slice.columns for e in [vol_short_expr, vol_long_expr, ma_expr])
+
+    for i, inst in enumerate(instruments):
+        reasons_i = []
+
+        # ── Veto 1: Momentum crash ───────────────────────────────
+        ret_60 = float(factor_slice[ret_60d_expr].iloc[i]) if ret_60d_expr in factor_slice.columns else 0.0
+        vol_20 = float(factor_slice[vol_20d_expr].iloc[i]) if vol_20d_expr in factor_slice.columns else 0.0
+        if ret_60 < -0.30 and vol_20 > 0.40 / np.sqrt(252):  # ~2.5% daily
+            vetoed.add(inst)
+            reasons_i.append(f"momentum_crash(ret60={ret_60:.1%},vol20={vol_20:.3f})")
+
+        # ── Veto 2: Quality deterioration ────────────────────────
+        if has_vol_data and inst not in vetoed:
+            vs = float(factor_slice[vol_short_expr].iloc[i])
+            vl = float(factor_slice[vol_long_expr].iloc[i])
+            ma = float(factor_slice[ma_expr].iloc[i])
+            close = float(factor_slice["$close"].iloc[i]) if "$close" in factor_slice.columns else ma
+            if vl > 0 and vs / vl > 1.5 and close < ma:
+                vetoed.add(inst)
+                reasons_i.append(f"quality_deterioration(vol_ratio={vs/vl:.1f})")
+
+        # ── Veto 3: Sentiment extreme ────────────────────────────
+        near_low = float(factor_slice[low_52w_expr].iloc[i]) if low_52w_expr in factor_slice.columns else 1.0
+        vol_ratio = float(factor_slice[vol_ratio_expr].iloc[i]) if vol_ratio_expr in factor_slice.columns else 1.0
+        if inst not in vetoed and near_low < 0.05 and vol_ratio < 0.5:
+            vetoed.add(inst)
+            reasons_i.append(f"sentiment_extreme(near_low={near_low:.1%},vol_ratio={vol_ratio:.1f})")
+
+        # ── Veto 4: Systematic weakness ──────────────────────────
+        if inst not in vetoed and bottom_count[i] >= 4:
+            vetoed.add(inst)
+            reasons_i.append(f"systematic_weakness({bottom_count[i]}/6 dims bottom 15%)")
+
+        # ── Overweight checks (only if not vetoed) ───────────────
+        if inst not in vetoed:
+            v_pct = _dim_pct("value", i)
+            q_pct = _dim_pct("quality", i)
+            g_pct = _dim_pct("growth", i)
+            m_pct = _dim_pct("momentum", i)
+            lr_pct = _dim_pct("low_risk", i)
+            s_pct = _dim_pct("sentiment", i)
+
+            # Deep value + quality (Graham)
+            if v_pct > 0.85 and q_pct > 0.70:
+                overweight[inst] = 1.5
+                reasons_i.append(f"deep_value_quality(v={v_pct:.0%},q={q_pct:.0%})→1.5×")
+            # Contrarian sentiment (Templeton)
+            elif s_pct < 0.20 and q_pct > 0.60 and lr_pct > 0.50:
+                overweight[inst] = 1.5
+                reasons_i.append(f"contrarian_sentiment(s={s_pct:.0%},q={q_pct:.0%})→1.5×")
+            # GARP (Lynch)
+            elif g_pct > 0.60 and v_pct > 0.50:
+                overweight[inst] = 1.3
+                reasons_i.append(f"garp(g={g_pct:.0%},v={v_pct:.0%})→1.3×")
+            # Trend + quality
+            elif m_pct > 0.70 and q_pct > 0.70 and lr_pct > 0.50:
+                overweight[inst] = 1.2
+                reasons_i.append(f"trend_quality(m={m_pct:.0%},q={q_pct:.0%})→1.2×")
+
+        if reasons_i:
+            reasons.append(f"{inst}: {', '.join(reasons_i)}")
+
+    return vetoed, overweight, reasons
+
+
 def _validate_factor_ic(
     cal: pd.DatetimeIndex,
     trade_dates: pd.DatetimeIndex,
