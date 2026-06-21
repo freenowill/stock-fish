@@ -189,11 +189,11 @@ class StockAnalysisAgent:
                        f"技术: {score_result.technical}, 基本面: {score_result.fundamental}, "
                        f"舆情: {score_result.sentiment}, 市场状态: {score_result.regime})")
 
-            # ── 缓存给LLM/大师前的全量数据 ──
-            self._cache_pre_llm_data(symbol, master, state)
-
             # ── 数据补充：从现有接口提取更多分析维度 ──
             self._extract_detailed_financials(symbol, state)
+
+            # ── 缓存给LLM/大师前的全量数据 ──
+            self._cache_pre_llm_data(symbol, master, state)
             self._compute_risk_metrics(symbol, state)
             self._compute_equity_risk_premium(state)
             # 长期PE分位在 _compute_valuation 中已完成(如已有数据)
