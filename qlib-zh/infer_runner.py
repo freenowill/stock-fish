@@ -250,11 +250,53 @@ def run_inference(
         stocks.append(code)
         scores_detail.append({"code": code, "score": round(score, 4), "rank": rank})
 
+    # ── Strategy B Master Veto Analysis ────────────────────────────
+    strategy_b_result: dict = {}
+    try:
+        _log("运行 Strategy B Master Veto 分析...")
+        _all_stocks_raw = []
+        with open(scores_csv, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                code = _instrument_to_code(row.get("instrument", ""))
+                score = float(row.get("score", 0))
+                rank = int(row.get("rank", "999999"))
+                if rank <= 20:  # top-20 for Strategy B
+                    _all_stocks_raw.append((code, score, row.get("instrument", "")))
+
+        _all_stocks_raw.sort(key=lambda x: x[2])  # sort by instrument for consistency
+        _sb_stocks = [s[2] for s in _all_stocks_raw]  # Qlib instruments
+        _sb_scores = [str(s[1]) for s in _all_stocks_raw]
+
+        sb_cmd = [
+            "docker", "run", "--rm",
+            "-e", f"QLIB_DATA_DIR={cfg['qlib_data_dir']}",
+            "-v", f"{_HOST_PROJECT_ROOT}:{WORKDIR}",
+            "-w", WORKDIR,
+            DOCKER_IMAGE,
+            "python3", "strategy_b_analyze.py",
+            "--stocks", ",".join(_sb_stocks),
+            "--scores", ",".join(_sb_scores),
+            "--date", pred_date,
+            "--top-n", "5",
+        ]
+
+        sb_process = subprocess.run(sb_cmd, capture_output=True, text=True, timeout=120)
+        if sb_process.returncode == 0 and sb_process.stdout.strip():
+            strategy_b_result = json.loads(sb_process.stdout.strip())
+            _log(f"Strategy B: vetoed={len(strategy_b_result.get('vetoed',[]))}, "
+                 f"buy={len(strategy_b_result.get('buy',[]))}")
+        else:
+            _log(f"Strategy B analysis failed: {sb_process.stderr[:200]}")
+    except Exception as e:
+        _log(f"Strategy B analysis error: {e}")
+
     result = {
         "stocks": "/".join(stocks),
         "count": len(stocks),
         "pred_date": pred_date,
         "scores": scores_detail,
+        "strategy_b": strategy_b_result,
     }
 
     _log(

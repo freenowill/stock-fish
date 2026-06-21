@@ -630,30 +630,42 @@ class StockFishBot:
     async def _handle_qlib_inference(
         self, chat_id: str, parsed: ParsedMessage
     ) -> None:
-        """处理 /qlib_inference [csi300|csi500|csi1000] [--include-star] 命令。"""
-        # 解析参数: inline_master 被复用为 "market:exclude_star"
+        """处理 /qlib_inference [股票代码] 命令。
+
+        用法:
+          /qlib_inference                        → 初始买入建议
+          /qlib_inference 600018/600066/600309   → 调仓建议（对比当前持仓）
+        """
+        # 解析参数
         market = "csi300"
         exclude_star = True
-        if parsed.inline_master and ":" in parsed.inline_master:
-            parts = parsed.inline_master.split(":")
-            market = parts[0]
-            exclude_star = parts[1] == "True"
+        holdings_raw = ""
 
-        # 模型映射
-        MODELS = {
-            "csi300": "2026-06-12-csi300-alpha158-fintune",
-            "csi500": "2026-06-12-csi300-alpha158-fintune",  # 暂时复用 csi300 模型
-            "csi1000": "2026-06-12-csi300-alpha158-fintune",  # 暂时复用 csi300 模型
-        }
-        model = MODELS.get(market, MODELS["csi300"])
+        if parsed.inline_master:
+            raw = parsed.inline_master.strip()
+            # Check if input looks like stock codes (6-digit numbers separated by / or space)
+            import re
+            code_pattern = re.findall(r'\b\d{6}\b', raw)
+            if code_pattern:
+                holdings_raw = "/".join(code_pattern)
+            elif ":" in raw:
+                parts = raw.split(":")
+                market = parts[0]
+                exclude_star = parts[1] == "True"
+
+        # 默认模型
+        MODEL = "2026-06-21-csi300-alpha158"
         star_note = "（剔除科创板）" if exclude_star else ""
+
+        is_rebalance = bool(holdings_raw)
 
         await self._send_text(
             chat_id,
             f"🤖 Qlib 推理启动\n"
-            f"市场: **{market.upper()}** {star_note}\n"
-            f"模型: {model}\n"
-            f"每 5 分钟汇报一次进度...",
+            f"模型: **{MODEL}**\n"
+            f"策略: **Strategy B (Master Veto)**\n"
+            + (f"当前持仓: **{holdings_raw}**\n" if is_rebalance else "")
+            + f"每 5 分钟汇报一次进度...",
         )
 
         # 后台心跳
@@ -689,6 +701,7 @@ class StockFishBot:
             stocks_raw = result.get("stocks", "")
             pred_date = result.get("pred_date", "")
             message = result.get("message", "推理完成")
+            strategy_b = result.get("strategy_b", {})
 
             # 剔除科创板（688 开头）
             if exclude_star and stocks_raw:
@@ -700,12 +713,46 @@ class StockFishBot:
                 if star_count > 0:
                     message += f"（已剔除 {star_count} 只科创板）"
 
-            resp = [f"✅ Qlib 推理完成！", f"市场: {market.upper()} {star_note}", f"模型: {model}"]
-            if pred_date:
-                resp.append(f"预测日期: {pred_date}")
-            resp.append(f"\n{message}")
-            if stocks_raw:
-                resp.append(f"\n**选股结果**:\n{stocks_raw}")
+            resp = [f"✅ Qlib 推理完成！", f"模型: **{MODEL}** | 预测日期: {pred_date}"]
+
+            # ── Strategy B Analysis ────────────────────────────
+            if strategy_b:
+                sb_buy = strategy_b.get("buy", [])
+                sb_vetoed = strategy_b.get("vetoed", [])
+                sb_over = strategy_b.get("overweight_signals", [])
+                sb_reasons = strategy_b.get("veto_reasons", [])
+
+                if is_rebalance:
+                    resp.append(f"\n📊 **调仓建议** (Strategy B Master Veto)")
+                    # Current holdings → rebalancing
+                    keep_list = strategy_b.get("keep", [])
+                    sell_list = strategy_b.get("sell", [])
+                    if keep_list:
+                        resp.append(f"🟢 **继续持有**: {' / '.join(keep_list)}")
+                    if sell_list:
+                        resp.append(f"🔴 **建议卖出**: {' / '.join(sell_list)}")
+                    if sb_buy:
+                        buy_codes = [b if isinstance(b, str) else b.get("stock", "") for b in sb_buy]
+                        resp.append(f"🆕 **建议买入**: {' / '.join(buy_codes[:5])}")
+                else:
+                    resp.append(f"\n📊 **初始买入建议** (Strategy B Master Veto)")
+                    if sb_buy:
+                        buy_codes = [b if isinstance(b, str) else b.get("stock", "") for b in sb_buy]
+                        resp.append(f"🆕 **建议买入**: {' / '.join(buy_codes[:5])}")
+                    else:
+                        resp.append(f"🆕 **建议买入**: {stocks_raw}")
+
+                if sb_vetoed:
+                    resp.append(f"\n⚠ **Strategy B 否决** (已剔除): {' / '.join(sb_vetoed[:5])}")
+                if sb_over:
+                    resp.append(f"💡 **加仓信号**: {' / '.join(sb_over[:3])} (仅参考)")
+                if sb_reasons:
+                    resp.append(f"\n📝 **否决原因**:")
+                    for r in sb_reasons[:3]:
+                        resp.append(f"  · {r[:100]}")
+            else:
+                resp.append(f"\n**模型 Top-{count}**: {stocks_raw}")
+
             await self._send_text(chat_id, "\n".join(resp))
         else:
             error = result.get("error", "未知错误")
