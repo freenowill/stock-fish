@@ -95,6 +95,9 @@ class FundamentalAgent(BaseAgent):
         elif oper_cf > 0 and rev > 0:
             # 无 FCF 时用经营现金流近似
             score += 0.5; points.append(f"经营现金流为正({oper_cf:.1f}亿)")
+        else:
+            # 现金流数据完全缺失
+            risks.append("经营现金流/自由现金流数据缺失，净利润质量无法验证")
 
         # 多期趋势
         ft = state.get('financial_trends') or {}
@@ -116,6 +119,13 @@ class FundamentalAgent(BaseAgent):
 
         if profit_yoy > 20:
             score += 2; points.append(f"净利润同比+{profit_yoy:.1f}%，利润高增")
+            # 利润质量检查: 利润增速远高于收入增速时可能有非经常性损益
+            if rev_yoy is not None and profit_yoy is not None:
+                try:
+                    if float(profit_yoy) > float(rev_yoy) * 3 and float(rev_yoy) < 10:
+                        risks.append("净利润增速远超营收增速，可能存在非经常性损益")
+                except (ValueError, TypeError):
+                    pass
         elif profit_yoy > 10:
             score += 1
         elif profit_yoy < 0:

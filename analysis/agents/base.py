@@ -63,6 +63,9 @@ class CIODecision:
     # 否决回应 (当风险经理行使软否决权时)
     veto_response: str = ""
 
+    # 非经常性损益说明 (CIO 对净利润质量的推断)
+    extraordinary_items_note: str = ""
+
     # 原始输出
     raw_llm_output: str = ""
     error: Optional[str] = None
@@ -84,6 +87,7 @@ class CIODecision:
             'risk_monitoring': self.risk_monitoring,
             'decision_quality': self.decision_quality,
             'veto_response': self.veto_response,
+            'extraordinary_items_note': self.extraordinary_items_note,
             'raw_llm_output': self.raw_llm_output,
             'error': self.error,
         }
@@ -273,6 +277,27 @@ class BaseAgent:
             sources = moat.get('moat_sources', [])
             lines.append(f"护城河判断: {moat['moat_level']}" +
                         (f" — 来源: {', '.join(sources[:3])}" if sources else ""))
+
+        # ── 数据质量提示 ──
+        data_warnings = []
+        ocf = fs.get('operating_cash_flow')
+        fcf_val = fs.get('free_cash_flow')
+        if ocf is None or ocf == 0 or ocf == 'N/A':
+            data_warnings.append("⚠️ 经营现金流数据缺失，净利润质量无法验证")
+        if fcf_val is None or fcf_val == 0 or fcf_val == 'N/A':
+            data_warnings.append("⚠️ 自由现金流数据缺失")
+        net_profit = fs.get('net_profit')
+        rev = fs.get('revenue')
+        if net_profit and rev and net_profit != 'N/A' and rev != 'N/A':
+            try:
+                np_val = float(net_profit)
+                rev_val = float(rev)
+                if np_val > 0 and rev_val > 0 and np_val / rev_val > 0.3:
+                    data_warnings.append("⚠️ 净利率>30%，可能存在非经常性损益")
+            except (ValueError, TypeError):
+                pass
+        if data_warnings:
+            lines.append("【数据质量】" + " | ".join(data_warnings))
 
         return "\n".join(lines)
 

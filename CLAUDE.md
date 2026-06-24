@@ -8,11 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Start server (port 8000)
 python app.py
 
+# Start Feishu/Lark bot (WebSocket, no public IP needed)
+python integration/lark_bot.py
+
 # One-click deploy (Docker or local)
-bash run.sh              # Docker: pulls zhuhai123/stockfish-* images, starts StockFish + MiroFish
-bash run.sh --local      # Local Python (no Docker, port 8000)
-bash run.sh --no-mirofish # Docker: StockFish only, skip MiroFish
-bash run.sh --debug      # Debug mode: OASIS_DEBUG=true (2 agents, 2 rounds)
+bash run.sh                       # Docker: pulls zhuhai123/stockfish-* images, starts StockFish + MiroFish
+bash run.sh --local               # Local Python (no Docker, port 8000)
+bash run.sh --no-mirofish         # Docker: StockFish only, skip MiroFish
+bash run.sh --bot                 # Start both StockFish and Lark Bot (combine with --local or Docker)
+bash run.sh --debug               # Debug mode: OASIS_DEBUG=true (2 agents, 2 rounds)
 
 # Install dependencies
 pip install -r requirements.txt
@@ -114,6 +118,16 @@ No test framework exists (`tests/__init__.py` is empty). No linting/formatting c
 
 ### Multi-Agent Investment Decision System (`analysis/agents/`)
 
+All agents extend `BaseAgent` (`analysis/agents/base.py`), which provides:
+- OpenAI-compatible LLM client with `_call_llm(system_prompt, user_prompt, temperature, use_json_mode)` — retry (max 2), timeout (45s), exception-safe
+- `_parse_json(raw)` — handles truncated JSON, markdown-wrapped blocks, trailing commas
+- Static data extractors (`build_tech_context`, `build_fund_context`, `build_valuation_context`, `build_sent_context`, `build_risk_context`, `build_macro_context`, `build_industry_context`, `build_search_context`, `build_overseer_context`) — each pulls relevant fields from an AnalysisState dict and formats them as readable prompts
+- `_safe_get()` and `_is_financial_industry()` utilities
+
+**`EmployeeReport`** dataclass — standardized output for all 8 employees: `employee_id`, `role`, `department`, `outlook`, `confidence`, `score` (-10~+10), `key_points`, `risks`, `raw_output`, `error`.
+
+**`CIODecision`** dataclass — structured CIO output: `master_name`, `master_key`, `decision_summary`, `rationale`, `evidence_chain`, 3-scenario analysis (base/bull/bear), `order` (action/position_size/stop_loss/take_profit), multi-cycle predictions, `risk_monitoring`, `decision_quality`, `veto_response`.
+
 When a `master` parameter is passed to `POST /api/analyze`, the system activates the full investment committee pipeline:
 
 **8 Employees (5 Departments)** — all extend `BaseAgent`, output `EmployeeReport`:
@@ -199,6 +213,8 @@ Docker-in-Docker Microsoft Qlib integration. StockFish containers shell out to `
 - `qlib-zh/DATA/` — Qlib-format market data + trained models in `DATA/analysis_outputs/` (gitignored)
 - `qlib-zh/scripts/practice/run_stage2_walk_forward.py` — core training engine (165KB)
 - `qlib-zh/scripts/small/` — CSI1000-specific variants + cached_handler
+- `qlib-zh/strategy_b_analyze.py` — CLI tool: applies 4 master-veto rules to Qlib top-20 predictions, outputs filtered buy list + rebalancing advice
+  - Usage: `python strategy_b_analyze.py --stocks SH600000,SZ000001,... --scores 0.14,0.12,... --date 2026-06-20 [--holdings ...]`
 
 ### Simulation Bridge (`POST /api/predict`, background thread)
 
@@ -207,6 +223,19 @@ Docker-in-Docker Microsoft Qlib integration. StockFish containers shell out to `
 - Pipeline: ontology generation → graph build → simulation create → agent profile prep → OASIS run → report generation
 - Each stage has polling with configurable timeouts; falls back to standalone mode on any MiroFish failure
 - SSE progress stream with real-time log messages (EventSource in frontend, polling fallback)
+
+### Feishu/Lark Bot Integration (`integration/`)
+
+WebSocket-based Feishu bot (`lark_bot.py`, 36KB) enabling stock analysis from mobile Feishu, no public IP needed.
+
+**Components:**
+- `lark_bot.py` — async WebSocket handler, stock code regex parsing, message routing (`--master` arg extraction, multi-stock `/` delimiter), UserPrefManager integration (persistent master per user)
+- `lark_card.py` (21KB) — Card JSON v2.0 builder, 3 analysis card types (normal/master/batch) + help card, A-stock color scheme (red=bullish, green=bearish)
+- `lark_client.py` (12KB) — aiohttp-based async client wrapping StockFish Flask API (`/api/analyze`, `/api/batch/analyze`)
+- `lark_prefs.py` (4KB) — JSON-file-backed user preference manager (default master, notification pref)
+
+**Run**: `python integration/lark_bot.py` or `bash run.sh --bot` (with/without `--local`).
+**Config**: Requires `LARK_APP_ID`, `LARK_APP_SECRET` in `.env`.
 
 ### Prediction Report (`prediction_report/report_generator.py`)
 
@@ -226,6 +255,31 @@ All backends implement `BaseStockBackend`: `get_quote`, `get_historical`, `get_f
 
 Real-time quote priority chain (configurable via `REALTIME_SOURCE_PRIORITY`): Tencent → Sina → Eastmoney → Tushare.
 
+### Data Fetcher Architecture (`market_data/data_fetchers/`)
+
+All fetchers extend a shared base (`base.py`, 130KB) providing: circuit-breaker failover, rate limiting, retry with exponential backoff, uniform `Quote`/`FinancialSummary`/`TechnicalIndicators` output.
+
+| Fetcher | File | Focus |
+|---|---|---|
+| efinance | `efinance_fetcher.py` (50KB) | EastMoney via efinance, primary CN source |
+| akshare | `akshare_fetcher.py` (92KB) | EastMoney via akshare, broadest coverage |
+| tushare | `tushare_fetcher.py` (51KB) | Tushare Pro via vendored SDK |
+| pytdx | `pytdx_fetcher.py` (18KB) | TDX protocol, low-level quote/歷史 |
+| baostock | `baostock_fetcher.py` (14KB) | Free academic-grade fallback |
+| yfinance | `yfinance_fetcher.py` (30KB) | Yahoo Finance, HK/US stocks |
+| longbridge | `longbridge_fetcher.py` (28KB) | Longbridge OpenAPI, HK/US/CN |
+| finnhub | `finnhub_fetcher.py` (6KB) | Finnhub.io, US stocks |
+| alphavantage | `alphavantage_fetcher.py` (7KB) | Alpha Vantage, global |
+| fundamental | `fundamental_adapter.py` (24KB) | Growth/earnings/institutional pipeline |
+| realtime | `realtime_types.py` (17KB) | Quote data models & merge logic |
+
+### Market Data Sub-modules
+
+- `search/search_service.py` (150KB) — 7-engine search service (Tavily/Bocha/Brave/SerpAPI/Anspire/MiniMax/SearXNG) with auto health-check, multi-key round-robin, and a `SearchResult` dataclass
+- `social_sentiment/social_sentiment_service.py` (14KB) — Reddit/X/Polymarket sentiment for US stocks via Adanos API
+- `stock_index/` — Index constituent loading (`stock_index_loader.py`), remote service (`stock_index_remote_service.py`), stock-to-index mapping (`stock_mapping.py`)
+- `patches/eastmoney_patch.py` (6KB) — Runtime monkey-patches for EastMoney API compatibility
+
 ## News Sources (`market_data/news_sources.py`)
 
 Plugin architecture: each source extends `BaseNewsSource` or `BaseGubaSource`, registered in `NEWS_SOURCES`/`GUBA_SOURCES` lists. Current: SinaNews, NewsNow (cls+xueqiu+wallstreetcn aggregate), YahooFinance, XueqiuPopularity, CLSNews (disabled), EastMoneyGuba.
@@ -244,11 +298,19 @@ Single-file dark-theme SPA (~2100 lines, no build step). Features:
 
 ## Scoring Engine (`analysis/scoring.py`)
 
-Three-layer weighted system (-5 to +5). See README.md for full factor tables.
+Three-layer weighted system (-5 to +5):
+
+| Layer | Default Weight | Factors |
+|---|---|---|
+| Technical | 50% | RSI(14), MACD histogram, MA alignment (MA5/10/20/60), Bollinger position, volume-price, momentum |
+| Fundamental | 30% | PE percentile (industry-corrected), ROE (cash-flow validated), profit growth, dividend yield |
+| Sentiment | 20% | News avg score, guba avg score, emotional consistency |
+
+**Adaptive weights**: trending market → technical +5%; ranging → fundamental +5%. Missing data redistributed proportionally.
 
 Key dataclass: `ScoreResult` with `final`, `label`, `technical`, `fundamental`, `sentiment`, `regime`, `confidence`, `weights`, `breakdown: List[FactorDetail]`.
 
-Adaptive weights: trending → technical +5%; ranging → fundamental +5%. Missing data redistributed proportionally.
+Signal labels map: `>=4.0`→强烈看多, `>=2.0`→看多, `>=0.5`→偏多, `>-0.5`→中性, `>=-2.0`→偏空, `>=-4.0`→看空, else→强烈看空.
 
 ## LLM Prediction (`analysis/nodes/prediction_node.py`)
 
@@ -296,7 +358,22 @@ Uses `uv` package manager with `pyproject.toml`. Dependencies: flask, flask-cors
 
 ## Configuration (`config.py`)
 
-pydantic-settings `Settings` loaded from `.env`. Adds MiroFish to Python path for cross-project imports. Copy `.env.example` to `.env` to get started.
+pydantic-settings `Settings` loaded from `.env`. See `.env.example` for a complete template. Adds MiroFish and BettaFish directories to Python path on import.
+
+### Feature Flags
+
+| Flag | Default | Effect |
+|---|---|---|
+| `ENABLE_REALTIME_QUOTE` | true | Live quote fetching |
+| `ENABLE_REALTIME_TECHNICAL_INDICATORS` | true | Real-time RSI/MACD/MA/Bollinger |
+| `ENABLE_CHIP_DISTRIBUTION` | true | Chip/position distribution data |
+| `ENABLE_EASTMONEY_PATCH` | false | Runtime monkey-patches for EastMoney |
+| `ENABLE_FUNDAMENTAL_PIPELINE` | true | Growth/earnings/institutional pipeline |
+| `ENABLE_LONGBRIDGE` | false | Longbridge HK/US OpenAPI |
+| `ENABLE_MACRO` | false | Macro-economic data collection |
+| `ENABLE_US_STOCKS` / `ENABLE_HK_STOCKS` | false | US/HK stock support |
+| `PREFETCH_REALTIME_QUOTES` | true | Pre-fetch quotes on startup |
+| `STOCK_INDEX_REMOTE_UPDATE_ENABLED` | true | Remote index constituent updates |
 
 Key env vars:
 - `LLM_API_KEY/BASE_URL/MODEL_NAME` — LLM config (OpenAI-compatible)
@@ -307,7 +384,7 @@ Key env vars:
 - `MIROFISH_HOST/PORT` — MiroFish address (Docker: `mirofish:5001`, local: `localhost:5001`)
 - `REALTIME_SOURCE_PRIORITY` — quote source order (default: `tencent,tushare,efinance,akshare_em`)
 - `EFINANCE_CALL_TIMEOUT` — Eastmoney timeout (default 30s, set 5s outside China)
-- Feature flags: `ENABLE_REALTIME_QUOTE`, `ENABLE_FUNDAMENTAL_PIPELINE`, `ENABLE_CHIP_DISTRIBUTION`, `ENABLE_EASTMONEY_PATCH`, `ENABLE_LONGBRIDGE`, `ENABLE_MACRO`, `ENABLE_US_STOCKS`, `ENABLE_HK_STOCKS`, `ENABLE_REALTIME_TECHNICAL_INDICATORS`, `PREFETCH_REALTIME_QUOTES`, `STOCK_INDEX_REMOTE_UPDATE_ENABLED`
+- Feature flags: see table above
 - Multi-source fetcher priorities: `EFINANCE_PRIORITY`, `YFINANCE_PRIORITY`, `PYTDX_PRIORITY`, `AKSHARE_PRIORITY`, `BAOSTOCK_PRIORITY`
 - Circuit breaker: `CIRCUIT_BREAKER_COOLDOWN` (default 300s), rate limits for each fetcher
 - Rate limits/timeouts: `AKSHARE_SLEEP_MIN`/`MAX`, `TUSHARE_RATE_LIMIT_PER_MINUTE` (80), `MAX_RETRIES` (3), `RETRY_BASE_DELAY`/`MAX_DELAY`
@@ -320,14 +397,27 @@ Key env vars:
 - `QLIB_ENABLED` (false), `QLIB_DATA_PROXY` (SOCKS5 for GitHub acceleration)
 - `BATCH_MAX_CONCURRENT` — Batch analysis concurrency limit (default: 5)
 
-## Key Conventions
+## AnalysisState (`analysis/state/state.py`)
+
+Central dataclass carrying all analysis pipeline state through 5 steps (122 lines). Key field groups:
+
+| Group | Fields |
+|---|---|
+| **User input** | `symbol`, `cost_price`, `shares`, `total_assets`, `available_cash` |
+| **Market data** | `quote`, `technical_indicators`, `financial_summary`, `news`, `guba_posts` |
+| **Sentiment** | `sentiment_news`, `sentiment_guba` (each: `SentimentSummary` with avg_score, positive/negative/neutral counts, per-item scores) |
+| **Valuation** | `valuation_level` (很低~很高), `valuation_percentile` (%, 365-day), `suggested_buy_price`, `historical_pe_avg`, `valuation_percentile_5y/10y`, `pe_avg_5y/10y` |
+| **Financial depth** | `roic`, `fcf_per_share`, `operating_cash_flow_per_share`, `owner_earnings_per_share`, `financial_trends` (ROE 5yr, EPS CAGR 5yr, ROE stability, gross margin trend) |
+| **Risk** | `var_95`, `max_drawdown`, `beta`, `annualized_volatility`, `earnings_yield`, `bond_yield_10y`, `equity_risk_premium` |
+| **Context** | `macro_context` (SHIBOR/PMI/CPI/northbound flow/USD-CNY/policy), `industry_context` (industry PE/momentum/cycle/policy), `search_results` (multi-dimension web search) |
+| **Peer/Moat** | `peer_valuation`, `moat_assessment`, `management_quality` |
+| **LLM output** | `llm_analysis`, `prediction_summary`, `short_term_pred`, `mid_term_pred`, `long_term_pred`, `suggested_action`, `price_target`, `risk_factors` |
+| **Scoring** | `score_breakdown` (ScoreResult dict), `signals` |
+| **News summaries** | `important_bullish_news`, `important_bearish_news`, `important_bullish_guba`, `important_bearish_guba` |
+
+All backends produce data that maps into these fields. Sentiment history is persisted per-symbol in `data/sentiment_history/` as JSON (survives restarts).
 
 - A-stock color scheme: **red = up (gain)**, green = down (loss) — opposite of Western markets
-- `Quote`, `FinancialSummary`, `TechnicalIndicators`, `NewsItem`, `GubaPost` — dataclasses with `to_dict()`, used across all backends
-- `AnalysisState` (`analysis/state/state.py`) — dataclass carrying full analysis state through all pipeline steps
-- `ScoreResult` (`analysis/scoring.py`) — composite score with breakdown, label, weights, and confidence
-- `PredictionResult`, `AgentView` (`analysis/nodes/prediction_node.py`) — LLM prediction output dataclasses
-- `EmployeeReport`, `CIODecision` (`analysis/agents/base.py`) — Multi-agent decision system dataclasses
 - `loguru` for logging consistently across all modules
 - `config:settings` singleton — imported at module level in `app.py`, lazy-imported elsewhere
 - `sxsc_tushare/` — vendored Tushare Pro SDK (山西证券 proxy), imported directly
@@ -363,6 +453,20 @@ Key env vars:
 - `TODO.md` — Full project roadmap with P0-P3 priorities, tech debt, and work estimates
 
 ## Slash Commands
+
+### `/master-audit`
+大师分析质量审计 — 随机从沪深300挑选一支股票和一位大师，运行完整的 8 员工 + CIO 分析工作流，交叉验证数据完整性/逻辑一致性/哲学匹配度，输出审计报告和改进计划。
+
+**Usage:** `/master-audit [--symbol <股票>] [--master <大师key>] [--seed <随机种子>]`
+
+**Examples:**
+```
+/master-audit                                   # 随机股票 + 随机大师
+/master-audit --symbol 600519 --master buffett  # 指定
+/master-audit --seed 42                         # 固定种子复现
+```
+
+**Output:** `master-audit/{date-seq}/` 目录保存完整中间数据、审计报告和改进计划。
 
 ### `/release-model`
 Compress a Qlib model directory into `csi300-alpha158.tar.gz` and push it to `github.com/freenowill/stock-fish/releases`.

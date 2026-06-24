@@ -198,6 +198,38 @@ class CIOAgent(BaseAgent):
                     if d.get('pe'):
                         lines.append(f"  {d['name']} PE={d['pe']:.1f}")
 
+        # ── 数据质量告警 ──
+        lines.append("")
+        warnings = []
+
+        # 现金流数据缺失告警
+        ocf = fs.get('operating_cash_flow')
+        fcf = fs.get('free_cash_flow')
+        if ocf is None or ocf == 0 or ocf == 'N/A' or ocf == '?':
+            warnings.append("⚠️ 数据缺失告警: 经营现金流数据不可用（null/0），净利润质量无法通过现金流验证")
+        if fcf is None or fcf == 0 or fcf == 'N/A' or fcf == '?':
+            warnings.append("⚠️ 数据缺失告警: 自由现金流数据不可用（null/0），无法计算FCF收益率")
+        net_profit = fs.get('net_profit')
+        np_yoy = fs.get('net_profit_yoy')
+        rev = fs.get('revenue')
+        rev_yoy = fs.get('revenue_yoy')
+        if net_profit is not None and rev is not None and net_profit != 'N/A' and rev != 'N/A':
+            try:
+                np_val = float(net_profit) if net_profit is not None else 0
+                rev_val = float(rev) if rev is not None else 0
+                if np_val > 0 and rev_val > 0 and np_val / rev_val > 0.3:
+                    warnings.append(f"⚠️ 净利率异常: 净利润({net_profit}亿)/营收({rev}亿)>30%，可能存在非经常性损益")
+            except (ValueError, TypeError):
+                pass
+
+        if warnings:
+            lines.append("## ⚠️ 数据完整性问题 — 你的决策中必须回应以下告警")
+            lines.append("")
+            for w in warnings:
+                lines.append(w)
+            lines.append("")
+            lines.append("请在 rationale 或 extraordinary_items_note 中针对以上告警做出说明。")
+
         return "\n".join(lines)
 
     # ── 结果解析 ──
@@ -220,6 +252,7 @@ class CIOAgent(BaseAgent):
             risk_monitoring=result.get('risk_monitoring', []),
             decision_quality=result.get('decision_quality'),
             veto_response=result.get('veto_response', ''),
+            extraordinary_items_note=result.get('extraordinary_items_note', ''),
             raw_llm_output=json.dumps(result, ensure_ascii=False),
         )
 
