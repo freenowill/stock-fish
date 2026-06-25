@@ -235,13 +235,36 @@ class CIOAgent(BaseAgent):
     # ── 结果解析 ──
 
     def _parse_cio_result(self, result: dict, master_info: dict) -> CIODecision:
-        """将 LLM 返回的 JSON 解析为 CIODecision"""
+        """将 LLM 返回的 JSON 解析为 CIODecision，含输出质量校验"""
+        # ── 校验 1: evidence_chain 必须包含全部 8 名员工 ──
+        evidence_chain = result.get('evidence_chain', [])
+        EXPECTED_EMPLOYEES = 8  # 宏观/行业/估值/基本面/技术/舆情/风险/监察员
+        if len(evidence_chain) < EXPECTED_EMPLOYEES:
+            logger.warning(
+                f"CIO evidence_chain 不完整: 期望 {EXPECTED_EMPLOYEES} 条, "
+                f"实际 {len(evidence_chain)} 条 — 已截断/缺失 {EXPECTED_EMPLOYEES - len(evidence_chain)} 位员工"
+            )
+        elif len(evidence_chain) > EXPECTED_EMPLOYEES:
+            logger.warning(
+                f"CIO evidence_chain 超长: 期望 {EXPECTED_EMPLOYEES} 条, "
+                f"实际 {len(evidence_chain)} 条 — 自动截断至 {EXPECTED_EMPLOYEES} 条"
+            )
+            evidence_chain = evidence_chain[:EXPECTED_EMPLOYEES]
+
+        # ── 校验 2: scenario probability 之和必须为 1.0 ──
+        for case_key in ('base_case', 'bull_case', 'bear_case'):
+            case = result.get(case_key)
+            if case and isinstance(case, dict):
+                prob = case.get('probability')
+                if prob is not None and (prob < 0 or prob > 1):
+                    logger.warning(f"CIO {case_key}.probability={prob} 超出 [0,1] 范围")
+
         return CIODecision(
             master_name=master_info['name'],
             master_key=master_info['key'],
             decision_summary=result.get('decision_summary', ''),
             rationale=result.get('rationale', ''),
-            evidence_chain=result.get('evidence_chain', []),
+            evidence_chain=evidence_chain,
             base_case=result.get('base_case'),
             bull_case=result.get('bull_case'),
             bear_case=result.get('bear_case'),
