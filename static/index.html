@@ -297,7 +297,10 @@
 <div class="container">
   <header>
     <div><h1>StockFish</h1><div class="subtitle">A 股实时分析 · 多智能体推演 | <a href="https://github.com/freenowill/qlib-zh" target="_blank" style="color:#8ab4f8;text-decoration:none;">qlib-zh 因子选股 → StockFish 深度分析</a></div></div>
-    <div id="backendStatus" style="font-size:12px;color:#6b8db5;">加载中...</div>
+    <div id="backendStatus" style="font-size:12px;color:#6b8db5;">
+      <span id="backendStatusText">加载中...</span>
+      <span id="healthIndicator" style="margin-left:10px;cursor:pointer;" onclick="toggleHealthPanel()">🔍 系统状态</span>
+    </div>
   </header>
 
   <!-- Batch mode toggle -->
@@ -397,7 +400,10 @@
   </div>
 
   <div class="search-box">
-    <input id="symbolInput" type="text" placeholder="股票代码 (600519)" value="600519" />
+    <div style="position:relative;display:inline-block;">
+      <input id="symbolInput" type="text" placeholder="股票代码/名称 (600519/贵州茅台)" value="600519" />
+      <div id="autocompleteDropdown" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:#1a2d42;border:1px solid #1e3a5f;border-radius:8px;max-height:200px;overflow-y:auto;min-width:220px;"></div>
+    </div>
     <input id="costInput" type="text" inputmode="decimal" placeholder="成本价格 (选填)" />
     <span class="hint" style="margin-left:-6px;">选填</span>
         <input id="sharesInput" type="text" inputmode="decimal" placeholder="数量/股 (选填)" style="max-width:120px;" />
@@ -436,6 +442,15 @@
   <div id="simLog" style="display:none;margin-bottom:16px;background:#0a0f16;border:1px solid #1e3a5f;border-radius:8px;padding:12px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:12px;color:#8ab4f8;line-height:1.6;white-space:pre-wrap;"></div>
 
   <div id="result"></div>
+</div>
+
+<!-- 健康检查面板 -->
+<div id="healthPanel" style="display:none;margin-bottom:16px;background:#152436;border:1px solid #1e3a5f;border-radius:10px;padding:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <span style="font-size:16px;font-weight:600;color:#8ab4f8;">🔍 系统状态检查</span>
+    <span id="healthOverallBadge" style="padding:4px 12px;border-radius:12px;font-size:12px;"></span>
+  </div>
+  <div id="healthContent" style="font-size:13px;color:#e0e6ed;">点击加载中...</div>
 </div>
 
 <script>
@@ -497,6 +512,135 @@ function downloadAnalysisReport(symbol, cardId) {
   URL.revokeObjectURL(url);
 }
 
+	// ── 健康检查面板 ──
+	let healthPanelLoaded = false;
+
+	async function toggleHealthPanel() {
+	  const panel = document.getElementById('healthPanel');
+	  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+	  if (panel.style.display === 'block' && !healthPanelLoaded) {
+	    healthPanelLoaded = true;
+	    await loadHealthCheck();
+	  }
+	}
+
+	async function loadHealthCheck() {
+	  const content = document.getElementById('healthContent');
+	  const badge = document.getElementById('healthOverallBadge');
+	  try {
+	    const resp = await fetch('/api/config/health');
+	    const data = await resp.json();
+
+	    badge.textContent = data.overall === 'ok' ? '✅ 正常' : data.overall === 'warning' ? '⚠️ 警告' : '❌ 异常';
+	    badge.style.background = data.overall === 'ok' ? 'rgba(0,212,170,.2)' : data.overall === 'warning' ? 'rgba(255,165,2,.2)' : 'rgba(255,71,87,.2)';
+	    badge.style.color = data.overall === 'ok' ? '#00d4aa' : data.overall === 'warning' ? '#ffa502' : '#ff4757';
+
+	    let html = '<div style="margin-bottom:12px;font-size:12px;color:#6b8db5;">';
+	    html += '总检: ' + data.summary.total + ' | ✅ ' + data.summary.ok + ' | ⚠️ ' + data.summary.warning + ' | ❌ ' + data.summary.error + ' | ⬜ ' + data.summary.not_configured;
+	    html += '</div>';
+
+	    const tiers = [
+	      { num: 1, label: '核心服务' },
+	      { num: 2, label: '行情 / 财务数据' },
+	      { num: 3, label: '增强功能' },
+	      { num: 4, label: '飞书机器人' },
+	    ];
+
+	    for (const tier of tiers) {
+	      const items = data.checks.filter(c => c.tier === tier.num);
+	      if (items.length === 0) continue;
+
+	      html += '<div style="margin-bottom:14px;">';
+	      html += '<div style="font-size:13px;font-weight:600;color:#8ab4f8;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #1e3a5f;">Tier ' + tier.num + ' - ' + tier.label + '</div>';
+
+	      for (const item of items) {
+	        const statusIcon = item.status === 'ok' ? '✅' : item.status === 'warning' ? '⚠️' : item.status === 'error' ? '❌' : '⬜';
+	        const statusColor = item.status === 'ok' ? '#00d4aa' : item.status === 'warning' ? '#ffa502' : item.status === 'error' ? '#ff4757' : '#6b8db5';
+
+	        html += '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(30,58,95,.4);">';
+	        html += '<span style="flex-shrink:0;width:20px;">' + statusIcon + '</span>';
+	        html += '<div style="flex:1;">';
+	        html += '<div style="font-size:13px;font-weight:500;color:#e0e6ed;">' + item.description + '</div>';
+	        html += '<div style="font-size:11px;color:' + statusColor + ';">' + (item.detail || item.status) + '</div>';
+	        if (item.impact) {
+	          html += '<div style="font-size:11px;color:#6b8db5;">影响: ' + item.impact + '</div>';
+	        }
+	        html += '</div>';
+	        html += '</div>';
+	      }
+	      html += '</div>';
+	    }
+
+	    content.innerHTML = html;
+	  } catch(e) {
+	    content.innerHTML = '<div style="color:#ff4757;">健康检查失败: ' + e.message + '</div>';
+	  }
+	}
+
+	// ── 股票名称自动补全 ──
+	let autocompleteDebounce = null;
+	let autocompleteCache = {};
+
+	document.addEventListener('DOMContentLoaded', function() {
+	  const input = document.getElementById('symbolInput');
+	  if (input) {
+	    input.addEventListener('input', function() {
+	      clearTimeout(autocompleteDebounce);
+	      const val = this.value.trim();
+	      const dropdown = document.getElementById('autocompleteDropdown');
+	      if (val.length < 1 || /^\d+$/.test(val)) {
+	        dropdown.style.display = 'none';
+	        return;
+	      }
+	      autocompleteDebounce = setTimeout(() => {
+	        fetchStockSuggestions(val);
+	      }, 200);
+	    });
+	    input.addEventListener('blur', function() {
+	      setTimeout(() => {
+	        document.getElementById('autocompleteDropdown').style.display = 'none';
+	      }, 250);
+	    });
+	  }
+	});
+
+	async function fetchStockSuggestions(query) {
+	  try {
+	    const dropdown = document.getElementById('autocompleteDropdown');
+	    if (autocompleteCache[query]) {
+	      renderSuggestions(autocompleteCache[query]);
+	      return;
+	    }
+	    const resp = await fetch('/api/stock/search?q=' + encodeURIComponent(query));
+	    const items = await resp.json();
+	    autocompleteCache[query] = items;
+	    renderSuggestions(items);
+	  } catch(e) {
+	    // 自动补全为非关键功能，静默失败
+	  }
+	}
+
+	function renderSuggestions(items) {
+	  const dropdown = document.getElementById('autocompleteDropdown');
+	  if (!items || items.length === 0) {
+	    dropdown.style.display = 'none';
+	    return;
+	  }
+	  let html = '';
+	  for (const item of items) {
+	    const typeLabel = item.match_type === 'exact' ? '✓ 精确' : item.match_type === 'prefix' ? '🔤 前缀' : item.match_type === 'pinyin' ? '🀄 拼音' : '🔍 模糊';
+	    html += '<div onclick="selectSuggestion(\'' + item.code + '\')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #1e3a5f;font-size:13px;" onmouseover="this.style.background=\'#152436\'" onmouseout="this.style.background=\'\'"><span style="color:#ffa502;font-weight:600;">' + item.code + '</span><span style="color:#e0e6ed;margin-left:8px;">' + item.name + '</span><span style="color:#6b8db5;font-size:11px;margin-left:6px;">' + typeLabel + '</span></div>';
+	  }
+	  dropdown.innerHTML = html;
+	  dropdown.style.display = 'block';
+	}
+
+	function selectSuggestion(code) {
+	  document.getElementById('symbolInput').value = code;
+	  document.getElementById('autocompleteDropdown').style.display = 'none';
+	  autocompleteCache = {};
+	}
+
 function toggleBatchMode() {
   isBatchMode = !isBatchMode;
   const toggleBar = document.getElementById('batchModeToggle');
@@ -514,7 +658,7 @@ function toggleBatchMode() {
     toggleBar.querySelector('.batch-toggle-icon').textContent = '📋';
     btn.textContent = '批量分析';
     simLabel.style.display = 'none';
-    symbolInput.placeholder = '600519/000858/000001 (以/分隔)';
+    symbolInput.placeholder = '600519/000858/贵州茅台/长电科技 (以/分隔)';
     costInput.placeholder = '150/0/0 (以/分隔)';
     costInput.inputMode = 'text';
     sharesInput.placeholder = '100/0/0 (以/分隔)';
@@ -532,7 +676,7 @@ function toggleBatchMode() {
     toggleBar.querySelector('.batch-toggle-icon').textContent = '📊';
     btn.textContent = '分析';
     simLabel.style.display = '';
-    symbolInput.placeholder = '股票代码 (600519)';
+    symbolInput.placeholder = '股票代码/名称 (600519/贵州茅台)';
     costInput.placeholder = '成本价格 (选填)';
     costInput.inputMode = 'decimal';
     sharesInput.placeholder = '数量/股 (选填)';
@@ -1021,7 +1165,7 @@ async function analyze() {
 
       // 先显示后端状态
       const cfg = await fetch(`${API}/api/config`).then(r => r.json());
-      document.getElementById('backendStatus').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+      document.getElementById('backendStatusText').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
 
       // 轮询任务状态
       pollSimulation(taskId);
@@ -1326,7 +1470,7 @@ async function batchAnalyze() {
 
     // Update backend status
     fetch(`${API}/api/config`).then(r => r.json()).then(cfg => {
-      document.getElementById('backendStatus').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+      document.getElementById('backendStatusText').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
     }).catch(() => {});
 
   } catch (e) {
@@ -2088,13 +2232,13 @@ function renderAnalysis(data) {
   document.getElementById('result').innerHTML = html;
 
   fetch(`${API}/api/config`).then(r => r.json()).then(cfg => {
-    document.getElementById('backendStatus').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+    document.getElementById('backendStatusText').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
   }).catch(() => {});
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   fetch(`${API}/api/config`).then(r => r.json()).then(cfg => {
-    document.getElementById('backendStatus').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
+    document.getElementById('backendStatusText').textContent = `后端: ${cfg.backend} | LLM: ${cfg.llm_model || '-'}`;
   }).catch(() => {});
 });
 </script>

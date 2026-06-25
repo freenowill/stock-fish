@@ -104,14 +104,18 @@ _qlib_finetune_lock = threading.Lock()
 def analyze():
     """完整多因子分析"""
     data = request.get_json(silent=True) or {}
-    symbol = data.get('symbol', '').strip().upper()
+    raw_symbol = data.get('symbol', '').strip()
     cost_price = data.get('cost_price', 0)
     master = data.get('master', '').strip().lower()
     shares = data.get('shares', 0) or 0
     total_assets = data.get('total_assets', 0) or 0.0
     available_cash = data.get('available_cash', 0) or 0.0
-    if not symbol:
+    if not raw_symbol:
         return jsonify({'error': '请提供股票代码'}), 400
+
+    # 支持股票名称输入解析
+    from stock_name_resolver import resolve_symbol as _resolve_symbol
+    symbol = _resolve_symbol(raw_symbol) or raw_symbol.upper()
 
     logger.info(f"开始深度分析 [{symbol}] 成本价={cost_price} 持仓={shares}股 总资产={total_assets} 可用={available_cash} master={master or 'off'}")
     result = agent.analyze(symbol, cost_price=float(cost_price) if cost_price else 0.0,
@@ -129,7 +133,7 @@ def analyze():
 def predict():
     """启动股价推演"""
     data = request.get_json(silent=True) or {}
-    symbol = data.get('symbol', '').strip().upper()
+    raw_symbol = data.get('symbol', '').strip()
     scenario = data.get('scenario', 'base')
     cost_price = data.get('cost_price', 0)
     master = data.get('master', '').strip().lower()
@@ -137,8 +141,12 @@ def predict():
     total_assets = data.get('total_assets', 0) or 0.0
     available_cash = data.get('available_cash', 0) or 0.0
 
-    if not symbol:
+    if not raw_symbol:
         return jsonify({'error': '请提供股票代码'}), 400
+
+    # 支持股票名称输入解析
+    from stock_name_resolver import resolve_symbol as _resolve_symbol
+    symbol = _resolve_symbol(raw_symbol) or raw_symbol.upper()
 
     task_id = f"pred_{uuid.uuid4().hex[:12]}"
 
@@ -315,8 +323,10 @@ def batch_analyze():
     if not symbols_raw:
         return jsonify({'error': '请提供至少一只股票代码（多只以 / 分隔）'}), 400
 
-    # 解析 / 分隔的输入
-    symbols = [s.strip().upper() for s in symbols_raw.split('/') if s.strip()]
+    # 解析 / 分隔的输入（支持股票名称自动解析为代码）
+    from stock_name_resolver import resolve_symbol as _resolve_symbol
+    raw_symbols = [s.strip() for s in symbols_raw.split('/') if s.strip()]
+    symbols = [(_resolve_symbol(s) or s.upper()) for s in raw_symbols]
     cost_prices = [float(c.strip()) if c.strip() else 0.0 for c in cost_prices_raw.split('/')] if cost_prices_raw else []
     shares_list = [int(s.strip()) if s.strip() else 0 for s in shares_raw.split('/')] if shares_raw else []
 
@@ -1311,6 +1321,40 @@ def config():
         agent.provider._backend = None
         agent.provider._requested_backend = new_backend
     return jsonify({'status': 'ok'})
+
+
+# ==========================================
+#  API: 配置健康检查
+# ==========================================
+
+@app.route('/api/config/health', methods=['GET'])
+def config_health():
+    """返回完整的配置健康检查报告"""
+    from config_health import ConfigHealthChecker
+    from analysis.agent import _get_search_service
+    checker = ConfigHealthChecker(
+        settings_obj=settings,
+        agent_obj=agent,
+        orchestrator_obj=orchestrator,
+        search_service_obj=_get_search_service(),
+    )
+    return jsonify(checker.run_all_checks())
+
+
+# ==========================================
+#  API: 股票名称搜索（自动补全）
+# ==========================================
+
+@app.route('/api/stock/search', methods=['GET'])
+def stock_search():
+    """搜索股票代码（支持中文名称、拼音、代码片段）"""
+    from stock_name_resolver import get_resolver
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 1:
+        return jsonify([])
+    resolver = get_resolver()
+    results = resolver.search(q, limit=10)
+    return jsonify(results)
 
 
 @app.route('/api/masters', methods=['GET'])

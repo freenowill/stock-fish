@@ -217,6 +217,20 @@
       "guba_avg": 0.1,
       "news_count": 3,
       "guba_count": 5
+    },
+    {
+      "date": "2026-06-24",
+      "news_avg": -0.1667,
+      "guba_avg": 0.1,
+      "news_count": 3,
+      "guba_count": 5
+    },
+    {
+      "date": "2026-06-25",
+      "news_avg": 0,
+      "guba_avg": 0,
+      "news_count": 5,
+      "guba_count": 0
     }
   ]
 }
