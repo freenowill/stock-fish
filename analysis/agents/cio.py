@@ -314,48 +314,179 @@ class CIOAgent(BaseAgent):
                            reports: List[EmployeeReport],
                            state: dict) -> CIODecision:
         """
-        当 LLM 不可用时，基于员工报告的规则降级决策。
-        取 majority outlook + 风险加权。
+        当 LLM 不可用时，增强型规则降级决策。
+        置信度加权投票 + 评分引擎融合 + 基本情景分析 + 监察员风险纳入。
         """
-        # 统计各员工的方向
         valid_reports = [r for r in reports if not r.error]
         if not valid_reports:
             outlook = "中性"
             confidence = "低"
             summary = "所有员工报告生成失败，无法做出决策。"
+            ec_info = "无有效员工报告"
+            overseer_risks = []
         else:
-            bullish = sum(1 for r in valid_reports if r.outlook in ('看多', '偏多'))
-            bearish = sum(1 for r in valid_reports if r.outlook in ('看空', '偏空'))
-            neutral = len(valid_reports) - bullish - bearish
+            # ── 置信度加权投票 ──
+            confidence_map = {'高': 1.0, '中': 0.6, '低': 0.3}
+            weighted_bullish = 0.0
+            weighted_bearish = 0.0
+            weighted_neutral = 0.0
+            for r in valid_reports:
+                w = confidence_map.get(r.confidence, 0.5)
+                if r.outlook in ('看多', '偏多'):
+                    weighted_bullish += w
+                elif r.outlook in ('看空', '偏空'):
+                    weighted_bearish += w
+                else:
+                    weighted_neutral += w
 
-            if bullish > bearish and bullish > neutral:
+            total_w = weighted_bullish + weighted_bearish + weighted_neutral
+            if total_w > 0:
+                bull_pct = weighted_bullish / total_w
+                bear_pct = weighted_bearish / total_w
+            else:
+                bull_pct = bear_pct = 0
+
+            if bull_pct >= 0.5:
                 outlook = "看多"
-            elif bearish > bullish and bearish > neutral:
+            elif bear_pct >= 0.5:
                 outlook = "看空"
+            elif bull_pct > bear_pct:
+                outlook = "偏多"
+            elif bear_pct > bull_pct:
+                outlook = "偏空"
             else:
                 outlook = "中性"
 
-            confidence = "高" if abs(bullish - bearish) >= 3 else "中" if abs(bullish - bearish) >= 1 else "低"
-            summary = f"(规则降级) 基于{len(valid_reports)}份有效报告: 看多{bullish}/看空{bearish}/中性{neutral} → {outlook}"
+            diff = abs(bull_pct - bear_pct)
+            confidence = "高" if diff >= 0.4 else "中" if diff >= 0.15 else "低"
 
+            # ── 融合评分引擎信号 ──
+            sb = state.get('score_breakdown') or {}
+            score_val = sb.get('final') if isinstance(sb, dict) else None
+            score_outlook = sb.get('label') if isinstance(sb, dict) else None
+
+            score_note = ""
+            if score_val is not None and score_outlook:
+                # 如果评分与投票方向矛盾，保守处理
+                score_bullish = score_val >= 0.5
+                score_bearish = score_val <= -0.5
+                vote_bullish = outlook in ('看多', '偏多')
+                vote_bearish = outlook in ('看空', '偏空')
+                if (vote_bullish and score_bearish) or (vote_bearish and score_bullish):
+                    score_note = f"（注意：投票方向与评分{score_outlook}({score_val})矛盾，最终取保守方向）"
+                    outlook = "中性"
+
+            # ── 提取监察员风险点 ──
+            overseer_risks = []
+            for r in valid_reports:
+                if r.employee_id == 'overseer' and r.risks:
+                    overseer_risks = r.risks
+
+            q = state.get('quote', {}) or {}
+            price = q.get('price', 0) if isinstance(q, dict) else 0
+
+            # ── 基本情景分析基于波动率 ──
+            var_95 = state.get('var_95', 3.0) or 3.0
+            max_dd = state.get('max_drawdown', 20.0) or 20.0
+            vol = state.get('annualized_volatility', 20.0) or 20.0
+            change_pct = round(price * var_95 / 100, 2) if price > 0 else 0
+
+            summary = f"(规则降级·增强) 置信度加权投票→{outlook}，评分信号{score_outlook or 'N/A'}({score_val}) {score_note}".strip()
+
+            # 构建详细的证据链 + 监察员纳入
+            ec_info = []
+            for r in valid_reports:
+                entry = f"{r.role}: {r.outlook} (置信度={r.confidence})"
+                if r.key_points:
+                    entry += f" — {'; '.join(r.key_points[:2])}"
+                ec_info.append(entry)
+            # 确保监察员在证据链中（重要）
+            has_overseer = any(r.employee_id == 'overseer' for r in valid_reports)
+            if not has_overseer:
+                ec_info.append("独立监察员: 报告缺失，未参与规则决策")
+
+            # 构建详细 rationale
+            rationale_parts = [
+                f"(LLM不可用·规则降级·增强模式) 基于{len(valid_reports)}份员工报告置信度加权投票: "
+                f"看多权重{bull_pct:.0%} / 看空权重{bear_pct:.0%} / 中性权重{weighted_neutral/total_w:.0%}",
+                f"→ {outlook}（置信度{confidence}）",
+                f"评分引擎: {score_outlook or 'N/A'}（{score_val}）",
+            ]
+            if overseer_risks:
+                rationale_parts.append(f"监察员风险提示: {'; '.join(overseer_risks[:3])}（已纳入综合判断）")
+            if score_note:
+                rationale_parts.append(score_note)
+            rationale_parts.append("建议启用LLM获取完整深度推理。")
+            rationale = " | ".join(rationale_parts)
+
+            # 生成基本操作建议
+            if outlook == "看多":
+                action = "买入"
+                pos_pct = 10
+                sl = round(price * (1 - var_95 / 100 * 1.5), 2) if price > 0 else 0
+                tp = round(price * (1 + var_95 / 100 * 2), 2) if price > 0 else 0
+            elif outlook == "偏多":
+                action = "加仓"
+                pos_pct = 5
+                sl = round(price * (1 - var_95 / 100 * 1.5), 2) if price > 0 else 0
+                tp = round(price * (1 + var_95 / 100 * 1.5), 2) if price > 0 else 0
+            elif outlook in ("看空", "偏空"):
+                action = "卖出"
+                pos_pct = 0
+                sl = 0
+                tp = 0
+            else:
+                action = "观望"
+                pos_pct = 0
+                sl = 0
+                tp = 0
+
+            # 有监察员极端风险时预警
+            risk_monitoring = []
+            if overseer_risks:
+                for r in overseer_risks[:3]:
+                    risk_monitoring.append({"trigger": f"监察员提示: {r}", "action": "重新评估持仓"})
+
+            return CIODecision(
+                master_name=master_info['name'],
+                master_key=master_info['key'],
+                decision_summary=summary,
+                rationale=rationale,
+                evidence_chain=ec_info,
+                short_term={'direction': outlook, 'change_pct': change_pct, 'confidence': confidence,
+                           'reason': f'规则降级模式: 置信度加权投票{outlook}'},
+                mid_term={'direction': outlook, 'change_pct': change_pct * 2 if price > 0 else 0,
+                         'confidence': confidence if confidence != '高' else '中',
+                         'reason': '规则降级模式: 基于加权投票趋势外推'},
+                long_term={'direction': '震荡', 'change_pct': 0, 'confidence': '低',
+                          'reason': 'LLM不可用，无法做长期预测'},
+                order={'action': action, 'position_size_pct': pos_pct,
+                       'entry_conditions': f'参考价{price}元',
+                       'stop_loss': {'level': sl, 'type': '固定止损', 'trigger': f'跌破{sl}'},
+                       'take_profit': {'level_1': tp, 'level_2': 0, 'type': '一次性止盈'}},
+                risk_monitoring=risk_monitoring if risk_monitoring else [
+                    {'trigger': '价格波动超过VaR预测', 'action': '关注是否触发止损'}
+                ],
+                decision_quality={'confidence': '低', 'key_uncertainties': ['LLM不可用，决策精度下降'],
+                                 'next_review': '1个交易日后'},
+                veto_response='规则降级模式下自动跳过风险否决评估',
+            )
+
+        # 无有效报告时的兜底
         q = state.get('quote', {}) or {}
         price = q.get('price', 0) if isinstance(q, dict) else 0
-
         return CIODecision(
             master_name=master_info['name'],
             master_key=master_info['key'],
             decision_summary=summary,
-            rationale=f"(LLM 不可用，规则降级模式) 基于 {len(valid_reports)} 份有效员工报告的多数投票结果: 看多 {bullish} 人/看空 {bearish} 人/中性 {neutral} 人，主导方向为 {outlook}。此模式下未进行深度推理，建议启用 LLM 获得完整决策分析。",
-            evidence_chain=[f"{r.role}: {r.outlook} (confidence={r.confidence})" for r in valid_reports],
-            short_term={'direction': outlook, 'change_pct': 0, 'confidence': confidence,
-                       'reason': 'LLM 不可用，规则降级'},
-            mid_term={'direction': outlook, 'change_pct': 0, 'confidence': '低',
-                     'reason': 'LLM 不可用，规则降级'},
-            long_term={'direction': '震荡', 'change_pct': 0, 'confidence': '低',
-                      'reason': 'LLM 不可用，无法做长期预测'},
+            rationale=f"LLM不可用且所有员工报告均失败，无法做出有效决策。",
+            evidence_chain=[ec_info] if isinstance(ec_info, str) else ec_info if isinstance(ec_info, list) else [],
+            short_term={'direction': '震荡', 'change_pct': 0, 'confidence': '低', 'reason': '所有报告失败'},
+            mid_term={'direction': '震荡', 'change_pct': 0, 'confidence': '低', 'reason': '所有报告失败'},
+            long_term={'direction': '震荡', 'change_pct': 0, 'confidence': '低', 'reason': '所有报告失败'},
             order={'action': '观望', 'position_size_pct': 0, 'entry_conditions': 'N/A',
                    'stop_loss': {'level': 0, 'type': 'N/A'},
                    'take_profit': {'level_1': 0, 'level_2': 0, 'type': 'N/A'}},
-            decision_quality={'confidence': '低', 'key_uncertainties': ['LLM 不可用，决策精度下降'],
+            decision_quality={'confidence': '低', 'key_uncertainties': ['LLM不可用，所有员工报告失败'],
                              'next_review': '1个交易日后'},
         )
