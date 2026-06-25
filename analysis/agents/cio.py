@@ -249,7 +249,7 @@ class CIOAgent(BaseAgent):
         EXPECTED_EMPLOYEES = 8  # 宏观/行业/估值/基本面/技术/舆情/风险/监察员
         EMPLOYEE_NAMES = [
             "宏观分析师", "行业政策分析师", "估值分析师", "基本面分析师",
-            "技术分析师", "舆情分析师", "风险经理", "监察员",
+            "技术分析师", "舆情分析师", "风险经理", "独立监察员",
         ]
         ec_len_original = len(evidence_chain)
         if ec_len_original < EXPECTED_EMPLOYEES:
