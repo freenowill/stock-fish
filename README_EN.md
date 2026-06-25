@@ -18,6 +18,9 @@
 
 ## 📰 News
 
+- 2026.06.25: Added [🔍 System Status] check and Chinese fuzzy name matching to the web interface
+- 2026.06.24: Completed automated master reasoning chain optimization skill — supports random spot-check + cross-validation with improvement reports
+- 2026.06.17: Completed Feishu Bot integration — mobile single-stock/batch analysis + master decision
 - 2026.06.14: Integrated Qlib one-click data download, base model training, fine-tuning, and backtesting
 - 2026.06.07: Completed master decision batch stock analysis
 - 2026.05.31: Completed stock analysis and MiroFish integration
@@ -53,10 +56,11 @@
 - [x] 7-master factor scoring (top 20 → 6-dimension scoring → top 5)
 - [x] Yearly/weekly/monthly/daily rebalance options
 
-**💬 Feishu Integration**
-- [ ] `/analyze` `/batch` `/backtest` `/watch` commands
-- [ ] Message cards (normal / master / batch / backtest)
-- [ ] Watchlist + market open/close brief push
+**💬 Feishu Integration** (completed)
+- [x] Feishu Bot WebSocket persistent connection, no public IP needed
+- [x] Send stock code directly to trigger analysis (`600519` single / `600519/000858` batch)
+- [x] Master mode (`/master buffett` set default / `600519 --master soros` one-time)
+- [x] Message cards (normal / master / batch) + real-time progress feedback
 
 ---
 
@@ -157,6 +161,76 @@ docker compose logs -f stockfish    # View logs
 docker compose logs -f mirofish     # View MiroFish logs
 docker compose down                 # Stop services
 docker compose pull                 # Update to latest images
+```
+
+---
+
+## 💬 Feishu Bot Integration
+
+Send stock codes in Feishu — the Bot automatically analyzes and replies with rich cards. Supports single-stock/batch analysis + 7 investment master decisions.
+
+### Prerequisites
+
+1. Create an enterprise self-built app on the [Feishu Open Platform](https://open.feishu.cn)
+2. Add "Bot" capability
+3. Enable permissions: `im:message` / `im:message:send_as_bot` / `im:message.p2p_msg:readonly` / `im:message.group_at_msg:readonly`
+4. In Event Subscriptions, select "Use WebSocket (long connection)", subscribe to `im.message.receive_v1`
+5. Create a version and publish
+
+### Configure `.env`
+
+```bash
+LARK_APP_ID=cli_xxxxxxxx
+LARK_APP_SECRET=xxxxxxxx
+LARK_BOT_NAME=stock-fish
+STOCKFISH_API_URL=http://127.0.0.1:8000   # Change to http://stockfish:8000 inside Docker
+```
+
+### Start Bot
+
+```bash
+# All-in-one local (Flask + Bot)
+bash run.sh --local --bot
+
+# Start Bot separately (Flask already running)
+python integration/lark_bot.py
+
+# Docker deployment + Bot
+bash run.sh --bot
+```
+
+### Usage
+
+| Action | Example | Effect |
+|--------|---------|--------|
+| Single-stock analysis | `600519` | Returns analysis card (signal/quotes/valuation/prediction/action) |
+| Batch analysis | `600519/000858/300750` | Returns batch card (sorted table + picks + common themes) |
+| Set master | `/master buffett` | Subsequent analyses use Buffett's perspective by default |
+| One-time master | `600519 --master graham` | Uses Graham's perspective for this analysis only |
+| List masters | `/master list` | Lists 7 available investment masters |
+| Disable master | `/master off` | Revert to normal analysis |
+| Qlib data update | `/update_data` | Download latest Qlib market data |
+| Full-market master analysis | `/analyze_index [market]` | Master analysis of entire index constituents (CSI300/500/1000), returns cards one by one |
+| Advanced index analysis | `/analyze_index csi500 --include-star` | Specify market + keep STAR board stocks |
+| Qlib inference | `/qlib_inference [market]` | Qlib model inference stock selection (not master analysis) |
+| Help | `/help` | Show usage help card |
+
+### Card Types
+
+| Card | Trigger | Content |
+|------|---------|---------|
+| Normal analysis | Send stock code directly | Signal label + quotes/valuation + multi-cycle prediction + action |
+| Master analysis | Send code with master enabled | Additional: CIO decision summary + 3-scenario analysis + order instructions |
+| Batch analysis | Multiple stocks separated by `/` | Sorted table + best picks + common themes |
+
+### Docker Deployment
+
+```bash
+# Start Bot container separately
+docker compose --profile bot up -d stockfish-bot
+
+# View logs
+docker compose logs -f stockfish-bot
 ```
 
 ---
@@ -465,6 +539,12 @@ StockFish/
 │   │   └── stage2_master_strategy.py  # Master analysis backtest strategy
 │   ├── DATA/analysis_outputs/ # Model output directory
 │   └── models/                # Pre-trained models (optional)
+│
+├── integration/               # Feishu Bot
+│   ├── lark_bot.py            # WebSocket persistent connection + message routing
+│   ├── lark_card.py           # Card templates (normal/master/batch)
+│   ├── lark_client.py         # Async HTTP wrapper for StockFish API
+│   └── lark_prefs.py          # User preference management
 │
 ├── simulation_bridge/         # MiroFish bridge layer
 │   ├── orchestrator.py        # Simulation orchestrator
