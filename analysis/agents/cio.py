@@ -93,6 +93,14 @@ class CIOAgent(BaseAgent):
 
         lines.append(f"- 估值等级: {state.get('valuation_level', 'N/A')}")
         lines.append(f"- 系统建议买入价: {state.get('suggested_buy_price', 'N/A')}")
+        # 评分引擎信号
+        sb = state.get('score_breakdown') or {}
+        if isinstance(sb, dict):
+            score_val = sb.get('final', 'N/A')
+            score_label = sb.get('label', '')
+            lines.append(f"- 系统综合评分: {score_val} ({score_label})")
+            if sb.get('technical') is not None:
+                lines.append(f"  技术{sb.get('technical', '')} / 基本面{sb.get('fundamental', '')} / 舆情{sb.get('sentiment', '')}")
         lines.append("")
 
         # 用户持仓/资金信息
@@ -239,11 +247,32 @@ class CIOAgent(BaseAgent):
         # ── 校验 1: evidence_chain 必须包含全部 8 名员工 ──
         evidence_chain = result.get('evidence_chain', [])
         EXPECTED_EMPLOYEES = 8  # 宏观/行业/估值/基本面/技术/舆情/风险/监察员
-        if len(evidence_chain) < EXPECTED_EMPLOYEES:
+        EMPLOYEE_NAMES = [
+            "宏观分析师", "行业政策分析师", "估值分析师", "基本面分析师",
+            "技术分析师", "舆情分析师", "风险经理", "监察员",
+        ]
+        ec_len_original = len(evidence_chain)
+        if ec_len_original < EXPECTED_EMPLOYEES:
             logger.warning(
                 f"CIO evidence_chain 不完整: 期望 {EXPECTED_EMPLOYEES} 条, "
-                f"实际 {len(evidence_chain)} 条 — 已截断/缺失 {EXPECTED_EMPLOYEES - len(evidence_chain)} 位员工"
+                f"实际 {ec_len_original} 条 — 缺失 {EXPECTED_EMPLOYEES - ec_len_original} 位员工, "
+                f"自动补全中..."
             )
+            # 检测已覆盖的员工角色
+            covered = set()
+            for entry in evidence_chain:
+                for emp_name in EMPLOYEE_NAMES:
+                    if emp_name in entry:
+                        covered.add(emp_name)
+                        break
+            # 补全缺失的员工
+            for emp in EMPLOYEE_NAMES:
+                if emp not in covered:
+                    evidence_chain.append(
+                        f"{emp}: [系统自动补注 — CIO 原始输出未引用此员工，"
+                        f"请参考该员工报告自行补充判断]"
+                    )
+            logger.warning(f"已自动补全 {len(evidence_chain) - ec_len_original} 条缺失的员工引用")
         elif len(evidence_chain) > EXPECTED_EMPLOYEES:
             logger.warning(
                 f"CIO evidence_chain 超长: 期望 {EXPECTED_EMPLOYEES} 条, "
