@@ -582,6 +582,8 @@ def _build_fold_dates(
     test_weeks: int = 52,
     train_years: int = 7,
     valid_years: int = 2,
+    valid_months: int = 0,
+    valid_weeks: int = 0,
     train_base_start: str = "2008-01-01",
     history_years: int | None = None,
     train_coverage_intervals: list[tuple[pd.Timestamp, pd.Timestamp]] | None = None,
@@ -599,19 +601,35 @@ def _build_fold_dates(
 
       Weekly mode (step_years = 0, step_weeks > 0):
         Anchors are the last trading day of every ISO week within
-        [start_date, end_date].  Iteration is forward.  test_end is the
-        last trading day of the following step_weeks week(s).
+        [start_date, end_date].  Iteration is backward from the end
+        to guarantee the latest period is covered first.  test_end is the
+        last trading day of the following test_weeks week(s).
+        stride = step_weeks (independent of test_weeks, controls fold count).
 
     For any anchor t the non-overlapping windows are:
-            train = [t - (train_years + valid_years),  t - valid_years)  ← train_years long
-            dev   = [t - valid_years,                  t)                ← valid_years long
-            test  = [t,                                t + test_years)
+            train = [t - train_years,                         t - valid_offset)  ← train_years long
+            dev   = [t - valid_offset,                        t)                 ← valid_offset wide
+            test  = [t,                                        t + test_window)
+
+    Where test_window = test_years (annual mode) or test_weeks (weekly mode).
+    valid_offset is determined by valid_years, valid_months, or valid_weeks (only one at a time).
     """
     use_annual = step_years > 0
     if not use_annual and step_weeks <= 0:
         raise ValueError("Either step_years or step_weeks must be positive")
     if test_years <= 0 or test_weeks <= 0:
         raise ValueError("test_years and test_weeks must be positive")
+
+    # Determine valid DateOffset from unit-specific parameters (三选一)
+    non_zero_valid = sum([valid_years > 0, valid_months > 0, valid_weeks > 0])
+    if non_zero_valid > 1:
+        raise ValueError("Only one of valid_years, valid_months, valid_weeks may be set at a time")
+    if valid_weeks > 0:
+        valid_offset = pd.DateOffset(weeks=valid_weeks)
+    elif valid_months > 0:
+        valid_offset = pd.DateOffset(months=valid_months)
+    else:
+        valid_offset = pd.DateOffset(years=valid_years) if valid_years > 0 else pd.DateOffset(years=0)
 
     _, end_ts = _align_right(calendar, pd.Timestamp(end_date))
     base_start_ts = pd.Timestamp(train_base_start)
@@ -642,13 +660,13 @@ def _build_fold_dates(
                 break
 
             # Guard: enough history for a full train window
-            train_start_target = signal_date - pd.DateOffset(years=train_years + valid_years)
+            train_start_target = signal_date - pd.DateOffset(years=train_years) - valid_offset
             if train_start_target < base_start_ts:
                 break
 
             # dev: [signal_date - valid_years, last trading day strictly before signal_date]
             valid_end_idx, valid_end = _align_right(calendar, signal_date - pd.Timedelta(days=1))
-            valid_start_target = signal_date - pd.DateOffset(years=valid_years)
+            valid_start_target = signal_date - valid_offset
             valid_start_idx = int(calendar.searchsorted(valid_start_target, side="left"))
             if valid_start_idx > valid_end_idx:
                 t_end -= pd.DateOffset(years=step_years)
@@ -701,21 +719,24 @@ def _build_fold_dates(
             item["oos_end"] = _fmt(oos_end)
 
     else:
-        # ── Weekly mode: walk FORWARD through weekly anchors ────────────────
+        # ── Weekly mode: walk BACKWARD from the end ─────────────────────────
         _, start_ts = _align_left(calendar, pd.Timestamp(start_date))
         anchors = _weekly_last_trade_dates(calendar)
         anchors = anchors[(anchors >= start_ts) & (anchors <= end_ts)]
-        if len(anchors) <= step_weeks:
+        # step_weeks = stride; test_weeks = 测试窗口宽度 (二者已解耦)
+        wf_win = test_weeks  # 只需要 test_weeks 的空间，stride 独立
+        if len(anchors) <= wf_win:
             return []
 
-        for anchor_idx in range(0, len(anchors) - step_weeks, step_weeks):
+        last_start = len(anchors) - wf_win - 1  # -1 因为 0-index
+        for anchor_idx in range(last_start, -1, -step_weeks):
             signal_date = pd.Timestamp(anchors[anchor_idx])
-            # test_end = last trade day of the following step_weeks week(s)
-            test_end = pd.Timestamp(anchors[anchor_idx + step_weeks])
+            # test_end = last trade day after test_weeks week(s)
+            test_end = pd.Timestamp(anchors[anchor_idx + test_weeks])
 
             # dev window
             valid_end_idx, valid_end = _align_right(calendar, signal_date - pd.Timedelta(days=1))
-            valid_start_target = signal_date - pd.DateOffset(years=valid_years)
+            valid_start_target = signal_date - valid_offset
             valid_start_idx = int(calendar.searchsorted(valid_start_target, side="left"))
             if valid_start_idx > valid_end_idx:
                 continue
@@ -727,7 +748,7 @@ def _build_fold_dates(
                 continue
             train_end = pd.Timestamp(calendar[train_end_idx])
 
-            train_start_target = signal_date - pd.DateOffset(years=train_years + valid_years)
+            train_start_target = signal_date - pd.DateOffset(years=train_years) - valid_offset
             if train_start_target < base_start_ts:
                 continue
             train_start_idx = int(calendar.searchsorted(train_start_target, side="left"))
@@ -751,6 +772,9 @@ def _build_fold_dates(
                     "oos_end": _fmt(test_end),
                 }
             )
+
+        # Reverse weekly mode folds to chronological order (backward → forward)
+        items.reverse()
 
     return items
 
@@ -3825,7 +3849,12 @@ def main() -> None:
     ap.add_argument("--test-weeks", type=int, default=52,
                     help="Test window width in weeks (weekly mode only; annual mode uses --test-years)")
     ap.add_argument("--train-years", type=int, default=7)  # 7y train window
-    ap.add_argument("--valid-years", type=int, default=2)
+    ap.add_argument("--valid-years", type=int, default=2,
+                    help="Validation window in years (default, used when --valid-months and --valid-weeks are both 0)")
+    ap.add_argument("--valid-months", type=int, default=0,
+                    help="Validation window in months (alternative to --valid-years, 0=disabled)")
+    ap.add_argument("--valid-weeks", type=int, default=0,
+                    help="Validation window in weeks (alternative to --valid-years, 0=disabled)")
     ap.add_argument("--history-years", type=int, default=10,
                     help="Annual mode only: roll backward from the latest anchor for at most this many years")
     ap.add_argument("--train-base-start", default="2008-01-01")
@@ -3868,8 +3897,10 @@ def main() -> None:
 
     if args.step_years <= 0 and args.step_weeks <= 0:
         raise ValueError("Either --step-years or --step-weeks must be positive")
-    if args.train_years <= 0 or args.valid_years <= 0:
-        raise ValueError("train-years and valid-years must be positive")
+    if args.train_years <= 0:
+        raise ValueError("train-years must be positive")
+    if args.valid_years <= 0 and args.valid_months <= 0 and args.valid_weeks <= 0:
+        raise ValueError("One of valid-years, valid-months, or valid-weeks must be positive")
     if args.hold_num <= 0:
         raise ValueError("hold-num must be positive")
     if args.half_life <= 0:
@@ -3924,6 +3955,8 @@ def main() -> None:
         test_weeks=args.test_weeks,
         train_years=args.train_years,
         valid_years=args.valid_years,
+        valid_months=args.valid_months,
+        valid_weeks=args.valid_weeks,
         train_base_start=args.train_base_start,
         history_years=args.history_years,
         train_coverage_intervals=train_coverage_intervals,
@@ -3931,10 +3964,16 @@ def main() -> None:
     folds = raw_folds
 
     _mode = f"{args.step_years}y" if args.step_years > 0 else f"{args.step_weeks}w"
-    _test_win = f"{args.test_years} year(s)" if args.step_years > 0 else f"{args.step_weeks} week(s)"
+    _test_win = f"{args.test_years} year(s)" if args.step_years > 0 else f"{args.test_weeks} week(s)"
+    if args.valid_weeks > 0:
+        _dev_win = f"{args.valid_weeks}w"
+    elif args.valid_months > 0:
+        _dev_win = f"{args.valid_months}m"
+    else:
+        _dev_win = f"{args.valid_years}y"
     print("═══════════════════════════════════════════════")
     print("Walk-forward stage2 plan")
-    print(f"  window  : train={args.train_years}y  dev={args.valid_years}y  test={_test_win}")
+    print(f"  window  : train={args.train_years}y  dev={_dev_win}  test={_test_win}")
     print(f"  stride  : {_mode}  ({'annual' if args.step_years > 0 else 'weekly'} mode)")
     if args.step_years > 0:
         print(f"  history : {args.history_years} year(s)")

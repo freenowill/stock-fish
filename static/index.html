@@ -330,7 +330,7 @@
       <input type="checkbox" id="qlibTrainCheck" onchange="toggleQlibTrain()"
              style="width:16px;height:16px;cursor:pointer;" />
       <span style="font-size:13px;color:#f0a500;">🎯 启用qlib训练及回测</span>
-      <span style="font-size:11px;color:#6b8db5;">训练新模型或微调已有模型</span>
+      <span style="font-size:11px;color:#6b8db5;">训练新模型（LightGBM walk-forward）</span>
     </label>
     <div id="qlibTrainPanel" style="display:none;margin-top:8px;padding:10px 12px;background:#0f1a2b;border:1px solid #1e3a5f;border-radius:8px;">
       <!-- 基础模型训练 -->
@@ -345,23 +345,24 @@
                 style="background:#1a2d42;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:6px;padding:4px 8px;font-size:12px;min-width:240px;">
           <option value="">选择训练目标...</option>
         </select>
-        <button id="qlibTrainBtn" onclick="startQlibTrain()" style="padding:5px 14px;background:linear-gradient(135deg,#e17055,#d63031);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">开始训练</button>
-        <span id="qlibTrainStatus" style="font-size:11px;color:#6b8db5;"></span>
-      </div>
-
-      <!-- 近6年数据微调 -->
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-top:10px;">
-        <input type="checkbox" id="finetuneCheck" onchange="toggleFinetune()"
-               style="width:16px;height:16px;cursor:pointer;" />
-        <span style="font-size:12px;color:#e0e0e0;">近6年数据微调</span>
-        <span style="font-size:11px;color:#6b8db5;">选取模型 + 近5年/1年数据微调一个fold（约5-15分钟）</span>
-      </label>
-      <div id="finetuneControls" style="display:none;margin-top:8px;flex-wrap:wrap;align-items:center;gap:10px;">
-        <select id="finetuneModelSelect" style="background:#1a2d42;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:6px;padding:4px 8px;font-size:12px;min-width:280px;">
-          <option value="">选择基础模型...</option>
-        </select>
-        <button id="qlibFinetuneBtn" onclick="startQlibFinetune()" style="padding:5px 14px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">开始微调</button>
-        <span id="qlibFinetuneStatus" style="font-size:11px;color:#6b8db5;"></span>
+        <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="trainSettingsToggle" onclick="toggleTrainSettings()"
+                  style="cursor:pointer;font-size:12px;color:#6b8db5;user-select:none;">
+              ▶ 设置
+            </span>
+            <button id="qlibTrainBtn" onclick="startQlibTrain()" style="padding:5px 14px;background:linear-gradient(135deg,#e17055,#d63031);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">开始训练</button>
+            <span id="qlibTrainStatus" style="font-size:11px;color:#6b8db5;"></span>
+          </div>
+          <div id="trainSettingsPanel" style="display:none;margin-top:2px;padding:8px 10px;background:#0d1a2b;border:1px solid #1e3a5f;border-radius:6px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+              <span style="font-size:12px;color:#e0e0e0;white-space:nowrap;">train/dev/test:</span>
+              <input type="text" id="trainDevTestInput" value="5year/1year/2year"
+                     style="background:#1a2d42;color:#e0e0e0;border:1px solid #1e3a5f;border-radius:4px;padding:4px 8px;font-size:12px;width:220px;" />
+              <span style="font-size:10px;color:#6b8db5;">格式: {数}{单位}/{数}{单位}/{数}{单位}，如 5year/1year/2year 或 5year/1month/2month</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -693,15 +694,12 @@ function toggleBatchMode() {
     document.getElementById('qlibDataStatus').textContent = '';
     document.getElementById('qlibDataCheck').checked = false;
     document.getElementById('qlibDataControls').style.display = 'none';
-    // 重置训练和微调
+    // 重置训练
     document.getElementById('qlibTrainCheck').checked = false;
     document.getElementById('qlibTrainPanel').style.display = 'none';
     document.getElementById('baseTrainCheck').checked = false;
     document.getElementById('baseTrainControls').style.display = 'none';
-    document.getElementById('finetuneCheck').checked = false;
-    document.getElementById('finetuneControls').style.display = 'none';
     document.getElementById('qlibTrainStatus').textContent = '';
-    document.getElementById('qlibFinetuneStatus').textContent = '';
   }
 }
 
@@ -921,8 +919,6 @@ function toggleQlibTrain() {
   if (!checked) {
     document.getElementById('baseTrainCheck').checked = false;
     document.getElementById('baseTrainControls').style.display = 'none';
-    document.getElementById('finetuneCheck').checked = false;
-    document.getElementById('finetuneControls').style.display = 'none';
   }
 }
 
@@ -955,6 +951,14 @@ function toggleBaseTrain() {
   if (checked) loadTrainTargets();
 }
 
+function toggleTrainSettings() {
+  const panel = document.getElementById('trainSettingsPanel');
+  const toggle = document.getElementById('trainSettingsToggle');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  toggle.textContent = isOpen ? '▶ 设置' : '▼ 设置';
+}
+
 async function startQlibTrain() {
   const btn = document.getElementById('qlibTrainBtn');
   const statusEl = document.getElementById('qlibTrainStatus');
@@ -964,6 +968,20 @@ async function startQlibTrain() {
   // 从 target 解析 market（如 csi300-alpha158 → csi300）
   let market = 'csi300';
   if (target.toLowerCase().includes('csi1000')) market = 'csi1000';
+
+  // 解析 train/dev/test 设置 (格式: {n}{unit}/{n}{unit}/{n}{unit})
+  const tdtVal = document.getElementById('trainDevTestInput').value.trim();
+  const tdtMatch = tdtVal.match(/^(\d+)(year|month|week)\/(\d+)(year|month|week)\/(\d+)(year|month|week)$/i);
+  if (!tdtMatch) {
+    alert('train/dev/test 格式错误，请使用如 5year/1year/2year 或 5year/1month/2month 的格式');
+    return;
+  }
+  const trainYears = parseInt(tdtMatch[1]);
+  const validVal   = parseInt(tdtMatch[3]);
+  const validUnit  = tdtMatch[4].toLowerCase();
+  const testVal    = parseInt(tdtMatch[5]);
+  const testUnit   = tdtMatch[6].toLowerCase();
+
   btn.disabled = true;
   statusEl.textContent = '启动训练...';
   simLogDiv.style.display = 'block';
@@ -974,7 +992,16 @@ async function startQlibTrain() {
     const resp = await fetch(`${API}/api/qlib/train`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target, market, model_mode: 'robust', hold_num: 20 })
+      body: JSON.stringify({
+        target, market,
+        model_mode: 'robust',
+        hold_num: 20,
+        train_years: trainYears,
+        valid_val: validVal,
+        valid_unit: validUnit,
+        test_val: testVal,
+        test_unit: testUnit
+      })
     });
     if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || '请求失败'); }
     const { task_id } = await resp.json();
@@ -1025,99 +1052,6 @@ async function startQlibTrain() {
 }
 
 // ---- Qlib 微调 ----
-function toggleFinetune() {
-  const checked = document.getElementById('finetuneCheck').checked;
-  const controls = document.getElementById('finetuneControls');
-  controls.style.display = checked ? 'flex' : 'none';
-  if (checked) loadFinetuneModels();
-}
-
-async function loadFinetuneModels() {
-  const sel = document.getElementById('finetuneModelSelect');
-  if (sel.options.length > 1) return;
-  try {
-    const resp = await fetch(`${API}/api/qlib/models`);
-    const models = await resp.json();
-    // 微调需要 analysis_outputs 下的完整训练产物（walk_forward/、params.pkl 等），排除已微调的模型
-    const finetuneModels = models.filter(m => m.in_analysis_outputs && m.has_scores && !m.is_finetune);
-    finetuneModels.forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m.name;
-      opt.textContent = `${m.name} (${m.market.toUpperCase()})${m.is_finetune ? ' 🔧' : ''}`;
-      sel.appendChild(opt);
-    });
-    if (finetuneModels.length === 0) {
-      sel.innerHTML = '<option value="">无可用模型（需先完成基础训练）</option>';
-    }
-  } catch (e) {
-    sel.innerHTML = '<option value="">加载失败</option>';
-    console.error('加载模型列表失败:', e);
-  }
-}
-
-async function startQlibFinetune() {
-  const model = document.getElementById('finetuneModelSelect').value;
-  if (!model) { alert('请选择基础模型'); return; }
-
-  const btn = document.getElementById('qlibFinetuneBtn');
-  const statusEl = document.getElementById('qlibFinetuneStatus');
-  const simLogDiv = document.getElementById('simLog');
-  btn.disabled = true;
-  statusEl.textContent = '启动微调...';
-  simLogDiv.style.display = 'block';
-  simLogDiv.textContent = '';
-  statusEl.style.color = '#6b8db5';
-
-  try {
-    const resp = await fetch(`${API}/api/qlib/finetune`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ base_model: model })
-    });
-    if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || '请求失败'); }
-    const { task_id } = await resp.json();
-
-    const startTime = Date.now();
-    _connectSSE(`${API}/api/qlib/finetune/${task_id}/stream`, function(data, es) {
-      const elapsed = Math.round((Date.now() - startTime) / 1000);
-      if (data.message) {
-        simLogDiv.textContent += `[${elapsed}s] ${data.message}\n`;
-        simLogDiv.scrollTop = simLogDiv.scrollHeight;
-      }
-      statusEl.textContent = data.message || '';
-
-      if (data.status === 'completed') {
-        let msg = '✅ 微调完成';
-        if (data.model_name) msg += `: ${data.model_name}`;
-        if (data.backtest_metrics) {
-          const m = data.backtest_metrics;
-          if (m.sharpe_ratio != null) msg += ` | 夏普: ${m.sharpe_ratio}`;
-        }
-        statusEl.textContent = msg;
-        statusEl.style.color = '#a29bfe';
-        btn.disabled = false;
-        es.close();
-      }
-      if (data.status === 'failed') {
-        statusEl.textContent = `❌ ${data.error || '微调失败'}`;
-        statusEl.style.color = '#d63031';
-        btn.disabled = false;
-        es.close();
-      }
-    }, function(state, detail, delay) {
-      if (state === 'reconnecting') {
-        statusEl.textContent = `⚠ 连接断开，${Math.round(delay/1000)}s 后重连 (${detail})...`;
-      } else if (state === 'failed') {
-        statusEl.textContent = `❌ SSE 连接失败 (${detail})`;
-        statusEl.style.color = '#d63031';
-        btn.disabled = false;
-      }
-    });
-  } catch (e) {
-    statusEl.textContent = `❌ ${e.message}`;
-    btn.disabled = false;
-  }
-}
 
 async function analyze() {
   const symbol = document.getElementById('symbolInput').value.trim();

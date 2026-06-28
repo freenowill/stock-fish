@@ -71,6 +71,18 @@ def _get_last_trade_date() -> str:
     return datetime.now().strftime("%Y-%m-%d")
 
 
+def _get_total_years() -> float:
+    """从 qlib 日历获取总数据跨度（年），用于将 fold 数转换为 stride."""
+    calendar_file = Path.home() / ".qlib" / "qlib_data" / "cn_data" / "calendars" / "day.txt"
+    if calendar_file.exists():
+        dates = calendar_file.read_text().strip().splitlines()
+        if len(dates) >= 2:
+            first = datetime.strptime(dates[0].strip(), "%Y-%m-%d")
+            last = datetime.strptime(dates[-1].strip(), "%Y-%m-%d")
+            return (last - first).days / 365.25
+    return 15.0  # fallback
+
+
 def _ensure_mlruns_dir():
     """确保 mlruns 目录存在."""
     _HOST_MLRUNS.mkdir(parents=True, exist_ok=True)
@@ -142,6 +154,11 @@ def run_training(
     model_mode: str = "robust",
     hold_num: int = 20,
     lightgbm_only: bool = True,
+    train_years: int = 5,
+    valid_val: int = 1,
+    valid_unit: str = "year",
+    test_val: int = 2,
+    test_unit: str = "year",
     progress_callback: Callable | None = None,
 ) -> dict:
     """
@@ -152,6 +169,11 @@ def run_training(
         model_mode: "default" 或 "robust"
         hold_num: 持仓股票数量
         lightgbm_only: 仅训练 LightGBM（跳过 XGBoost）
+        train_years: 训练窗口（年）
+        valid_val: 验证窗口数值
+        valid_unit: 验证窗口单位 ("year", "month", "week")
+        test_val: 测试窗口数值
+        test_unit: 测试窗口单位 ("year", "month", "week")
         progress_callback: 可选回调，接收 dict(message, progress, ...)
 
     Returns:
@@ -160,6 +182,7 @@ def run_training(
     """
 
     def _log(msg: str, **extra):
+        print(msg, flush=True)  # 输出到服务日志
         if progress_callback:
             progress_callback({"message": msg, **extra})
 
@@ -225,13 +248,52 @@ def run_training(
         "--experiment-name", model_name,
         "--uri-folder", "mlruns",
         "--walk-forward-end", last_trade_date,
-        "--step-years", "3",           # 3折 walk-forward
-        "--train-years", "5",          # 训练窗口
-        "--valid-years", "1",          # 验证窗口（dev，用于early stopping）
-        "--test-years", "2",           # 测试窗口（回测评估）
+    ]
+
+    # ---- 自动计算 fold 数 (基于数据总跨度, ≤10) ----
+    total_years = _get_total_years()
+    _BASE = "2008-01-01"
+    _eff_yrs = max(1.0, (datetime.strptime(last_trade_date, "%Y-%m-%d") - datetime.strptime(_BASE, "%Y-%m-%d")).days / 365.25)
+    # 目标 stride ≈ 3 年/个, 不超过 10 个 fold
+    fold_target = min(10, max(3, round(_eff_yrs / 3)))
+    _log(f"数据跨度: {total_years:.1f}年 (有效: {_eff_yrs:.1f}年)  自动fold: {fold_target}")
+
+    # ---- 数据划分参数 (根据单位动态构建) ----
+    # valid: 根据单位传递对应参数
+    valid_years_arg = valid_val if valid_unit == "year" else 0
+    valid_months_arg = valid_val if valid_unit == "month" else 0
+    valid_weeks_arg = valid_val if valid_unit == "week" else 0
+
+    # test + step: 根据 test 单位确定 mode
+    valid_desc = f"{valid_val}{valid_unit}"
+    if test_unit == "year":
+        # annual mode: stride = effective_years / fold_target
+        stride_y = max(1, round(_eff_yrs / fold_target))
+        test_years_arg, test_weeks_arg = test_val, 1  # test-weeks 必须 > 0
+        step_years_final, step_weeks_final = stride_y, 0
+        step_desc = f"{stride_y}y"
+    else:
+        # weekly mode: 部分 anchor 被跳过, 用 fold*2 补偿
+        step_weeks_final = max(1, round(_eff_yrs * 52 / (fold_target * 2)))
+        test_weeks_arg = test_val * 4 if test_unit == "month" else test_val
+        test_years_arg = 1  # test-years 必须 > 0
+        step_years_final = 0
+        step_desc = f"{step_weeks_final}w"
+
+    cmd += [
+        "--step-years", str(step_years_final),
+        "--step-weeks", str(step_weeks_final),
+        "--train-years", str(train_years),
+        "--valid-years", str(valid_years_arg),
+        "--valid-months", str(valid_months_arg),
+        "--valid-weeks", str(valid_weeks_arg),
+        "--test-years", str(test_years_arg),
+        "--test-weeks", str(test_weeks_arg),
         "--model-mode", model_mode,
         "--hold-num", str(hold_num),
     ]
+
+    _log(f"数据划分: train={train_years}y  valid={valid_desc}  test={test_val}{test_unit}  stride={step_desc} (目标{fold_target}fold)")
 
     _log(f"启动 Docker 训练 (超时 {TRAIN_TIMEOUT}s)...")
     _log(f"脚本: {cfg['script']}")

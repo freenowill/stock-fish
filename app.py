@@ -923,6 +923,11 @@ def qlib_train():
             market = 'csi1000'
     model_mode = data.get('model_mode', 'robust')
     hold_num = int(data.get('hold_num', 20))
+    train_years = int(data.get('train_years', 5))
+    valid_val = int(data.get('valid_val', 1))
+    valid_unit = data.get('valid_unit', 'year')
+    test_val = int(data.get('test_val', 2))
+    test_unit = data.get('test_unit', 'year')
 
     if market not in ('csi300', 'csi1000'):
         return jsonify({'error': f'不支持的市场: {market}'}), 400
@@ -968,6 +973,11 @@ def qlib_train():
                 model_mode=model_mode,
                 hold_num=hold_num,
                 lightgbm_only=True,
+                train_years=train_years,
+                valid_val=valid_val,
+                valid_unit=valid_unit,
+                test_val=test_val,
+                test_unit=test_unit,
                 progress_callback=_progress,
             )
 
