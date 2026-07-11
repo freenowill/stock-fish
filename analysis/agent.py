@@ -81,6 +81,15 @@ class StockAnalysisAgent:
                               created_at=datetime.now().isoformat())
 
         try:
+            # Step 0: 验证该股票过去预测的准确率（14天/3个月/12个月后回测）
+            try:
+                from memory.masters.accuracy import verify_predictions
+                verified = verify_predictions(symbol=symbol)
+                if verified:
+                    logger.info(f"[{symbol}] 已验证 {len(verified)} 条历史预测结果")
+            except Exception:
+                pass
+
             # Step 1: 采集市场数据（通过缓存层）
             state.status = "gathering"
 

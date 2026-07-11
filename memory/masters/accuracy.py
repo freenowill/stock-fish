@@ -1,11 +1,15 @@
 """
 准确率计算工具函数
 
-提供给验证脚本和报表使用。
+提供验证脚本和报表使用。
 """
-from typing import Dict, List
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+
+from loguru import logger
 
 from memory.masters.master_track import MasterTrackDB
+from memory.stocks.stock_library import StockLibrary
 
 
 def calculate_accuracy(master_key: str) -> Dict:
@@ -16,7 +20,7 @@ def calculate_accuracy(master_key: str) -> Dict:
 
 def accuracy_by_master() -> Dict[str, Dict]:
     """计算所有大师的准确率"""
-    from analysis.agents.cio_prompts import MASTERS
+    MASTERS = ["graham", "buffett", "fisher", "lynch", "templeton", "soros", "dalio"]
     result = {}
     for master_key in MASTERS:
         result[master_key] = calculate_accuracy(master_key)
@@ -54,15 +58,58 @@ def accuracy_by_symbol(master_key: str) -> Dict[str, Dict]:
     return result
 
 
-def verify_predictions():
+def _get_price_at_date(symbol: str, target_date: str) -> Optional[float]:
     """
-    检查所有待验证的记录，更新实际结果（由定时任务/脚本调用）
+    从 StockLibrary 历史快照获取某日收盘价。
+    Args:
+        symbol: 股票代码
+        target_date: "2026-07-25"
+    Returns:
+        收盘价，无数据返回 None
+    """
+    # 先从 StockLibrary 的每日快照读
+    price = StockLibrary().get_price_at_date(symbol, target_date)
+    if price is not None:
+        logger.debug(f"验证价格 [{symbol}@{target_date}]: {price} (来自 StockLibrary)")
+        return price
 
-    这是一个占位函数 — 实际的验证逻辑需要根据市场数据 API 补充。
-    验证时机:
-      - short: 分析后 14 天
-      - mid: 分析后 3 个月
-      - long: 分析后 12 个月
+    # 快照中没有 → 尝试从 provider 获取历史日线
+    try:
+        from market_data.a_stock_provider import AStockProvider
+        provider = AStockProvider()
+        hist = provider.get_historical(symbol, days=365)
+        if hist:
+            # hist 是 list of dict/Quote，找 target_date 那天的收盘价
+            target_dt = datetime.strptime(target_date, "%Y-%m-%d").date()
+            for h in hist:
+                h_date = None
+                if hasattr(h, 'date'):
+                    h_date = h.date
+                elif isinstance(h, dict):
+                    h_date = h.get('date') or h.get('trade_date')
+                if h_date:
+                    if isinstance(h_date, str):
+                        h_date = h_date[:10]
+                    if h_date == target_date or h_date == target_dt:
+                        price = h.close if hasattr(h, 'close') else h.get('close') if isinstance(h, dict) else None
+                        if price:
+                            return float(price)
+    except Exception as e:
+        logger.debug(f"验证价格 fallback 失败 [{symbol}@{target_date}]: {e}")
+
+    return None
+
+
+def verify_predictions(symbol: Optional[str] = None) -> List[str]:
+    """
+    检查待验证的记录，更新实际结果。
+    从 StockLibrary 历史快照读取实际价格，比较预测方向是否正确。
+
+    Args:
+        symbol: 若指定，只验证该股票的相关记录；否则验证所有
+
+    Returns:
+        已更新的记录 ID 列表
     """
     db = MasterTrackDB()
     unverified = db.get_unverified_records()
@@ -70,40 +117,72 @@ def verify_predictions():
     if not unverified:
         return []
 
-    from datetime import datetime, timedelta
-
     updated = []
     for record in unverified:
         try:
-            analysis_date = datetime.fromisoformat(record["analysis_timestamp"][:19])
+            rec_symbol = record.get("symbol", "")
+            if symbol and rec_symbol != symbol:
+                continue
+
+            analysis_date_str = record.get("analysis_timestamp", "")[:10]
+            if not analysis_date_str:
+                continue
+
+            analysis_date = datetime.strptime(analysis_date_str, "%Y-%m-%d")
             now = datetime.now()
             price_at = record.get("price_at_analysis")
 
-            if not price_at:
+            if not price_at or price_at <= 0:
                 continue
 
             days_since = (now - analysis_date).days
 
-            # 短周期验证 (14 天)
+            # ── 短周期验证 (14 天) ──
             if record["was_correct_short"] is None and days_since >= 14:
-                # TODO: 从市场数据 API 获取实际价格
-                # actual_price = get_price_at_date(record["symbol"], analysis_date + timedelta(days=14))
-                # actual_change = (actual_price - price_at) / price_at * 100
-                # pred_change = record.get("short_term_pred", {}).get("change_pct", 0)
-                # same_direction = (actual_change > 0) == (pred_change > 0)
-                # db.update_outcome(record["id"], "short", actual_change, same_direction)
-                # updated.append(record["id"])
-                pass
+                check_date = (analysis_date + timedelta(days=14)).strftime("%Y-%m-%d")
+                actual_price = _get_price_at_date(rec_symbol, check_date)
+                if actual_price and actual_price > 0:
+                    actual_change = (actual_price - price_at) / price_at * 100
+                    pred = record.get("short_term_pred", {}) or {}
+                    pred_change = pred.get("change_pct", 0) or 0
+                    same_direction = (actual_change > 0) == (pred_change > 0)
+                    db.update_outcome(record["id"], "short", round(actual_change, 2), same_direction)
+                    updated.append(record["id"])
+                    logger.info(f"验证短周期 [{rec_symbol}] {record['id'][:20]}: "
+                               f"pred={pred_change:+.1f}% actual={actual_change:+.1f}% "
+                               f"{'✓' if same_direction else '✗'}")
+
+            # ── 中周期验证 (3 个月) ──
+            if record["was_correct_mid"] is None and days_since >= 90:
+                check_date = (analysis_date + timedelta(days=90)).strftime("%Y-%m-%d")
+                actual_price = _get_price_at_date(rec_symbol, check_date)
+                if actual_price and actual_price > 0:
+                    actual_change = (actual_price - price_at) / price_at * 100
+                    pred = record.get("mid_term_pred", {}) or {}
+                    pred_change = pred.get("change_pct", 0) or 0
+                    same_direction = (actual_change > 0) == (pred_change > 0)
+                    db.update_outcome(record["id"], "mid", round(actual_change, 2), same_direction)
+                    updated.append(record["id"])
+                    logger.info(f"验证中周期 [{rec_symbol}] {record['id'][:20]}: "
+                               f"pred={pred_change:+.1f}% actual={actual_change:+.1f}% "
+                               f"{'✓' if same_direction else '✗'}")
+
+            # ── 长周期验证 (12 个月) ──
+            if record["was_correct_long"] is None and days_since >= 365:
+                check_date = (analysis_date + timedelta(days=365)).strftime("%Y-%m-%d")
+                actual_price = _get_price_at_date(rec_symbol, check_date)
+                if actual_price and actual_price > 0:
+                    actual_change = (actual_price - price_at) / price_at * 100
+                    pred = record.get("long_term_pred", {}) or {}
+                    pred_change = pred.get("change_pct", 0) or 0
+                    same_direction = (actual_change > 0) == (pred_change > 0)
+                    db.update_outcome(record["id"], "long", round(actual_change, 2), same_direction)
+                    updated.append(record["id"])
+                    logger.info(f"验证长周期 [{rec_symbol}] {record['id'][:20]}: "
+                               f"pred={pred_change:+.1f}% actual={actual_change:+.1f}% "
+                               f"{'✓' if same_direction else '✗'}")
 
         except Exception as e:
-            logger = __import__("loguru").logger
-            logger.warning(f"验证失败 [{record.get('id')}]: {e}")
+            logger.warning(f"验证失败 [{record.get('id', '?')}]: {e}")
 
     return updated
-
-
-# 已知的大师列表（用于 accuracy_by_master）
-MASTERS = [
-    "graham", "buffett", "fisher", "lynch",
-    "templeton", "soros", "dalio",
-]
