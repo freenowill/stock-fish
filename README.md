@@ -84,6 +84,34 @@
 
 > **使用方式**：在 `/api/analyze` 或 `/api/predict` 请求中传入 `"master"` 参数（`graham` / `buffett` / `fisher` / `lynch` / `templeton` / `soros` / `dalio`），前端选择器可通过 `GET /api/masters` 获取可用大师列表。
 
+## 🧠 记忆系统 (Memory)
+
+StockFish 内置 4 层文件记忆系统，无需外部数据库：
+
+### 1. cache/ — 数据缓存
+- **市场数据整包缓存** (5min)：避免对同一股票重复调用 `get_all_market_data()`
+- **PE 数据缓存** (1h)：历史 PE 分位计算不再重复请求
+- **宏观/行业缓存** (4h)：14 个宏观 API 调用跨股票共享
+- 线程安全 LRU 淘汰，磁盘持久化支持进程重启恢复
+- 第二次分析同只股票提速 ~85%
+
+### 2. stocks/ — 股票数据仓库
+- 每只股票独立目录 `memory/stocks/{symbol}/`
+- 每日快照 (`history/`)、季度财务 (`financials/`)、情绪 (`sentiment/`)、新闻索引 (`news/`)
+- 为历史数据分析和回测提供结构化数据
+
+### 3. analysis/ — 分析归档
+- 每次分析的完整快照：`state.json` + `employee_reports.json` + `cio_decision.json` + `prediction.json`
+- 按 `{symbol}/{timestamp}` 组织，支持对比历史分析结果
+
+### 4. masters/ — 大师自优化
+- **记录**：每次决策后写入 `memory/masters/records/{master_key}.json`，含多周期预测方向/幅度
+- **验证**：每次分析前自动回测该股票过去 14 天/3 个月/12 个月的预测准确率，从本地历史快照读取实际价格对比
+- **注入**：大师 CIO 提示词末尾追加历史准确率摘要，如 `"Your last 5 predictions: 4/5 correct (80%)"`
+- 准确率数据随分析次数滚动积累，大师自我认知持续优化
+
+> **监控**：`GET /api/memory/stats` 查看缓存命中率；`POST /api/memory/invalidate` 失效指定股票缓存。
+
 ## 🎬 Demo 演示
 
 <table>
