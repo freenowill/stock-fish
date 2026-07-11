@@ -24,6 +24,12 @@ from analysis.state.state import AnalysisState
 from analysis.nodes.prediction_node import PredictionNode
 from analysis.scoring import ScoringEngine
 
+# 记忆系统集成
+from memory.cache.cache_manager import cache_manager
+from memory.analysis.analysis_store import AnalysisStore
+from memory.stocks.stock_library import StockLibrary
+from memory.masters.master_track import MasterTrackDB
+
 # SearchService 缓存（5分钟有效期，支持key热更新）
 _search_service_cache = None
 _search_service_cache_time = 0
@@ -75,17 +81,38 @@ class StockAnalysisAgent:
                               created_at=datetime.now().isoformat())
 
         try:
-            # Step 1: 采集市场数据
+            # Step 1: 采集市场数据（通过缓存层）
             state.status = "gathering"
-            market = self.provider.get_all_market_data(symbol)
+
+            def _dictify(obj):
+                """将 dataclass 对象转为 dict，兼容已有 dict 和 None"""
+                if obj is None:
+                    return {}
+                if isinstance(obj, dict):
+                    return obj
+                if hasattr(obj, 'to_dict'):
+                    return obj.to_dict()
+                if hasattr(obj, '_asdict'):
+                    return obj._asdict()
+                return dict(obj)
+
+            # 整包缓存: get_all_market_data() 只在缓存未命中时真正调用 API
+            market = cache_manager.get_market_data(
+                symbol,
+                lambda: self.provider.get_all_market_data(symbol)
+            )
             state.stock_name = market.get('name', symbol)
-            state.quote = market.get('quote')
-            state.technical_indicators = market.get('technical_indicators')
-            state.financial_summary = market.get('financial_summary')
+            state.quote = _dictify(market.get('quote'))
+            state.technical_indicators = _dictify(market.get('technical_indicators'))
+            state.financial_summary = _dictify(market.get('financial_summary'))
             state.news = market.get('news', [])
             state.guba_posts = market.get('guba_posts', [])
-            state.macro_context = market.get('macro_context') or self._fetch_macro_context()
-            state.industry_context = market.get('industry_context') or self._fetch_industry_context(symbol)
+
+            # 宏观/行业有独立的 TTL（4h），单独缓存
+            state.macro_context = cache_manager.get_macro_context(
+                lambda: market.get('macro_context') or self._fetch_macro_context())
+            state.industry_context = cache_manager.get_industry_context(
+                symbol, lambda: market.get('industry_context') or self._fetch_industry_context(symbol))
 
             # Step 1b: Web 搜索（多维度情报 — 新闻/研报/风险/业绩）
             try:
@@ -270,6 +297,42 @@ class StockAnalysisAgent:
 
             state.mark_complete()
 
+            # ── 记忆系统：保存分析结果 ──
+            try:
+                state_dict = state.to_dict()
+                timestamp = state.created_at or datetime.now().isoformat()
+
+                # 保存分析归档
+                analysis_store = AnalysisStore()
+                employee_reports_list = getattr(prediction, 'employee_reports', None) if master else None
+                cio_decision_dict = getattr(prediction, 'cio_decision', None) if master else None
+                analysis_store.save(
+                    symbol=symbol,
+                    state=state_dict,
+                    timestamp=timestamp,
+                    employee_reports=employee_reports_list,
+                    cio_decision=cio_decision_dict,
+                    prediction=state.prediction_summary,
+                )
+
+                # 更新股票数据仓库
+                StockLibrary().update(symbol, state_dict)
+
+                # 记录大师决策（master 模式）
+                if master:
+                    MasterTrackDB().record_decision(
+                        master_key=master,
+                        symbol=symbol,
+                        analysis_timestamp=timestamp,
+                        state=state_dict,
+                        prediction_summary=state.prediction_summary,
+                        cio_decision=cio_decision_dict,
+                    )
+
+                logger.info(f"[{symbol}] 记忆系统保存完成")
+            except Exception as mem_err:
+                logger.warning(f"[{symbol}] 记忆系统保存失败 (非关键): {mem_err}")
+
         except Exception as e:
             logger.error(f"[{symbol}] 分析失败: {e}")
             state.mark_error(str(e))
@@ -281,8 +344,11 @@ class StockAnalysisAgent:
     def _compute_valuation(self, symbol: str, state: AnalysisState):
         """计算 PE 历史分位数、估值等级、建议买入价 + 长期PE分位"""
         try:
-            # 1年PE分位 (已有逻辑)
-            pe_values = self.provider.get_historical_pe(symbol, days=365)
+            # 1年PE分位 (缓存)
+            pe_values = cache_manager.get_historical_pe(
+                symbol, 365,
+                lambda: self.provider.get_historical_pe(symbol, days=365)
+            )
             quote = state.quote or {}
             current_pe = quote.get('pe') if isinstance(quote, dict) else None
             current_price = quote.get('price', 0) if isinstance(quote, dict) else 0
@@ -353,7 +419,10 @@ class StockAnalysisAgent:
         try:
             import numpy as np
             for label, days in [('5y', 1825), ('10y', 3650)]:
-                pe_vals = self.provider.get_historical_pe(symbol, days=days)
+                pe_vals = cache_manager.get_historical_pe(
+                    symbol, days,
+                    lambda d=days: self.provider.get_historical_pe(symbol, days=d)
+                )
                 if pe_vals and len(pe_vals) >= 120:
                     arr = np.array(pe_vals, dtype=float)
                     arr = arr[arr > 0]

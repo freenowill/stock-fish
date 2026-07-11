@@ -78,6 +78,12 @@ pickle_cache/
 # wget
 wget-log*
 
+# Memory system (runtime data, regeneratable)
+memory/cache/data/
+memory/stocks/
+memory/analysis/
+memory/masters/records/
+
 # Claude Code
 .claude/
 

@@ -1352,6 +1352,51 @@ def config_health():
 
 
 # ==========================================
+#  API: 记忆系统统计
+# ==========================================
+
+@app.route('/api/memory/stats', methods=['GET'])
+def memory_stats():
+    """返回记忆系统（缓存/分析归档/大师追踪）的统计信息"""
+    from memory import get_cache_manager, get_analysis_store, get_master_track_db
+
+    try:
+        # 缓存统计
+        cache_mgr = get_cache_manager()
+        cache_stats = cache_mgr.stats()
+
+        # 分析归档统计
+        analysis_store = get_analysis_store()
+        symbols_with_analysis = analysis_store.list_all_symbols()
+
+        return jsonify({
+            'cache': cache_stats,
+            'analysis_store': {
+                'symbol_count': len(symbols_with_analysis),
+                'symbols': symbols_with_analysis[:100],  # 最多返回 100 个
+            },
+            'master_track': {
+                'available': True,
+            },
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/memory/invalidate', methods=['POST'])
+def memory_invalidate():
+    """失效指定股票的缓存"""
+    from memory import get_cache_manager
+    data = request.get_json(silent=True) or {}
+    symbol = data.get('symbol', '')
+    if not symbol:
+        return jsonify({'error': 'symbol is required'}), 400
+    cache_mgr = get_cache_manager()
+    result = cache_mgr.invalidate_symbol(symbol)
+    return jsonify({'invalidated': result})
+
+
+# ==========================================
 #  API: 股票名称搜索（自动补全）
 # ==========================================
 

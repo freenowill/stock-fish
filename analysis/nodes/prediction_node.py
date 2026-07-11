@@ -18,6 +18,9 @@ from dataclasses import dataclass, field
 
 from loguru import logger
 
+# 记忆系统：大师历史准确率追踪
+from memory.masters.master_track import MasterTrackDB
+
 
 @dataclass
 class AgentView:
@@ -215,9 +218,17 @@ class PredictionNode:
         reports.append(overseer_report)
         logger.info(f"员工 [监察员] 完成")
 
-        # CIO 最终决策
+        # CIO 最终决策（带历史准确率追踪）
         cio = CIOAgent(api_key=self.api_key, base_url=self.base_url, model=self.model)
-        cio_decision = cio.decide(master_key, reports, state)
+
+        # 查询大师历史准确率
+        track_context = MasterTrackDB().get_prompt_context(
+            master_key=master_key,
+            symbol=state.get('symbol', ''),
+            limit=5,
+        )
+
+        cio_decision = cio.decide(master_key, reports, state, track_context=track_context)
         logger.info(f"CIO [{cio_decision.master_name}] 决策: {cio_decision.decision_summary[:60]}")
 
         # 组装 PredictionResult

@@ -25,7 +25,7 @@ class CIOAgent(BaseAgent):
     """最终决策人 — 以大师的投资哲学对员工报告做出最终裁决"""
 
     def decide(self, master_key: str, employee_reports: List[EmployeeReport],
-               state: dict) -> CIODecision:
+               state: dict, track_context: Optional[str] = None) -> CIODecision:
         """
         执行大师决策流程
 
@@ -33,6 +33,7 @@ class CIOAgent(BaseAgent):
             master_key: 大师标识 (buffett/graham/fisher/lynch/templeton/soros/dalio)
             employee_reports: 所有员工的分析报告列表
             state: 分析状态 dict (AnalysisState.to_dict() 的输出)
+            track_context: 可选，历史准确率上下文（用于回注大师提示词）
 
         Returns:
             CIODecision 结构化决策
@@ -52,8 +53,8 @@ class CIOAgent(BaseAgent):
                 error=f"大师 prompt 未找到: {master_key}",
             )
 
-        # 组装用户提示：员工报告 + 关键市场数据
-        user_prompt = self._build_cio_user_prompt(employee_reports, state, master_info)
+        # 组装用户提示：员工报告 + 关键市场数据 + 历史准确率
+        user_prompt = self._build_cio_user_prompt(employee_reports, state, master_info, track_context=track_context)
 
         # 调用 LLM
         if not self.has_llm:
@@ -72,7 +73,8 @@ class CIOAgent(BaseAgent):
     # ── Prompt 构建 ──
 
     def _build_cio_user_prompt(self, reports: List[EmployeeReport],
-                                state: dict, master_info: dict) -> str:
+                                state: dict, master_info: dict,
+                                track_context: Optional[str] = None) -> str:
         """构建发送给 CIO 的用户 prompt: 包含所有员工报告 + 市场背景"""
         q = state.get('quote', {}) or {}
         price = q.get('price', 0) if isinstance(q, dict) else 0
@@ -237,6 +239,13 @@ class CIOAgent(BaseAgent):
                 lines.append(w)
             lines.append("")
             lines.append("请在 rationale 或 extraordinary_items_note 中针对以上告警做出说明。")
+
+        # 注入历史准确率追踪（如果可用）
+        if track_context:
+            lines.append("")
+            lines.append(track_context)
+            lines.append("")
+            lines.append("请参考以上历史表现，思考你在哪些情境下容易判断失误，并在本次决策中有意识地避免同样错误。")
 
         return "\n".join(lines)
 

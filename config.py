@@ -125,5 +125,17 @@ class Settings(BaseSettings):
     # ===== 行情缓存 =====
     CACHE_TTL_SECONDS: int = 60
 
+    # ===== 记忆系统 (Memory) =====
+    MEMORY_ENABLED: bool = True                       # 总开关
+    CACHE_TTL_QUOTE: int = 300                        # 行情 5min
+    CACHE_TTL_TECHNICAL: int = 900                    # 技术指标 15min
+    CACHE_TTL_HISTORICAL: int = 3600                  # 历史 K 线 1h
+    CACHE_TTL_FINANCIAL: int = 7200                   # 财务摘要 2h
+    CACHE_TTL_NEWS: int = 600                         # 新闻 10min
+    CACHE_TTL_GUBA: int = 600                         # 股吧 10min
+    CACHE_TTL_MACRO: int = 14400                      # 宏观 4h
+    CACHE_TTL_INDUSTRY: int = 14400                   # 行业 4h
+    CACHE_MAX_ENTRIES_PER_TYPE: int = 10000            # 每类缓存最大条目
+
 
 settings = Settings()
