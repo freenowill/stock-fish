@@ -512,9 +512,28 @@ class StockAnalysisAgent:
             import pandas as pd
 
             # 1. ROIC (Row 42: 投入资本回报率)
-            state.roic = _get_val('投入资本回报率')
-            if state.roic is None:
-                state.roic = _get_val('ROIC')
+            # 注意: 东方财富财务摘要中 ROIC 是期间值(非年化)。
+            # 如果最新列为中报/季报，必须年化后才能与评分阈值(>15%/+2, <5%/-1)比较。
+            # 策略: 优先取最近一期年报列(1231)，否则取最新列并年化。
+            roic_raw = _get_val('投入资本回报率')
+            if roic_raw is None:
+                roic_raw = _get_val('ROIC')
+            if roic_raw is not None and latest_q is not None:
+                col_str = str(latest_q)
+                if col_str.endswith('0331'):
+                    # Q1 单季 → 年化 ×4
+                    state.roic = round(roic_raw * 4, 2)
+                elif col_str.endswith('0630'):
+                    # 中报(半年) → 年化 ×2
+                    state.roic = round(roic_raw * 2, 2)
+                elif col_str.endswith('0930'):
+                    # 三季报(9个月) → 年化 ×4/3
+                    state.roic = round(roic_raw * 4 / 3, 2)
+                else:
+                    # 年报列(1231)或其他 → 已经是全年值
+                    state.roic = roic_raw
+            else:
+                state.roic = roic_raw
 
             # 2. FCF per share (Row 25: 每股企业自由现金流量)
             state.fcf_per_share = _get_val('每股企业自由现金流量')
